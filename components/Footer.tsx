@@ -20,7 +20,7 @@ export function Footer() {
 
         <nav aria-label="Footer" className="flex gap-10 text-sm">
           <div className="flex flex-col gap-2.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+            <span className="dp-eyebrow text-muted">
               Explore
             </span>
             <Link
@@ -43,7 +43,7 @@ export function Footer() {
             </Link>
           </div>
           <div className="flex flex-col gap-2.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+            <span className="dp-eyebrow text-muted">
               Project
             </span>
             <a

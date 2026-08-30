@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ladder, branches } from "@/content/career";
+import { accentFill } from "@/lib/accent";
 
 export function GrowthTree() {
   // Which rung the user has marked as "where I am now". Null = none selected.
@@ -28,7 +29,7 @@ export function GrowthTree() {
               <span
                 aria-hidden="true"
                 className="relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-paper"
-                style={{ backgroundColor: rung.color }}
+                style={{ backgroundColor: accentFill(rung.color) }}
               >
                 <span className="h-3 w-3 rounded-full bg-white/90" />
               </span>
@@ -36,18 +37,21 @@ export function GrowthTree() {
                 type="button"
                 onClick={() => setHereId(isHere ? null : rung.id)}
                 aria-pressed={isHere}
-                className={`dp-lift flex-1 rounded-card border-2 bg-card p-4 text-left transition-all ${
+                className={`dp-card dp-lift flex-1 rounded-card border bg-card p-4 text-left transition-all ${
                   isHere
-                    ? "border-here shadow-md shadow-black/5"
+                    ? "dp-shadow border-here"
                     : "border-line hover:border-here/40"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-display text-lg font-bold text-ink">
+                  <span className="font-display text-lg font-bold text-ink">
                     {rung.role}
-                  </h3>
+                  </span>
                   {isHere ? (
-                    <span className="dp-pulse-here rounded-pill bg-here px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                    <span
+                      className="dp-pulse-here rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-wide text-white"
+                      style={{ backgroundColor: accentFill("#FF8A3D") }}
+                    >
                       You are here
                     </span>
                   ) : (
@@ -83,13 +87,13 @@ export function GrowthTree() {
         {branches.map((branch) => (
           <section
             key={branch.title}
-            className="dp-lift dp-shadow-sm rounded-card border-2 bg-card p-5"
-            style={{ borderColor: `${branch.color}55` }}
+            className="dp-card dp-lift rounded-card border border-line bg-card p-5 transition-colors hover:border-[color:var(--accent)]/50"
+            style={{ ["--accent" as string]: branch.color }}
           >
             <header>
               <span
                 className="inline-flex items-center rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-wide text-white"
-                style={{ backgroundColor: branch.color }}
+                style={{ backgroundColor: accentFill(branch.color) }}
               >
                 {branch.title}
               </span>
@@ -104,11 +108,11 @@ export function GrowthTree() {
                 style={{ backgroundColor: `${branch.color}40` }}
               />
               {branch.roles.map(([title, description], i) => (
-                <li key={title} className="relative flex gap-3">
+                <li key={`${i}-${title}`} className="relative flex gap-3">
                   <span
                     aria-hidden="true"
                     className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                    style={{ backgroundColor: branch.color }}
+                    style={{ backgroundColor: accentFill(branch.color) }}
                   >
                     {i + 1}
                   </span>

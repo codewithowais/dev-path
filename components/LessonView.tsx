@@ -3,6 +3,7 @@ import type { Lesson } from "@/content/lessons";
 import { pillarColor, lessonsByPillar } from "@/content/lessons";
 import { CodeRunner } from "@/components/CodeRunner";
 import { PillarIcon } from "@/components/PillarIcon";
+import { accentText } from "@/lib/accent";
 
 /** Full lesson page: short explanation on the left, live editor + output on the
  *  right (stacked on mobile). Designed so you can see it all without hunting. */
@@ -14,13 +15,24 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
   const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : undefined;
   return (
     <div className="mx-auto max-w-6xl px-5">
-      <div className="py-8 sm:py-10">
-        <Link
-          href={`/learn#${slug(lesson.pillar)}`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-ink"
-        >
-          <span aria-hidden="true">←</span> Back to {lesson.pillar}
-        </Link>
+      <div className="py-10 sm:py-14">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted">
+          <Link
+            href={`/learn#${slug(lesson.pillar)}`}
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-ink"
+          >
+            <span aria-hidden="true">←</span> Back to {lesson.pillar}
+          </Link>
+          <span aria-hidden="true" className="text-line">
+            ·
+          </span>
+          <Link
+            href="/learn"
+            className="inline-flex items-center transition-colors hover:text-ink"
+          >
+            All lessons
+          </Link>
+        </div>
 
         <header className="mt-5 flex items-start gap-4">
           <span
@@ -33,16 +45,16 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
             <PillarIcon pillar={lesson.pillar} className="h-6 w-6" />
           </span>
           <div>
-            <p className="dp-eyebrow" style={{ color }}>
+            <p className="dp-eyebrow" style={{ color: accentText(color) }}>
               {lesson.pillar}
             </p>
-            <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            <h1 className="mt-1 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
               {lesson.name}
             </h1>
             {lesson.big && (
               <p
                 className="mt-2 inline-block rounded-pill px-3 py-1 font-mono text-xs font-semibold"
-                style={{ backgroundColor: `${color}14`, color }}
+                style={{ backgroundColor: `${color}14`, color: accentText(color) }}
               >
                 {lesson.big}
               </p>
@@ -68,7 +80,7 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
                       style={{
                         backgroundColor: "color-mix(in srgb, var(--accent) 15%, white)",
-                        color: "var(--accent)",
+                        color: accentText(color),
                       }}
                     >
                       {i + 1}
@@ -102,7 +114,7 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
           {/* Right — the editor, sticky on desktop so it stays in view */}
           <div className="lg:sticky lg:top-24 lg:self-start">
             <Block label="Try it — edit and run">
-              <CodeRunner code={lesson.code} output={lesson.output} />
+              <CodeRunner key={lesson.id} code={lesson.code} output={lesson.output} />
             </Block>
             {lesson.note && (
               <p className="mt-4 rounded-xl border border-line bg-paper px-4 py-3 text-sm leading-relaxed text-muted">
@@ -129,6 +141,17 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
             <LessonNavCard lesson={next} direction="next" />
           </div>
         </nav>
+
+        <p className="mt-8 text-sm text-muted">
+          Not sure this is the right topic?{" "}
+          <Link href="/" className="font-semibold text-primary hover:text-ink">
+            See the learning paths →
+          </Link>{" "}
+          or{" "}
+          <Link href="/grow" className="font-semibold text-primary hover:text-ink">
+            where this leads →
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const LINKS = [
   { href: "/", label: "Paths", hint: "What to learn" },
@@ -11,13 +11,23 @@ const LINKS = [
 ] as const;
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  if (href === "/") return pathname === "/" || pathname.startsWith("/paths");
   return pathname.startsWith(href);
 }
 
 export function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Close the mobile menu on Escape while it's open.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur">
@@ -96,13 +106,13 @@ export function Nav() {
         </button>
       </nav>
 
-      {/* Mobile menu */}
-      {open && (
-        <ul
-          id="mobile-menu"
-          className="flex flex-col gap-1 border-t border-line px-5 pb-4 pt-2 sm:hidden"
-        >
-          {LINKS.map((link) => {
+      {/* Mobile menu — kept mounted so aria-controls always resolves; toggled via `hidden`. */}
+      <ul
+        id="mobile-menu"
+        hidden={!open}
+        className="flex flex-col gap-1 border-t border-line px-5 pb-4 pt-2 sm:hidden"
+      >
+        {LINKS.map((link) => {
             const active = isActive(pathname, link.href);
             return (
               <li key={link.href}>
@@ -120,8 +130,7 @@ export function Nav() {
               </li>
             );
           })}
-        </ul>
-      )}
+      </ul>
     </header>
   );
 }

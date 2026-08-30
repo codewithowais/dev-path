@@ -9,7 +9,7 @@
 @theme {
   /* Core palette */
   --color-ink: #191c33; /* primary text */
-  --color-muted: #727793; /* secondary text */
+  --color-muted: #5b6079; /* secondary text */
   --color-line: #e6e8f2; /* borders / hairlines */
   --color-paper: #f6f7fb; /* page background */
   --color-card: #ffffff; /* surfaces */
@@ -130,16 +130,6 @@ body::before {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* Utility: the self-drawing roadmap line animation */
-@keyframes devpath-draw {
-  from {
-    stroke-dashoffset: var(--dp-dash, 1000);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
 }
 
 /* ─────────────────────────── Motion system ───────────────────────────

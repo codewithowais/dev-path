@@ -20,7 +20,14 @@ type RunState =
 
 /** Runs a snippet of JS in a Web Worker so infinite loops can be killed and the
  *  page thread never freezes. Only console.log/error output is captured. */
-function runJavaScript(code: string, timeoutMs = 2000): Promise<{ out: string; error?: string }> {
+/** Handle to an in-flight run so the caller can abort it (e.g. on unmount). */
+type RunHandle = { worker: Worker; timer: ReturnType<typeof setTimeout> };
+
+function runJavaScript(
+  code: string,
+  timeoutMs = 2000,
+  onActive?: (handle: RunHandle) => void
+): Promise<{ out: string; error?: string }> {
   return new Promise((resolve) => {
     const src = `
       const logs = [];
@@ -42,7 +49,10 @@ function runJavaScript(code: string, timeoutMs = 2000): Promise<{ out: string; e
       resolve({ out: "", error: "Couldn't start the runner in this browser." });
       return;
     }
+    let settled = false;
     const finish = (r: { out: string; error?: string }) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
       worker.terminate();
       URL.revokeObjectURL(url);
@@ -54,11 +64,23 @@ function runJavaScript(code: string, timeoutMs = 2000): Promise<{ out: string; e
     );
     worker.onmessage = (e) => finish(e.data as { out: string; error?: string });
     worker.onerror = (e) => finish({ out: "", error: e.message || "Something went wrong." });
+    // Expose the live worker + timer so the component can tear them down on unmount.
+    onActive?.({ worker, timer });
     worker.postMessage(code);
   });
 }
 
-const norm = (s: string) => s.replace(/\r\n/g, "\n").replace(/\s+$/gm, "").replace(/\n+$/, "");
+// Mirror scripts/verify-output.mjs: normalize line endings, strip trailing
+// whitespace per line, and trim BOTH leading and trailing blank lines.
+// NOTE: this only aligns whitespace/trim. The worker formats objects with
+// JSON.stringify (`{"a":1}`), whereas the verifier uses Node's util.inspect
+// (`{ a: 1 }`), so object/array output can still differ from expected.
+const norm = (s: string) =>
+  s
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+$/gm, "")
+    .replace(/^\n+/, "")
+    .replace(/\n+$/, "");
 
 export function CodeRunner({ code, output }: Props) {
   const languages = useMemo(() => Object.keys(code) as Language[], [code]);
@@ -68,6 +90,12 @@ export function CodeRunner({ code, output }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
+
+  // Guards for late/aborted runs (see doRun + the unmount cleanup effect).
+  const mountedRef = useRef(true);
+  const runTokenRef = useRef(0);
+  const langRef = useRef<Language>(lang);
+  const runHandleRef = useRef<RunHandle | null>(null);
 
   const original = code[lang] ?? "";
   const current = drafts[lang] ?? original;
@@ -92,6 +120,25 @@ export function CodeRunner({ code, output }: Props) {
     syncScroll();
   }, [current, lang]);
 
+  // Keep the current language readable from async callbacks that captured an
+  // older render, so a late run can tell whether the language changed.
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
+
+  // Abort any in-flight run and block setState after the component unmounts.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (runHandleRef.current) {
+        runHandleRef.current.worker.terminate();
+        clearTimeout(runHandleRef.current.timer);
+        runHandleRef.current = null;
+      }
+    };
+  }, []);
+
   function syncScroll() {
     const ta = taRef.current;
     if (!ta) return;
@@ -103,20 +150,32 @@ export function CodeRunner({ code, output }: Props) {
   }
 
   function switchLang(next: Language) {
+    runTokenRef.current++; // invalidate any in-flight run
     setLang(next);
     setRun({ kind: "idle" });
   }
   function edit(value: string) {
+    runTokenRef.current++; // invalidate any in-flight run
     setDrafts((d) => ({ ...d, [lang]: value }));
     setRun({ kind: "idle" });
   }
   function reset() {
+    runTokenRef.current++; // invalidate any in-flight run
     setDrafts((d) => ({ ...d, [lang]: original }));
     setRun({ kind: "idle" });
   }
   async function doRun() {
+    const token = ++runTokenRef.current;
+    const langAtRun = lang;
     setRun({ kind: "running" });
-    const { out, error } = await runJavaScript(current);
+    const { out, error } = await runJavaScript(current, 2000, (handle) => {
+      runHandleRef.current = handle;
+    });
+    runHandleRef.current = null;
+    // Ignore the result if we unmounted, the language changed, or a newer
+    // action (run/edit/reset/switch) superseded this run.
+    if (!mountedRef.current) return;
+    if (runTokenRef.current !== token || langRef.current !== langAtRun) return;
     setRun({ kind: "done", out, error, matches: norm(out) === norm(output) });
   }
 
@@ -124,15 +183,14 @@ export function CodeRunner({ code, output }: Props) {
     <div className="dp-editor overflow-hidden rounded-xl border border-line bg-ink">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2">
-        <div role="tablist" aria-label="Language" className="inline-flex rounded-lg bg-white/5 p-0.5">
+        <div role="group" aria-label="Language" className="inline-flex rounded-lg bg-white/5 p-0.5">
           {languages.map((l) => (
             <button
               key={l}
-              role="tab"
               type="button"
-              aria-selected={l === lang}
+              aria-pressed={l === lang}
               onClick={() => switchLang(l)}
-              className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+              className={`inline-flex min-h-11 items-center rounded-md px-3 text-xs font-semibold transition-colors ${
                 l === lang ? "bg-white/15 text-white" : "text-white/55 hover:text-white"
               }`}
             >
@@ -146,7 +204,7 @@ export function CodeRunner({ code, output }: Props) {
             <button
               type="button"
               onClick={reset}
-              className="rounded-md px-2.5 py-1 text-xs font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              className="inline-flex min-h-11 items-center rounded-md px-2.5 text-xs font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white"
             >
               Reset
             </button>
@@ -156,18 +214,35 @@ export function CodeRunner({ code, output }: Props) {
               type="button"
               onClick={doRun}
               disabled={run.kind === "running"}
-              className="inline-flex items-center gap-1.5 rounded-md bg-output px-3 py-1 text-xs font-bold text-white transition-transform hover:scale-[1.03] disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-output px-3 text-xs font-bold text-white transition-transform hover:scale-[1.03] disabled:opacity-60"
             >
               <span aria-hidden="true">▶</span>
               {run.kind === "running" ? "Running…" : "Run"}
             </button>
           ) : (
-            <span className="rounded-md bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/50">
+            <span className="inline-flex min-h-11 items-center rounded-md bg-white/5 px-2.5 text-xs font-semibold text-white/70">
               Python — verified output
             </span>
           )}
         </div>
       </div>
+
+      {/* Beginner hints: how to edit + why Python isn't run live */}
+      {(!edited || !isJS) && (
+        <div className="space-y-1 border-b border-white/10 px-3 py-1.5 text-xs">
+          {!isJS && (
+            <p className="text-white/70">
+              Python can&apos;t run inside a browser, so this is the exact output this
+              code produces. Switch to the JavaScript tab to edit and run it live.
+            </p>
+          )}
+          {!edited && (
+            <p className="text-white/60">
+              <span aria-hidden="true">✎</span> Click the code to edit
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Editor: gutter + (highlight layer under a transparent textarea) */}
       <div className="flex">
@@ -198,20 +273,23 @@ export function CodeRunner({ code, output }: Props) {
             autoCapitalize="off"
             autoCorrect="off"
             aria-label={`${lang} code editor`}
-            style={{ height: Math.min(lineCount * 20.8 + 24, MAX_H), maxHeight: MAX_H }}
+            // `rows` gives a stable pre-paint height (~line count); the height
+            // effect above is the single source of truth once mounted.
+            rows={lineCount}
+            style={{ maxHeight: MAX_H }}
             className="dp-code relative block w-full resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-white outline-none"
           />
         </div>
       </div>
 
       {/* Output */}
-      <div className="border-t border-white/10">
+      <div className="border-t border-white/10" aria-live="polite" aria-atomic="true">
         <div className="flex items-center gap-2 px-3 py-2">
           <span
             className={`h-2 w-2 rounded-full ${run.kind === "done" && run.error ? "bg-here" : "bg-output"}`}
             aria-hidden="true"
           />
-          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-white/50">
+          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-white/70">
             {run.kind === "done"
               ? run.error
                 ? "Error"

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { paths, getPath } from "@/content/paths";
 import { Roadmap } from "@/components/Roadmap";
 import { PathIcon } from "@/components/PathIcon";
+import { accentText } from "@/lib/accent";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -39,15 +40,15 @@ export default async function PathDetailPage({ params }: Params) {
         <header className="mt-6 flex items-start gap-4">
           <span
             aria-hidden="true"
-            className="mt-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm"
+            className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm"
             style={{
               background: `linear-gradient(135deg, ${path.color}, color-mix(in srgb, ${path.color} 55%, white))`,
             }}
           >
-            <PathIcon id={path.id} className="h-7 w-7" />
+            <PathIcon id={path.id} className="h-6 w-6" />
           </span>
           <div>
-            <p className="dp-eyebrow" style={{ color: path.color }}>
+            <p className="dp-eyebrow" style={{ color: accentText(path.color) }}>
               {path.steps.length}-step roadmap
             </p>
             <h1 className="mt-1 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">

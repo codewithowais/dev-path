@@ -7,7 +7,7 @@ import { roleTrees } from "@/content/career";
 import { BrandChip } from "@/components/Brand";
 
 const STATS = [
-  { value: `${lessons.length}`, label: "runnable lessons" },
+  { value: `${lessons.length}`, label: "lessons" },
   { value: `${paths.length}`, label: "learning paths" },
   { value: `${roleTrees.length}`, label: "career trees" },
 ];
@@ -39,7 +39,7 @@ export default function HomePage() {
               href="#paths"
               className="dp-lift rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(91,75,235,0.8)] transition-colors hover:bg-primary/90"
             >
-              Find your path
+              Find your path <span aria-hidden="true">↓</span>
             </Link>
             <Link
               href="/learn"
@@ -56,7 +56,10 @@ export default function HomePage() {
                 <dt className="sr-only">{s.label}</dt>
                 <dd className="font-display text-2xl font-bold text-ink">
                   {s.value}
-                  <span className="ml-2 align-middle text-sm font-medium text-muted">
+                  <span
+                    aria-hidden="true"
+                    className="ml-2 align-middle text-sm font-medium text-muted"
+                  >
                     {s.label}
                   </span>
                 </dd>
@@ -191,7 +194,7 @@ function RouteMap() {
               {s.label}
             </text>
             {i === 0 && (
-              <text x={s.x} y={s.y - 26} textAnchor="middle" fontSize="11" fill="#727793">
+              <text x={s.x} y={s.y - 26} textAnchor="middle" fontSize="11" fill="#5b6079">
                 you are here
               </text>
             )}

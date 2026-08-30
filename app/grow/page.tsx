@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function GrowPage() {
   return (
-    <div className="mx-auto max-w-5xl px-5">
-      <section className="dp-stagger py-14 sm:py-16">
+    <div className="mx-auto max-w-6xl px-5">
+      <section className="dp-stagger py-14 sm:py-20">
         <p className="dp-eyebrow text-here">Grow</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
           Where can my career go?
@@ -26,10 +26,18 @@ export default function GrowPage() {
       </section>
 
       <section aria-labelledby="ladder-heading" className="pb-8">
-        <h2 id="ladder-heading" className="sr-only">
-          The career ladder
-        </h2>
-        <GrowthTree />
+        <header className="max-w-2xl">
+          <p className="dp-eyebrow text-here">The ladder</p>
+          <h2
+            id="ladder-heading"
+            className="mt-2 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl"
+          >
+            The shared ladder
+          </h2>
+        </header>
+        <div className="mt-8">
+          <GrowthTree />
+        </div>
       </section>
 
       <section aria-labelledby="role-trees-heading" className="py-14">
@@ -42,8 +50,7 @@ export default function GrowPage() {
             Role-specific growth trees
           </h2>
           <p className="mt-3 text-lg leading-relaxed text-muted">
-            Pick your specialty and see how far it goes — each step links to the
-            path that teaches it.
+            Pick a specialty to open the path that teaches it.
           </p>
         </header>
         <Reveal variant="scale" className="mt-8">

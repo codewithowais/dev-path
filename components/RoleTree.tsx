@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { roleTrees } from "@/content/career";
+import { accentText, accentFill } from "@/lib/accent";
 
 /**
  * Which learning path each role maps to. Clicking a role card takes you to the
@@ -18,11 +19,13 @@ const ROLE_TO_PATH: Record<string, string> = {
   cybersecurity: "cybersecurity",
   "cloud-engineer": "cloud-engineer",
   "game-developer": "game-developer",
+  "data-engineer": "data-scientist-ml",
+  "mlops-engineer": "ai-engineer",
 };
 
 function hrefFor(roleId: string): string {
   const pathId = ROLE_TO_PATH[roleId];
-  return pathId ? `/paths/${pathId}` : "/#paths";
+  return pathId ? `/paths/${pathId}` : "/paths/foundations";
 }
 
 export function RoleTree() {
@@ -31,19 +34,21 @@ export function RoleTree() {
       {roleTrees.map((role) => (
         <section
           key={role.id}
-          className="dp-lift dp-shadow-sm relative rounded-card border-2 bg-card p-5"
-          style={{ borderColor: `${role.color}55` }}
+          className="dp-card dp-lift relative rounded-card border border-line bg-card p-5 transition-colors hover:border-[color:var(--accent)]/50 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]"
+          style={{ ["--accent" as string]: role.color }}
         >
           <header>
             {/* Stretched link: the whole card is clickable, but the accessible
                 link name is just the role. */}
-            <Link
-              href={hrefFor(role.id)}
-              className="inline-flex items-center rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-wide text-white after:absolute after:inset-0 after:z-20 after:content-['']"
-              style={{ backgroundColor: role.color }}
-            >
-              {role.name}
-            </Link>
+            <h3>
+              <Link
+                href={hrefFor(role.id)}
+                className="inline-flex items-center rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-wide text-white after:absolute after:inset-0 after:z-20 after:content-['']"
+                style={{ backgroundColor: accentFill(role.color) }}
+              >
+                {role.name}
+              </Link>
+            </h3>
             <p className="mt-3 text-sm leading-relaxed text-muted">{role.sub}</p>
           </header>
           <ol className="relative mt-5 space-y-4">
@@ -53,11 +58,11 @@ export function RoleTree() {
               style={{ backgroundColor: `${role.color}40` }}
             />
             {role.levels.map(([title, description], i) => (
-              <li key={title} className="relative flex gap-3">
+              <li key={`${i}-${title}`} className="relative flex gap-3">
                 <span
                   aria-hidden="true"
                   className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                  style={{ backgroundColor: role.color }}
+                  style={{ backgroundColor: accentFill(role.color) }}
                 >
                   {i + 1}
                 </span>
@@ -74,9 +79,11 @@ export function RoleTree() {
           </ol>
           <span
             className="relative z-10 mt-5 flex items-center gap-1.5 text-sm font-semibold"
-            style={{ color: role.color }}
+            style={{ color: accentText(role.color) }}
           >
-            {ROLE_TO_PATH[role.id] ? "Explore this path" : "Browse learning paths"}
+            {ROLE_TO_PATH[role.id]
+              ? "Explore this path"
+              : "No dedicated path yet — start with Foundations"}
             <span aria-hidden="true">→</span>
           </span>
         </section>

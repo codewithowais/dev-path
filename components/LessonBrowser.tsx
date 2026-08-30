@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Pillar } from "@/content/lessons";
 import { pillarColor } from "@/content/lessons";
 import { PillarIcon } from "@/components/PillarIcon";
+import { accentText } from "@/lib/accent";
 
 export type LessonItem = {
   id: string;
@@ -32,7 +33,7 @@ function slug(pillar: string) {
 
 function tile(color: string) {
   return {
-    background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 58%, white))`,
+    background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 55%, white))`,
   } as React.CSSProperties;
 }
 
@@ -121,9 +122,28 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                 o.size === pillars.length ? new Set() : new Set(pillars.map(slug))
               )
             }
-            className="text-sm font-semibold text-primary transition-colors hover:text-ink"
+            className="min-h-11 inline-flex items-center text-sm font-semibold text-primary transition-colors hover:text-ink"
           >
             {open.size === pillars.length ? "Collapse all" : "Expand all"}
+          </button>
+        </div>
+      )}
+
+      {/* Friendly empty state when a search matches nothing */}
+      {searching && filtered.length === 0 && (
+        <div className="dp-card rounded-card p-8 text-center">
+          <h2 className="font-display text-xl font-bold text-ink">
+            No lessons match “{query}”
+          </h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
+            Try a broader word — like “loop”, “sort”, “tree”, or “database”.
+          </p>
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="mt-5 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Clear search
           </button>
         </div>
       )}
@@ -140,7 +160,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
               key={pillar}
               id={id}
               style={{ ["--accent" as string]: color }}
-              className={`dp-shadow-sm scroll-mt-32 overflow-hidden rounded-card border bg-card transition-colors ${
+              className={`dp-card scroll-mt-32 overflow-hidden rounded-card border transition-colors ${
                 expanded
                   ? "border-[color:var(--accent)]/45"
                   : "border-line hover:border-[color:var(--accent)]/45"
@@ -171,7 +191,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                   </span>
                   <span
                     className="hidden shrink-0 rounded-pill px-3 py-1 font-mono text-xs font-semibold sm:inline"
-                    style={{ backgroundColor: `${color}16`, color }}
+                    style={{ backgroundColor: `${color}16`, color: accentText(color) }}
                   >
                     {list.length} lessons
                   </span>
@@ -199,7 +219,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                       <Link
                         key={l.id}
                         href={`/learn/${l.id}`}
-                        className="dp-lift group relative flex flex-col overflow-hidden rounded-xl border border-line bg-card p-4 hover:border-[color:var(--accent)] hover:shadow-md hover:shadow-black/5"
+                        className="dp-lift dp-card group relative flex flex-col overflow-hidden rounded-card border border-line p-4 hover:border-[color:var(--accent)]/50"
                       >
                         <span
                           aria-hidden="true"
@@ -207,7 +227,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                           style={{ backgroundColor: color }}
                         />
                         <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold" style={{ color }}>
+                          <span className="font-mono text-xs font-bold" style={{ color: accentText(color) }}>
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <span

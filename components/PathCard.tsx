@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Path } from "@/content/paths";
 import { PathIcon } from "@/components/PathIcon";
+import { accentText } from "@/lib/accent";
 
 type Props = {
   path: Path;
@@ -31,11 +32,21 @@ export function PathCard({ path }: Props) {
         >
           <PathIcon id={path.id} className="h-6 w-6" />
         </span>
-        <span
-          className="rounded-pill px-2.5 py-1 font-mono text-[0.7rem] font-semibold"
-          style={{ backgroundColor: `${path.color}14`, color: path.color }}
-        >
-          {path.steps.length} steps
+        <span className="flex flex-wrap items-center justify-end gap-1.5">
+          {path.id === "foundations" && (
+            <span
+              className="inline-flex items-center gap-1 rounded-pill bg-output/15 px-2.5 py-1 font-mono text-[0.7rem] font-semibold"
+              style={{ color: accentText("#12b886") }}
+            >
+              <span aria-hidden="true">★</span> Start here
+            </span>
+          )}
+          <span
+            className="rounded-pill px-2.5 py-1 font-mono text-[0.7rem] font-semibold"
+            style={{ backgroundColor: `${path.color}14`, color: accentText(path.color) }}
+          >
+            {path.steps.length} steps
+          </span>
         </span>
       </div>
 

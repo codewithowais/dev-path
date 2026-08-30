@@ -27,7 +27,7 @@ export default function LearnPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5">
-      <section className="dp-stagger py-12 sm:py-14">
+      <section className="dp-stagger py-14 sm:py-20">
         <p className="dp-eyebrow text-primary">Learn</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
           The hard stuff, made simple
