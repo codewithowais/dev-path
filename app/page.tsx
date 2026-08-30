@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { PathsExplorer } from "@/components/PathsExplorer";
+import { Reveal } from "@/components/Reveal";
 
 export default function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-5">
       {/* Hero */}
-      <section className="py-14 sm:py-20">
+      <section className="dp-stagger py-14 sm:py-20">
         <span className="inline-flex items-center gap-2 rounded-pill border border-line bg-card px-3 py-1 text-sm font-semibold text-muted">
           <span className="h-2 w-2 rounded-full bg-output" aria-hidden="true" />
           For total beginners &amp; the career-confused
@@ -50,13 +51,13 @@ export default function HomePage() {
             one to open its full journey.
           </p>
         </header>
-        <div className="mt-8">
+        <Reveal className="mt-8">
           <PathsExplorer />
-        </div>
+        </Reveal>
       </section>
 
       {/* Cross-links to Grow & Learn */}
-      <section className="grid grid-cols-1 gap-4 py-12 sm:grid-cols-2">
+      <Reveal variant="up" className="grid grid-cols-1 gap-4 py-12 sm:grid-cols-2">
         <Link
           href="/grow"
           className="dp-lift group rounded-card border border-line bg-card p-6 hover:border-here/50 hover:shadow-md hover:shadow-black/5"
@@ -95,7 +96,7 @@ export default function HomePage() {
             <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
           </span>
         </Link>
-      </section>
+      </Reveal>
     </div>
   );
 }

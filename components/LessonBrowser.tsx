@@ -147,11 +147,11 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                   aria-expanded={expanded}
                   aria-controls={`${id}-panel`}
                   onClick={() => toggle(pillar)}
-                  className="flex w-full items-center gap-4 px-4 py-3.5 text-left sm:px-5"
+                  className="group flex w-full items-center gap-4 px-4 py-3.5 text-left sm:px-5"
                 >
                   <span
                     aria-hidden="true"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:scale-110 group-hover:-rotate-6"
                     style={{ backgroundColor: `${meta.color}1a` }}
                   >
                     {meta.icon}
@@ -186,9 +186,9 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                   id={`${id}-panel`}
                   role="region"
                   aria-label={pillar}
-                  className="px-4 pb-4 sm:px-5"
+                  className="dp-panel px-4 pb-4 sm:px-5"
                 >
-                  <div className="grid grid-cols-1 gap-3 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="dp-stagger grid grid-cols-1 gap-3 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-3">
                     {list.map((l) => (
                       <Link
                         key={l.id}

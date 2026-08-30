@@ -27,7 +27,7 @@ export default function LearnPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5">
-      <section className="py-12 sm:py-14">
+      <section className="dp-stagger py-12 sm:py-14">
         <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
           Learn
         </p>

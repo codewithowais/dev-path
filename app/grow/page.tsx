@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GrowthTree } from "@/components/GrowthTree";
 import { RoleTree } from "@/components/RoleTree";
 import { TitleGuide } from "@/components/TitleGuide";
+import { Reveal } from "@/components/Reveal";
 
 export const metadata: Metadata = {
   title: "Grow — where your career can go",
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 export default function GrowPage() {
   return (
     <div className="mx-auto max-w-5xl px-5">
-      <section className="py-14 sm:py-16">
+      <section className="dp-stagger py-14 sm:py-16">
         <p className="font-mono text-sm font-semibold uppercase tracking-wider text-here">
           Grow
         </p>
@@ -45,9 +46,9 @@ export default function GrowPage() {
             Pick your specialty and see how far it goes.
           </p>
         </header>
-        <div className="mt-8">
+        <Reveal variant="scale" className="mt-8">
           <RoleTree />
-        </div>
+        </Reveal>
       </section>
 
       <section aria-labelledby="titles-heading" className="py-14">
@@ -62,9 +63,9 @@ export default function GrowPage() {
             The job-title soup, decoded. Short, honest, no fluff. Tap to expand.
           </p>
         </header>
-        <div className="mt-8">
+        <Reveal className="mt-8">
           <TitleGuide />
-        </div>
+        </Reveal>
       </section>
     </div>
   );
