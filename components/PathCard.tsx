@@ -1,30 +1,21 @@
+import Link from "next/link";
 import type { Path } from "@/content/paths";
 
 type Props = {
   path: Path;
-  selected: boolean;
-  onSelect: (id: string) => void;
 };
 
-export function PathCard({ path, selected, onSelect }: Props) {
+/** A learning track card. Clicking it opens that path's full roadmap page. */
+export function PathCard({ path }: Props) {
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(path.id)}
-      aria-pressed={selected}
-      className={`group flex h-full flex-col rounded-card border-2 bg-card p-5 text-left transition-all ${
-        selected
-          ? "border-[color:var(--accent)] shadow-lg shadow-black/5"
-          : "border-line hover:border-[color:var(--accent)]/50 hover:shadow-md hover:shadow-black/5"
-      }`}
+    <Link
+      href={`/paths/${path.id}`}
+      className="group flex h-full flex-col rounded-card border-2 border-line bg-card p-5 text-left transition-all hover:border-[color:var(--accent)] hover:shadow-md hover:shadow-black/5"
       style={{ ["--accent" as string]: path.color }}
     >
       <span
         className="inline-flex w-fit items-center rounded-pill px-3 py-1 text-xs font-semibold"
-        style={{
-          backgroundColor: `${path.color}1a`,
-          color: path.color,
-        }}
+        style={{ backgroundColor: `${path.color}1a`, color: path.color }}
       >
         {path.tag}
       </span>
@@ -39,6 +30,6 @@ export function PathCard({ path, selected, onSelect }: Props) {
           →
         </span>
       </span>
-    </button>
+    </Link>
   );
 }

@@ -6,6 +6,10 @@ import type { Lesson, Language, Pillar } from "./types";
 import dataStructures from "./data-structures";
 import algorithms from "./algorithms";
 import designPatterns from "./design-patterns";
+import systemDesign from "./system-design";
+import cloud from "./cloud";
+import dataScience from "./data-science";
+import genai from "./genai";
 
 export * from "./types";
 
@@ -13,6 +17,10 @@ export const lessons: Lesson[] = [
   ...dataStructures,
   ...algorithms,
   ...designPatterns,
+  ...systemDesign,
+  ...cloud,
+  ...dataScience,
+  ...genai,
 ];
 
 export function lessonsByPillar(pillar: Pillar): Lesson[] {

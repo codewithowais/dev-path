@@ -32,35 +32,35 @@ export const ladder: Rung[] = [
     id: "student",
     role: "Student / Self-learner",
     years: "Learning stage",
-    desc: "You're picking up the basics — a language, how the web works, small projects. No job title yet, and that's completely fine.",
+    desc: "You're picking up the basics — a language, how the web works, small projects. No job title yet, and that's completely fine. There's no fixed length for this stage; go at your own pace.",
     color: "#727793",
   },
   {
     id: "intern",
     role: "Intern / Trainee",
-    years: "0–1 yr",
-    desc: "Your first taste of a real team. You do small, guided tasks and learn how software is built with other people.",
+    years: "0–1 yr (roughly)",
+    desc: "Your first taste of a real team. You do small, guided tasks and learn how software is built with other people. Not everyone does an internship — plenty of people skip straight to a junior job.",
     color: "#5B4BEB",
   },
   {
     id: "junior",
     role: "Junior / Associate Engineer",
-    years: "0–2 yrs",
-    desc: "Your first real job. You build features with guidance and ask lots of questions — exactly what you should be doing.",
+    years: "0–2 yrs (roughly)",
+    desc: "Your first real job. You build features with guidance and ask lots of questions — exactly what you should be doing. Some companies skip the 'junior' label and just call you 'Engineer'.",
     color: "#5B4BEB",
   },
   {
     id: "mid",
     role: "Mid-level Engineer",
-    years: "2–5 yrs",
-    desc: "You can take a task and finish it on your own. You need less hand-holding and start helping newer teammates.",
+    years: "2–5 yrs (roughly)",
+    desc: "You can take a task and finish it on your own. You need less hand-holding and start helping newer teammates. Many companies drop the label entirely and just call this 'Engineer'.",
     color: "#5B4BEB",
   },
   {
     id: "senior",
     role: "Senior Engineer",
-    years: "5+ yrs",
-    desc: "You handle big, fuzzy problems, make smart trade-offs, and lift the whole team. From here, the path splits in two.",
+    years: "5+ yrs (varies a lot)",
+    desc: "You handle big, fuzzy problems, make smart trade-offs, and lift the whole team. The years are a rough guide, not a promise — some reach here sooner, many take longer, and that's normal. From here the path often splits in two (but you can switch between them later).",
     color: "#191C33",
   },
 ];
@@ -69,22 +69,22 @@ export const ladder: Rung[] = [
 export const branches: Branch[] = [
   {
     title: "IC track — keep building",
-    sub: "IC = Individual Contributor: you grow by getting deeper at the craft, not by managing people.",
+    sub: "IC = Individual Contributor: you grow by getting deeper at the craft, not by managing people. Staying a senior engineer for your whole career is a perfectly good, well-paid choice — you don't have to climb further.",
     color: "#12B886",
     roles: [
-      ["Staff Engineer", "You solve problems that span many teams and set the technical direction for big pieces of work."],
+      ["Staff Engineer", "You solve problems that span many teams and set the technical direction for big pieces of work. Not every company has this level, and reaching it is far from automatic."],
       ["Principal Engineer", "You shape the technical strategy of a whole area of the company and mentor other senior engineers."],
-      ["Distinguished Engineer", "A rare, top-tier expert whose decisions influence the entire company's technology."],
+      ["Distinguished Engineer", "A rare, top-tier expert whose decisions influence the entire company's technology. Very few people reach this — treat it as a bonus, not a goal you must hit."],
     ],
   },
   {
     title: "Manager track — lead people",
-    sub: "You grow by helping a team of people do their best work, instead of writing most of the code yourself.",
+    sub: "You grow by helping a team of people do their best work, instead of writing most of the code yourself. It's a career change, not just a promotion — and if it's not for you, moving back to the IC track is common and fine.",
     color: "#FF8A3D",
     roles: [
-      ["Engineering Manager", "You lead a small team — their growth, their projects, and clearing roadblocks for them."],
+      ["Engineering Manager", "You lead a small team — their growth, their projects, and clearing roadblocks for them. You'll code much less, which some people love and some miss."],
       ["Director of Engineering", "You lead several teams (managers report to you) and own bigger goals across them."],
-      ["VP Engineering / CTO", "You set the direction for all of engineering and help steer the whole company."],
+      ["VP Engineering / CTO", "You set the direction for all of engineering and help steer the whole company. These top seats are few, so they're rare by nature — not a sign you fell short."],
     ],
   },
 ];
@@ -172,7 +172,7 @@ export const roleTrees: RoleTree[] = [
   {
     id: "data-analyst-scientist",
     name: "Data (Analyst → Scientist → ML Engineer)",
-    sub: "Turns raw numbers into insights, predictions, and eventually production ML systems.",
+    sub: "Turns raw numbers into insights, predictions, and production ML systems. These are related but separate jobs — the arrows show a common route, not an escalator everyone must ride. Many people happily stay an analyst for a whole career.",
     color: "#F08C00",
     levels: [
       ["Data Analyst", "Explores data, builds charts and reports, and answers 'what happened' questions for the business."],
@@ -246,6 +246,72 @@ export const roleTrees: RoleTree[] = [
       ["Senior Game Developer", "Owns performance and architecture for a major system, like rendering or networking."],
       ["Lead Game Programmer", "Guides the technical direction of the whole game and mentors the programming team."],
       ["Technical Director", "Owns every technical decision across the studio's games and tools."],
+    ],
+  },
+  {
+    id: "data-engineer",
+    name: "Data Engineer",
+    sub: "Builds the pipes that move and clean data so analysts and scientists have something reliable to work with. Different from a Data Analyst (who studies the data) — you build the plumbing.",
+    color: "#4263EB",
+    levels: [
+      ["Junior Data Engineer", "Writes small scripts to move data from one place to another and fixes broken pipelines, with guidance."],
+      ["Data Engineer", "Builds and maintains full data pipelines that collect, clean, and store data on a schedule."],
+      ["Senior Data Engineer", "Designs reliable, large-scale data systems and makes sure the data stays accurate and on time."],
+      ["Data Engineering Lead", "Sets the standards and tools the whole data team uses, and guides how data flows across the company."],
+      ["Principal Data Engineer / Data Architect", "Designs the big-picture data platform the entire organization depends on."],
+    ],
+  },
+  {
+    id: "mlops-engineer",
+    name: "MLOps Engineer",
+    sub: "The DevOps of machine learning: keeps AI models running, updated, and healthy in production. Sits between ML Engineers and infrastructure.",
+    color: "#9C36B5",
+    levels: [
+      ["Junior MLOps Engineer", "Helps set up the tools that deploy and monitor models, learning from senior teammates."],
+      ["MLOps Engineer", "Builds the pipelines that retrain, deploy, and track machine-learning models automatically."],
+      ["Senior MLOps Engineer", "Owns the reliability, cost, and monitoring of models running in production at scale."],
+      ["MLOps / ML Platform Lead", "Designs the platform other teams use to ship their models safely and repeatably."],
+      ["Principal MLOps / ML Platform Architect", "Sets the strategy and standards for how the whole company runs AI in production."],
+    ],
+  },
+  {
+    id: "engineering-manager",
+    name: "Engineering Manager (people track)",
+    sub: "You grow by helping a team do their best work rather than writing most of the code yourself. It's a career change, not just a promotion — and moving back to hands-on engineering later is common and fine.",
+    color: "#F76707",
+    levels: [
+      ["Team Lead / Tech Lead Manager", "A first step into leadership: you still code some, but also start looking after a couple of teammates."],
+      ["Engineering Manager", "You lead one team — their growth, their projects, hiring, and clearing roadblocks. You code much less."],
+      ["Senior Engineering Manager", "You lead a larger or more critical team, and often help other managers grow."],
+      ["Director of Engineering", "You lead several teams through the managers who report to you, and own bigger cross-team goals."],
+      ["VP of Engineering", "You set direction for a large part of engineering and translate company goals into team plans."],
+      ["CTO", "You own the company's overall technology direction. Rare by nature — there's usually only one."],
+    ],
+  },
+  {
+    id: "developer-advocate",
+    name: "Developer Advocate / DevRel",
+    sub: "Part engineer, part teacher, part communicator: you help other developers succeed with a product through demos, docs, talks, and honest feedback to the product team.",
+    color: "#66A80F",
+    levels: [
+      ["Junior Developer Advocate", "Writes tutorials, answers community questions, and builds small demo apps, with support."],
+      ["Developer Advocate / Developer Relations Engineer", "Creates content, speaks at events, and carries developer feedback back to the product team."],
+      ["Senior Developer Advocate", "Owns the developer experience for a product area and shapes how the community grows."],
+      ["Lead / Principal Developer Advocate", "Sets the DevRel strategy and mentors other advocates."],
+      ["Head of Developer Relations", "Leads the whole DevRel team and its goals across the company."],
+    ],
+  },
+  {
+    id: "technical-writer",
+    name: "Technical Writer",
+    sub: "Turns complicated technical things into clear docs, guides, and tutorials people can actually follow. A real, in-demand path — and a common way for strong writers to enter tech.",
+    color: "#0B7285",
+    levels: [
+      ["Junior / Associate Technical Writer", "Writes and updates smaller docs and help articles, learning the product and its audience."],
+      ["Technical Writer", "Owns the documentation for whole features — how-to guides, references, and tutorials."],
+      ["Senior Technical Writer", "Shapes how a product is explained end-to-end and improves the docs experience overall."],
+      ["Lead / Staff Technical Writer", "Sets documentation standards and tools, and guides other writers."],
+      ["Documentation Manager / Content Architect", "Owns the strategy for all of a company's technical content."],
     ],
   },
 ];
@@ -338,5 +404,30 @@ export const titleGuide: TitleQA[] = [
     term: "Product Engineer / Full-cycle",
     answer:
       "A newer title for someone who owns a feature end-to-end — talking to users, writing the code, and shipping it — instead of only handling one narrow layer. It overlaps a lot with 'full-stack,' just with more focus on product thinking.",
+  },
+  {
+    term: "Do I need a CS degree?",
+    answer:
+      "No — plenty of working engineers are self-taught or came from bootcamps, and many great teams hire on skills, not diplomas. That said, be honest: a degree can make a first job easier to land in some countries and companies, and a few (like big-name firms or certain visas) still ask for one. Either way, what gets you hired is real projects you can show and problems you can solve.",
+  },
+  {
+    term: "What does 'years of experience' really mean?",
+    answer:
+      "It's a rough shorthand for 'how much have you actually done,' not a stopwatch. Someone who built and shipped real things for two focused years can be ahead of someone who coasted for five. Job ads that say '3+ years' are usually describing a level of skill, not a hard rule — if you can do the work, it's often worth applying anyway.",
+  },
+  {
+    term: "Why do the same jobs have different titles?",
+    answer:
+      "Because there's no industry-wide rulebook. Every company invents its own titles and levels, so 'Software Engineer II' at one place might equal 'Senior' at another. Titles also vary by country. Focus on what the job actually involves — the day-to-day work and the skills — more than the label on it.",
+  },
+  {
+    term: "Startup vs big company",
+    answer:
+      "At a startup you usually wear many hats, ship fast, and have less structure — great for learning broadly, but often more chaos and risk. At a big company you go deeper on one area with more support, mentorship, and process — steadier, but slower-moving. Neither is 'better'; they suit different people at different times, and it's normal to switch between them.",
+  },
+  {
+    term: "Do titles and pay work the same in every country?",
+    answer:
+      "No. Titles, typical timelines, salaries, and even which roles exist all vary a lot by country and city. The levels and 'years' shown here are a general guide from the global tech industry — treat them as a rough map, and check what's normal where you actually plan to work.",
   },
 ];

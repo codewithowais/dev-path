@@ -30,6 +30,10 @@ const PILLAR_FILES = [
   "../content/lessons/data-structures.ts",
   "../content/lessons/algorithms.ts",
   "../content/lessons/design-patterns.ts",
+  "../content/lessons/system-design.ts",
+  "../content/lessons/cloud.ts",
+  "../content/lessons/data-science.ts",
+  "../content/lessons/genai.ts",
 ];
 
 async function loadLessons(path) {

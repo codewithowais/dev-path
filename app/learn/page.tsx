@@ -17,6 +17,9 @@ function slug(pillar: string) {
 }
 
 export default function LearnPage() {
+  // Only show pillars that actually have lessons yet.
+  const activePillars = pillars.filter((p) => lessonsByPillar(p).length > 0);
+
   return (
     <div className="mx-auto max-w-4xl px-5">
       <section className="py-14 sm:py-16">
@@ -34,7 +37,7 @@ export default function LearnPage() {
 
         {/* Jump nav */}
         <nav aria-label="Lesson categories" className="mt-8 flex flex-wrap gap-2">
-          {pillars.map((pillar) => (
+          {activePillars.map((pillar) => (
             <a
               key={pillar}
               href={`#${slug(pillar)}`}
@@ -46,7 +49,7 @@ export default function LearnPage() {
         </nav>
       </section>
 
-      {pillars.map((pillar) => {
+      {activePillars.map((pillar) => {
         const items = lessonsByPillar(pillar);
         return (
           <section

@@ -22,7 +22,11 @@ const jetBrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dev-path-omega.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  applicationName: "DevPath",
   title: {
     default: "DevPath — Learn to code & grow your career, in plain words",
     template: "%s · DevPath",
@@ -37,6 +41,24 @@ export const metadata: Metadata = {
     "career path",
     "beginner programming",
   ],
+  authors: [{ name: "codewithowais", url: "https://github.com/codewithowais" }],
+  creator: "codewithowais",
+  publisher: "codewithowais",
+  openGraph: {
+    type: "website",
+    siteName: "DevPath by codewithowais",
+    url: siteUrl,
+    title: "DevPath — Learn to code & grow your career, in plain words",
+    description:
+      "Figure out what to learn, see where your job title can grow, and understand data structures, algorithms, and design patterns — explained like a patient friend, with runnable code and the exact output you should expect.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DevPath — Learn to code & grow your career, in plain words",
+    description:
+      "A beginner-friendly hub for learning to code and growing your tech career, in plain words.",
+    creator: "@codewithowais",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

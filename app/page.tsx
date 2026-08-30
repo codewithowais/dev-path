@@ -46,8 +46,8 @@ export default function HomePage() {
             What should I learn?
           </h2>
           <p className="mt-2 text-muted">
-            Four starter tracks, each an ordered roadmap: learn this, then this.
-            Pick one to see the full journey.
+            Starter tracks, each an ordered roadmap: learn this, then this. Tap
+            one to open its full journey.
           </p>
         </header>
         <div className="mt-8">

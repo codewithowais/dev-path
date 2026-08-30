@@ -1001,6 +1001,491 @@ print("Distances from A:", line)`,
     output: `Distances from A: A:0 B:3 C:1 D:4`,
     note: "Node distances come out as plain integers here because every edge weight is a whole number — no floats to worry about matching between languages.",
   },
+  {
+    id: "topological-sort",
+    pillar: "Algorithms",
+    name: "Topological Sort",
+    easy: "Topological sort is figuring out what order to take your classes in when some classes require others first — you can't take Physics before Math. The algorithm lines up every task so each prerequisite comes before whatever depends on it. It only works on a DAG — jargon for 'directed acyclic graph', meaning every arrow points one way and nothing loops back on itself.",
+    how: [
+      "Pick a task you haven't fully explored yet, and dive into everything it depends on first (that's a DFS — depth-first search).",
+      "Once you've explored ALL of a task's dependents, mark it 'finished' and push it onto a stack — it's now safe to schedule.",
+      "After every task has been explored, read the stack back to front. That's a valid order where every prerequisite comes before what needs it.",
+    ],
+    when: "Scheduling tasks with dependencies — a build system figuring out compile order, course prerequisites, or installing packages so dependencies go in before the packages that need them.",
+    big: "O(V + E) time — every task (V) and every dependency arrow (E) is visited once · O(V) space for the visited set and the stack.",
+    mistakes: [
+      "Running it on a graph that has a cycle (A needs B, and B needs A) — there's no valid order, and naive code can loop forever.",
+      "Pushing a task onto the stack too early, before all of its dependents have been fully explored — that breaks the ordering guarantee.",
+    ],
+    code: {
+      JavaScript: `function topologicalSort(graph) {
+  const visited = new Set();
+  const stack = [];
+
+  function visit(node) {
+    if (visited.has(node)) return;
+    visited.add(node);
+    for (const next of graph[node]) {
+      visit(next);
+    }
+    stack.push(node); // fully explored — safe to schedule
+  }
+
+  for (const node in graph) visit(node);
+  return stack.reverse();
+}
+
+const graph = {
+  Math: ["Physics", "CS"],
+  Physics: ["Robotics"],
+  CS: ["Robotics"],
+  Robotics: [],
+  English: [],
+};
+
+console.log("Topological order:", topologicalSort(graph).join(" "));`,
+      Python: `def topological_sort(graph):
+    visited = set()
+    stack = []
+
+    def visit(node):
+        if node in visited:
+            return
+        visited.add(node)
+        for nxt in graph[node]:
+            visit(nxt)
+        stack.append(node)  # fully explored — safe to schedule
+
+    for node in graph:
+        visit(node)
+    stack.reverse()
+    return stack
+
+graph = {
+    "Math": ["Physics", "CS"],
+    "Physics": ["Robotics"],
+    "CS": ["Robotics"],
+    "Robotics": [],
+    "English": [],
+}
+
+print("Topological order:", " ".join(topological_sort(graph)))`,
+    },
+    output: `Topological order: English Math CS Physics Robotics`,
+  },
+  {
+    id: "backtracking-permutations",
+    pillar: "Algorithms",
+    name: "Backtracking (Permutations)",
+    easy: "Backtracking is trying on outfits: put on an item, see if the rest of the outfit can be completed, and if you hit a dead end, take that item off (backtrack) and try a different one. Generating every permutation (every possible ordering) of a list works the same way — choose one item for the next slot, recurse to fill the rest, then undo the choice and try the next item.",
+    how: [
+      "Keep a 'path' (the ordering built so far) and a list of 'remaining' items not yet placed.",
+      "For each remaining item: place it in the path, then recursively try to fill the rest of the path with what's left.",
+      "When no items remain, the path is one full permutation — record it. Then undo the last placement ('backtrack') and try the next remaining item instead.",
+    ],
+    when: "Generating every possible arrangement or combination — permutations, subsets, puzzle solutions like Sudoku or N-Queens — anywhere you need to explore every branch of choices and abandon the ones that don't pan out.",
+    big: "O(n!) time to generate all permutations of n items — there really are that many orderings · O(n) space for the recursion depth, not counting the output itself.",
+    mistakes: [
+      "Forgetting to 'undo' the choice after recursing — the actual backtrack step — without it, leftover state leaks into the next branch.",
+      "Not realizing n! grows explosively — permutations of just 10 items is already 3.6 million orderings.",
+    ],
+    code: {
+      JavaScript: `function permutations(arr) {
+  const results = [];
+
+  function backtrack(path, remaining) {
+    if (remaining.length === 0) {
+      results.push(path.join("")); // e.g. [1, 2, 3] -> "123"
+      return;
+    }
+    for (let i = 0; i < remaining.length; i++) {
+      const next = remaining[i];
+      const rest = remaining.slice(0, i).concat(remaining.slice(i + 1));
+      path.push(next); // choose
+      backtrack(path, rest); // explore
+      path.pop(); // un-choose — this is the "backtrack" step
+    }
+  }
+
+  backtrack([], arr);
+  return results;
+}
+
+const nums = [1, 2, 3];
+console.log("Permutations:", permutations(nums).join(" "));`,
+      Python: `def permutations(arr):
+    results = []
+
+    def backtrack(path, remaining):
+        if not remaining:
+            results.append("".join(str(v) for v in path))  # e.g. [1, 2, 3] -> "123"
+            return
+        for i in range(len(remaining)):
+            next_val = remaining[i]
+            rest = remaining[:i] + remaining[i + 1:]
+            path.append(next_val)   # choose
+            backtrack(path, rest)   # explore
+            path.pop()              # un-choose — this is the "backtrack" step
+
+    backtrack([], arr)
+    return results
+
+nums = [1, 2, 3]
+print("Permutations:", " ".join(permutations(nums)))`,
+    },
+    output: `Permutations: 123 132 213 231 312 321`,
+  },
+  {
+    id: "greedy-coin-change",
+    pillar: "Algorithms",
+    name: "Greedy Coin Change",
+    easy: "A greedy algorithm always grabs the best-looking option available right now and never looks back. Making change like a cashier is the classic example: hand over the biggest coin that still fits, then the next biggest, and so on. It's fast and often works — but only because everyday coin systems happen to be 'greedy-friendly'.",
+    how: [
+      "Sort the coin values from largest to smallest.",
+      "Take as many of the largest coin as fit into the remaining amount.",
+      "Move to the next-smaller coin and repeat, until the remaining amount hits zero.",
+    ],
+    when: "Making change with a 'canonical' coin system like US currency or most real-world money, or any problem where grabbing the locally-best choice also happens to be the globally optimal one.",
+    big: "O(n log n) time to sort the coins, then O(n) to hand them out · O(1) extra space besides the list of coins used.",
+    mistakes: [
+      "Assuming greedy always gives the FEWEST coins — with an oddball coin system (like [1, 3, 4] for amount 6), greedy can do worse than the true optimum, which needs dynamic programming to guarantee.",
+      "Forgetting to sort the coins first, so the biggest coin isn't actually tried first.",
+    ],
+    code: {
+      JavaScript: `function greedyCoinChange(amount, coins) {
+  const sorted = [...coins].sort((a, b) => b - a); // largest first
+  const used = [];
+  let remaining = amount;
+
+  for (const coin of sorted) {
+    while (remaining >= coin) {
+      used.push(coin);
+      remaining -= coin;
+    }
+  }
+  return used;
+}
+
+const coins = [25, 10, 5, 1];
+const amount = 63;
+const used = greedyCoinChange(amount, coins);
+console.log("Amount:", amount);
+console.log("Coins used:", used.join(" "));
+console.log("Total coins:", used.length);`,
+      Python: `def greedy_coin_change(amount, coins):
+    sorted_coins = sorted(coins, reverse=True)  # largest first
+    used = []
+    remaining = amount
+
+    for coin in sorted_coins:
+        while remaining >= coin:
+            used.append(coin)
+            remaining -= coin
+    return used
+
+coins = [25, 10, 5, 1]
+amount = 63
+used = greedy_coin_change(amount, coins)
+print("Amount:", amount)
+print("Coins used:", " ".join(str(c) for c in used))
+print("Total coins:", len(used))`,
+    },
+    output: `Amount: 63
+Coins used: 25 25 10 1 1 1
+Total coins: 6`,
+  },
+  {
+    id: "prefix-sums",
+    pillar: "Algorithms",
+    name: "Prefix Sums",
+    easy: "A prefix sum array is like a car's odometer readings at every mile marker. To find the distance between mile 20 and mile 50, you don't re-measure the whole road — you just subtract the two odometer readings. Precompute the running totals once, and every 'sum of this range' question becomes a single subtraction.",
+    how: [
+      "Build a prefix array where prefix[i] holds the sum of all original items before index i (prefix[0] is 0 — nothing summed yet).",
+      "To get the sum of a range from index left to right (inclusive), take prefix[right + 1] minus prefix[left].",
+      "Reuse the same prefix array for as many range-sum questions as you like — each one is now one subtraction instead of a fresh loop.",
+    ],
+    when: "Answering many 'sum of this range' questions on data that doesn't change — analytics dashboards, spreadsheet-style range totals, or any repeated range-sum queries where re-adding every time would be too slow.",
+    big: "O(n) time to build the prefix array once · O(1) time per range-sum query afterward, down from O(n) per query without it · O(n) space for the prefix array.",
+    mistakes: [
+      "Off-by-one errors — forgetting that prefix[i] is the sum BEFORE index i, so range [left, right] needs prefix[right + 1] - prefix[left], not prefix[right] - prefix[left].",
+      "Rebuilding the prefix array on every query instead of once up front, which throws away the whole speed benefit.",
+    ],
+    code: {
+      JavaScript: `function buildPrefixSums(arr) {
+  const prefix = [0];
+  for (let i = 0; i < arr.length; i++) {
+    prefix.push(prefix[i] + arr[i]);
+  }
+  return prefix;
+}
+
+function rangeSum(prefix, left, right) {
+  return prefix[right + 1] - prefix[left]; // inclusive range [left, right]
+}
+
+const data = [2, 4, 6, 8, 10];
+const prefix = buildPrefixSums(data);
+console.log("Numbers:", data.join(" "));
+console.log("Sum of indices 1..3:", rangeSum(prefix, 1, 3));
+console.log("Sum of indices 0..4:", rangeSum(prefix, 0, 4));`,
+      Python: `def build_prefix_sums(arr):
+    prefix = [0]
+    for i in range(len(arr)):
+        prefix.append(prefix[i] + arr[i])
+    return prefix
+
+def range_sum(prefix, left, right):
+    return prefix[right + 1] - prefix[left]  # inclusive range [left, right]
+
+data = [2, 4, 6, 8, 10]
+prefix = build_prefix_sums(data)
+print("Numbers:", " ".join(str(v) for v in data))
+print("Sum of indices 1..3:", range_sum(prefix, 1, 3))
+print("Sum of indices 0..4:", range_sum(prefix, 0, 4))`,
+    },
+    output: `Numbers: 2 4 6 8 10
+Sum of indices 1..3: 18
+Sum of indices 0..4: 30`,
+  },
+  {
+    id: "bit-manipulation",
+    pillar: "Algorithms",
+    name: "Bit Manipulation",
+    easy: "Every number is secretly a row of on/off light switches (called 'bits') written in binary. Bit tricks flip those switches directly instead of doing normal math. One classic trick, n & (n - 1) (the '&' means 'AND', comparing switches pairwise), always switches off the rightmost switch that's on — do that in a loop and you're counting how many switches were on. And if a number has exactly ONE switch on, it's a power of two.",
+    how: [
+      "To count 'set bits' (switches that are on): repeatedly do n = n & (n - 1), which clears the lowest set bit each time, and count how many times you did it before n hit 0.",
+      "To check if a number is a power of two: a power of two has exactly one set bit, so n & (n - 1) comes out to exactly 0 for it (and only it, among positive numbers).",
+      "Both tricks lean on the same operation, n & (n - 1) — just used to answer two different questions.",
+    ],
+    when: "Performance-sensitive counting or flag-checking — feature flags packed into a single number, checking if a size is power-of-two-friendly (like array capacities or hash table sizes), or anywhere bitwise math beats looping over digits.",
+    big: "O(number of set bits) time for the counting trick — far fewer steps than checking every single bit position · O(1) space.",
+    mistakes: [
+      "Forgetting the n > 0 check before the power-of-two test — the bit trick alone would wrongly call 0 a power of two.",
+      "Assuming bit tricks behave the same on negative numbers — their underlying binary representation (two's complement) works differently.",
+    ],
+    code: {
+      JavaScript: `function countSetBits(n) {
+  let count = 0;
+  while (n > 0) {
+    n = n & (n - 1); // clears the lowest set bit
+    count++;
+  }
+  return count;
+}
+
+function isPowerOfTwo(n) {
+  return n > 0 && (n & (n - 1)) === 0; // powers of two have exactly one set bit
+}
+
+console.log("Set bits in 44:", countSetBits(44));
+console.log("Is 16 a power of two?", isPowerOfTwo(16) ? "yes" : "no");
+console.log("Is 18 a power of two?", isPowerOfTwo(18) ? "yes" : "no");`,
+      Python: `def count_set_bits(n):
+    count = 0
+    while n > 0:
+        n = n & (n - 1)  # clears the lowest set bit
+        count += 1
+    return count
+
+def is_power_of_two(n):
+    return n > 0 and (n & (n - 1)) == 0  # powers of two have exactly one set bit
+
+print("Set bits in 44:", count_set_bits(44))
+print("Is 16 a power of two?", "yes" if is_power_of_two(16) else "no")
+print("Is 18 a power of two?", "yes" if is_power_of_two(18) else "no")`,
+    },
+    output: `Set bits in 44: 3
+Is 16 a power of two? yes
+Is 18 a power of two? no`,
+  },
+  {
+    id: "substring-search",
+    pillar: "Algorithms",
+    name: "Substring Search",
+    easy: "Finding a short word inside a longer piece of text is like sliding a strip of paper with the word written on it along the sentence, one letter at a time, checking whether everything under the strip matches. That's the simplest way to search for a substring — slow but completely honest about what it's doing.",
+    how: [
+      "Slide a window the same length as the pattern across the text, one starting position at a time.",
+      "At each position, compare the window's letters to the pattern's letters one by one.",
+      "If every letter matches, record that starting index as a match. Either way, slide the window one step and repeat until it no longer fits inside the text.",
+    ],
+    when: "Simple text search where the text is short-to-medium, or as the mental model before reaching for a faster algorithm (like KMP) when the text is huge and speed really matters.",
+    big: "O(n·m) time in the worst case, where n is the text length and m is the pattern length, because a near-match can force a full comparison at almost every position · O(1) space. Smarter algorithms like KMP bring this down to O(n + m) by never re-checking letters they've already matched.",
+    mistakes: [
+      "Letting the starting position go too far — it can't start past text.length - pattern.length, or the window runs off the end of the text.",
+      "Assuming this naive approach is 'the' way to search text — it's a solid starting point, but real editors and grep use smarter algorithms for long documents.",
+    ],
+    code: {
+      JavaScript: `function findAllOccurrences(text, pattern) {
+  const indices = [];
+  for (let i = 0; i <= text.length - pattern.length; i++) {
+    let matched = true;
+    for (let j = 0; j < pattern.length; j++) {
+      if (text[i + j] !== pattern[j]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) indices.push(i);
+  }
+  return indices;
+}
+
+const text = "ababcabab";
+const pattern = "abab";
+const matches = findAllOccurrences(text, pattern);
+console.log("Text:", text);
+console.log("Pattern:", pattern);
+console.log("Found at indices:", matches.join(" "));`,
+      Python: `def find_all_occurrences(text, pattern):
+    indices = []
+    for i in range(len(text) - len(pattern) + 1):
+        matched = True
+        for j in range(len(pattern)):
+            if text[i + j] != pattern[j]:
+                matched = False
+                break
+        if matched:
+            indices.append(i)
+    return indices
+
+text = "ababcabab"
+pattern = "abab"
+matches = find_all_occurrences(text, pattern)
+print("Text:", text)
+print("Pattern:", pattern)
+print("Found at indices:", " ".join(str(i) for i in matches))`,
+    },
+    output: `Text: ababcabab
+Pattern: abab
+Found at indices: 0 5`,
+  },
+  {
+    id: "floyds-cycle-detection",
+    pillar: "Algorithms",
+    name: "Floyd's Cycle Detection",
+    easy: "Picture two runners on a track: the tortoise takes one step at a time, the hare takes two. If the track is a straight line with an end, the hare just finishes first. But if the track secretly loops back on itself, the faster hare will eventually LAP the tortoise and they'll land on the exact same spot again — proof the track is a loop. This is how you detect a cycle in a linked list using almost no extra memory.",
+    how: [
+      "Start two pointers, 'slow' and 'fast', at the head of the linked list.",
+      "Move slow one step at a time, and fast two steps at a time, over and over.",
+      "If fast ever lands on the exact same node as slow, there's a cycle. If fast instead reaches the end (a null 'next'), there's no cycle.",
+    ],
+    when: "Detecting an accidental loop in a linked list — a bug where some node's 'next' pointer loops backward — or any 'does this chain of steps ever repeat' problem, using O(1) extra memory instead of a whole visited-set.",
+    big: "O(n) time — the hare catches up to the tortoise within one lap of the cycle if one exists · O(1) space, which is the whole point compared to tracking every visited node in a set.",
+    mistakes: [
+      "Checking fast.next.next without first checking that fast.next isn't null — that crashes on lists that end partway through.",
+      "Comparing node VALUES instead of the actual node objects — two different nodes can hold the same value, but a cycle means revisiting the same node, not the same number.",
+    ],
+    code: {
+      JavaScript: `function makeNode(value) {
+  return { value, next: null };
+}
+
+function hasCycle(head) {
+  let slow = head;
+  let fast = head;
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next; // tortoise: one step
+    fast = fast.next.next; // hare: two steps
+    if (slow === fast) return true; // they lapped — it's a loop
+  }
+  return false; // hare reached the end — no loop
+}
+
+// List with a cycle: 1 -> 2 -> 3 -> 4 -> 5 -> back to 3
+const a1 = makeNode(1), a2 = makeNode(2), a3 = makeNode(3), a4 = makeNode(4), a5 = makeNode(5);
+a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5; a5.next = a3;
+
+// List with no cycle: 1 -> 2 -> 3
+const b1 = makeNode(1), b2 = makeNode(2), b3 = makeNode(3);
+b1.next = b2; b2.next = b3;
+
+console.log("List with cycle has a cycle?", hasCycle(a1) ? "yes" : "no");
+console.log("List without a cycle has a cycle?", hasCycle(b1) ? "yes" : "no");`,
+      Python: `class Node:
+    def __init__(self, value):
+        self.value = value
+        self.next = None
+
+def has_cycle(head):
+    slow = head
+    fast = head
+    while fast is not None and fast.next is not None:
+        slow = slow.next       # tortoise: one step
+        fast = fast.next.next  # hare: two steps
+        if slow is fast:
+            return True  # they lapped — it's a loop
+    return False  # hare reached the end — no loop
+
+# List with a cycle: 1 -> 2 -> 3 -> 4 -> 5 -> back to 3
+a1, a2, a3, a4, a5 = Node(1), Node(2), Node(3), Node(4), Node(5)
+a1.next, a2.next, a3.next, a4.next, a5.next = a2, a3, a4, a5, a3
+
+# List with no cycle: 1 -> 2 -> 3
+b1, b2, b3 = Node(1), Node(2), Node(3)
+b1.next, b2.next = b2, b3
+
+print("List with cycle has a cycle?", "yes" if has_cycle(a1) else "no")
+print("List without a cycle has a cycle?", "yes" if has_cycle(b1) else "no")`,
+    },
+    output: `List with cycle has a cycle? yes
+List without a cycle has a cycle? no`,
+  },
+  {
+    id: "quickselect",
+    pillar: "Algorithms",
+    name: "Quickselect",
+    easy: "Quickselect is quicksort's lazier cousin. Quicksort fully sorts both sides of a pivot; quickselect only cares about ONE answer — the kth smallest item — so after splitting into a 'smaller' pile and a 'bigger' pile, it throws away whichever pile can't possibly contain the answer and only digs into the one that can.",
+    how: [
+      "Pick a pivot item and split the rest into two piles: smaller-than-pivot and bigger-than-or-equal-to-pivot.",
+      "Figure out where the pivot itself would land: right after all the 'smaller' items. If that's the kth position you want, the pivot IS the answer.",
+      "Otherwise, only recurse into whichever pile — smaller or bigger — actually contains the kth position, and completely ignore the other pile.",
+    ],
+    when: "Finding the kth smallest or largest value (like a median, or a 'top 10' cutoff) without needing the whole list sorted — noticeably faster than sorting everything just to read off one position.",
+    big: "O(n) time on average — each step throws away a whole pile instead of sorting it · O(n²) worst case with unlucky pivots · O(log n) space for the recursion.",
+    mistakes: [
+      "Forgetting that k is a POSITION (like '3rd smallest'), not a value — mixing those up gives nonsense results.",
+      "Recursing into BOTH piles like quicksort does — that defeats the entire point of quickselect, which is to ignore the pile you don't need.",
+    ],
+    code: {
+      JavaScript: `function quickSelect(arr, k) {
+  if (arr.length === 1) return arr[0];
+  const pivot = arr[arr.length - 1];
+  const smaller = [];
+  const bigger = [];
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] < pivot) smaller.push(arr[i]);
+    else bigger.push(arr[i]);
+  }
+  if (k <= smaller.length) return quickSelect(smaller, k); // answer is in the smaller pile
+  if (k === smaller.length + 1) return pivot; // pivot IS the kth smallest
+  return quickSelect(bigger, k - smaller.length - 1); // answer is in the bigger pile
+}
+
+const data = [7, 2, 9, 4, 1, 6];
+console.log("Numbers:", data.join(" "));
+console.log("3rd smallest:", quickSelect(data, 3));
+console.log("1st smallest:", quickSelect(data, 1));`,
+      Python: `def quick_select(arr, k):
+    if len(arr) == 1:
+        return arr[0]
+    pivot = arr[-1]
+    smaller = [x for x in arr[:-1] if x < pivot]
+    bigger = [x for x in arr[:-1] if x >= pivot]
+    if k <= len(smaller):
+        return quick_select(smaller, k)                # answer is in the smaller pile
+    if k == len(smaller) + 1:
+        return pivot                                     # pivot IS the kth smallest
+    return quick_select(bigger, k - len(smaller) - 1)    # answer is in the bigger pile
+
+data = [7, 2, 9, 4, 1, 6]
+print("Numbers:", " ".join(str(v) for v in data))
+print("3rd smallest:", quick_select(data, 3))
+print("1st smallest:", quick_select(data, 1))`,
+    },
+    output: `Numbers: 7 2 9 4 1 6
+3rd smallest: 4
+1st smallest: 1`,
+  },
 ];
 
 export default lessons;

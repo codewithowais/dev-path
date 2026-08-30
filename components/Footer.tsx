@@ -27,12 +27,42 @@ export function Footer() {
               Learn
             </Link>
           </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-semibold text-ink">Project</span>
+            <a
+              href="https://github.com/codewithowais/dev-path"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted hover:text-ink"
+            >
+              Source on GitHub
+            </a>
+            <a
+              href="https://github.com/codewithowais"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted hover:text-ink"
+            >
+              @codewithowais
+            </a>
+          </div>
         </nav>
       </div>
       <div className="border-t border-line">
-        <p className="mx-auto max-w-6xl px-5 py-4 text-xs text-muted">
-          Built for beginners. No jargon without a plain-English translation.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>Built for beginners. No jargon without a plain-English translation.</p>
+          <p>
+            Made by{" "}
+            <a
+              href="https://github.com/codewithowais"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-ink hover:text-primary"
+            >
+              codewithowais
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );

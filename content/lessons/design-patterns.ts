@@ -535,6 +535,437 @@ while iterator.has_next():
 Song B
 Song C`,
   },
+  {
+    id: "prototype",
+    pillar: "Design Patterns",
+    name: "Prototype",
+    easy: "The prototype pattern makes new objects by copying an existing one instead of building it from scratch. Like photocopying a filled-out form and just changing the name field, instead of drawing a brand new blank form and filling in every line again.",
+    how: [
+      "Start with one fully set-up object to use as the 'prototype'.",
+      "Call a clone method on it that copies its fields into a brand new object.",
+      "Tweak only the parts of the copy that need to be different — everything else comes for free.",
+    ],
+    when: "When making a new object from scratch is slow or repetitive, and most new objects look almost identical to one you already have — game characters, document templates, or pre-configured settings.",
+    big: "Cloning one object is O(n) in the number of fields being copied — much cheaper than rebuilding everything field by field.",
+    mistakes: [
+      "Doing a 'shallow' copy when you needed a 'deep' copy, so both objects end up secretly sharing the same nested data.",
+      "Forgetting that the original prototype should stay unchanged — editing a clone should never affect the prototype it came from.",
+    ],
+    code: {
+      JavaScript: `class Character {
+  constructor(name, health, weapon) {
+    this.name = name;
+    this.health = health;
+    this.weapon = weapon;
+  }
+  clone() {
+    return new Character(this.name, this.health, this.weapon); // copy, don't rebuild
+  }
+}
+
+const basePrototype = new Character("Warrior", 100, "Sword");
+
+const hero1 = basePrototype.clone();
+hero1.name = "Aragorn";
+
+const hero2 = basePrototype.clone();
+hero2.name = "Legolas";
+hero2.weapon = "Bow";
+
+console.log(hero1.name + ": " + hero1.health + " HP, " + hero1.weapon);
+console.log(hero2.name + ": " + hero2.health + " HP, " + hero2.weapon);
+console.log("Prototype unchanged:", basePrototype.name);`,
+      Python: `class Character:
+    def __init__(self, name, health, weapon):
+        self.name = name
+        self.health = health
+        self.weapon = weapon
+    def clone(self):
+        return Character(self.name, self.health, self.weapon)  # copy, don't rebuild
+
+base_prototype = Character("Warrior", 100, "Sword")
+
+hero1 = base_prototype.clone()
+hero1.name = "Aragorn"
+
+hero2 = base_prototype.clone()
+hero2.name = "Legolas"
+hero2.weapon = "Bow"
+
+print(hero1.name + ": " + str(hero1.health) + " HP, " + hero1.weapon)
+print(hero2.name + ": " + str(hero2.health) + " HP, " + hero2.weapon)
+print("Prototype unchanged:", base_prototype.name)`,
+    },
+    output: `Aragorn: 100 HP, Sword
+Legolas: 100 HP, Bow
+Prototype unchanged: Warrior`,
+  },
+  {
+    id: "chain-of-responsibility",
+    pillar: "Design Patterns",
+    name: "Chain of Responsibility",
+    easy: "Chain of responsibility passes a request along a line of handlers until one of them can deal with it. Like an expense request going to your manager first; if it's too big for them to approve, it moves up to the director, then the VP — each person either handles it or passes it up the chain.",
+    how: [
+      "Line up a series of handler objects, each one knowing which handler comes next.",
+      "Hand the request to the first handler in line.",
+      "Each handler checks 'can I handle this?' — if yes, it deals with it; if no, it passes the request to the next handler in line.",
+    ],
+    when: "When several objects might handle a request but you don't know which one in advance — approval chains, event handling, or support-ticket escalation.",
+    big: "In the worst case a request travels through all n handlers, so handling one request is O(n).",
+    mistakes: [
+      "Forgetting to set the 'next' handler, so a request silently gets dropped instead of passing along.",
+      "Building a chain so long that requests take forever to reach the handler that can actually deal with them.",
+    ],
+    code: {
+      JavaScript: `class Approver {
+  constructor(name, limit) {
+    this.name = name;
+    this.limit = limit;
+    this.next = null;
+  }
+  setNext(next) {
+    this.next = next;
+    return next; // lets us chain setNext calls
+  }
+  approve(amount) {
+    if (amount <= this.limit) return this.name + " approved $" + amount;
+    if (this.next) return this.next.approve(amount); // pass it up the chain
+    return "No one could approve $" + amount;
+  }
+}
+
+const manager = new Approver("Manager", 100);
+const director = new Approver("Director", 1000);
+const vp = new Approver("VP", 1000000);
+manager.setNext(director);
+director.setNext(vp);
+
+console.log(manager.approve(50));
+console.log(manager.approve(500));
+console.log(manager.approve(5000));`,
+      Python: `class Approver:
+    def __init__(self, name, limit):
+        self.name = name
+        self.limit = limit
+        self.next = None
+    def set_next(self, next_approver):
+        self.next = next_approver
+        return next_approver  # lets us chain set_next calls
+    def approve(self, amount):
+        if amount <= self.limit:
+            return self.name + " approved $" + str(amount)
+        if self.next:
+            return self.next.approve(amount)  # pass it up the chain
+        return "No one could approve $" + str(amount)
+
+manager = Approver("Manager", 100)
+director = Approver("Director", 1000)
+vp = Approver("VP", 1000000)
+manager.set_next(director)
+director.set_next(vp)
+
+print(manager.approve(50))
+print(manager.approve(500))
+print(manager.approve(5000))`,
+    },
+    output: `Manager approved $50
+Director approved $500
+VP approved $5000`,
+  },
+  {
+    id: "state",
+    pillar: "Design Patterns",
+    name: "State",
+    easy: "The state pattern is a traffic light. A traffic light doesn't run one giant pile of if-statements checking what color comes next — each color simply knows what comes after it. The light just asks its current state 'what's next?' and switches to whatever that state says. In code, an object's behavior changes automatically based on which 'state' it's currently in.",
+    how: [
+      "Give each state (Red, Green, Yellow) its own small object that knows only what state comes after it.",
+      "The main object just holds 'whichever state I'm currently in' and asks that state to move things along.",
+      "When a state object switches things to the next state, the main object's behavior automatically changes too — no giant if/else required.",
+    ],
+    when: "When an object behaves differently depending on its current mode or phase — a traffic light, an order status (placed, shipped, delivered), or a media player (playing, paused, stopped).",
+    big: "Switching state is O(1) — you're just swapping which small state object is 'current'.",
+    mistakes: [
+      "Cramming all the state-transition logic into one giant if/else instead of letting each state own its own transition.",
+      "Forgetting to actually update the current state, so the object gets stuck repeating the same behavior forever.",
+    ],
+    code: {
+      JavaScript: `class RedState {
+  get name() { return "Red"; }
+  next(light) { light.setState(new GreenState()); }
+}
+class GreenState {
+  get name() { return "Green"; }
+  next(light) { light.setState(new YellowState()); }
+}
+class YellowState {
+  get name() { return "Yellow"; }
+  next(light) { light.setState(new RedState()); }
+}
+
+class TrafficLight {
+  constructor() { this.state = new RedState(); }
+  setState(state) { this.state = state; }
+  change() {
+    this.state.next(this); // ask the current state what's next
+    return this.state.name;
+  }
+}
+
+const light = new TrafficLight();
+console.log("Start:", light.state.name);
+console.log("Change:", light.change());
+console.log("Change:", light.change());
+console.log("Change:", light.change());`,
+      Python: `class RedState:
+    name = "Red"
+    def next(self, light):
+        light.set_state(GreenState())
+
+class GreenState:
+    name = "Green"
+    def next(self, light):
+        light.set_state(YellowState())
+
+class YellowState:
+    name = "Yellow"
+    def next(self, light):
+        light.set_state(RedState())
+
+class TrafficLight:
+    def __init__(self):
+        self.state = RedState()
+    def set_state(self, state):
+        self.state = state
+    def change(self):
+        self.state.next(self)  # ask the current state what's next
+        return self.state.name
+
+light = TrafficLight()
+print("Start:", light.state.name)
+print("Change:", light.change())
+print("Change:", light.change())
+print("Change:", light.change())`,
+    },
+    output: `Start: Red
+Change: Green
+Change: Yellow
+Change: Red`,
+  },
+  {
+    id: "template-method",
+    pillar: "Design Patterns",
+    name: "Template Method",
+    easy: "A template method is a recipe card with some steps fixed and others left blank for you to fill in. 'Boil water' and 'pour into cup' are always the same, but 'brew' and 'add condiments' change depending on whether you're making tea or coffee. In code, a base class locks in the overall order of steps, while subclasses fill in just the steps that differ.",
+    how: [
+      "Write one method in a base class that calls a fixed sequence of steps in order.",
+      "Implement the steps that never change directly in the base class.",
+      "Leave the steps that do change unimplemented in the base class, and let each subclass fill them in its own way.",
+    ],
+    when: "When several processes share the same overall shape but differ in a few specific steps — brewing a hot drink, running a report, or processing different file formats through the same pipeline.",
+    big: "Running the template is O(n) in the number of steps — same cost as writing it out by hand, but organized instead of duplicated.",
+    mistakes: [
+      "Copy-pasting the whole sequence for every variant instead of pulling the shared steps into one template.",
+      "Forgetting to override a required step, silently falling back to a base behavior that doesn't make sense for that subclass.",
+    ],
+    code: {
+      JavaScript: `class HotBeverage {
+  prepare() {
+    const steps = [this.boilWater(), this.brew(), this.pourInCup(), this.addCondiments()];
+    return steps.join(" -> ");
+  }
+  boilWater() { return "Boil water"; } // shared, fixed step
+  pourInCup() { return "Pour in cup"; } // shared, fixed step
+}
+
+class Tea extends HotBeverage {
+  brew() { return "Steep tea"; }
+  addCondiments() { return "Add lemon"; }
+}
+class Coffee extends HotBeverage {
+  brew() { return "Brew coffee grounds"; }
+  addCondiments() { return "Add sugar and milk"; }
+}
+
+const tea = new Tea();
+const coffee = new Coffee();
+console.log("Tea:", tea.prepare());
+console.log("Coffee:", coffee.prepare());`,
+      Python: `class HotBeverage:
+    def prepare(self):
+        steps = [self.boil_water(), self.brew(), self.pour_in_cup(), self.add_condiments()]
+        return " -> ".join(steps)
+    def boil_water(self):
+        return "Boil water"  # shared, fixed step
+    def pour_in_cup(self):
+        return "Pour in cup"  # shared, fixed step
+
+class Tea(HotBeverage):
+    def brew(self):
+        return "Steep tea"
+    def add_condiments(self):
+        return "Add lemon"
+
+class Coffee(HotBeverage):
+    def brew(self):
+        return "Brew coffee grounds"
+    def add_condiments(self):
+        return "Add sugar and milk"
+
+tea = Tea()
+coffee = Coffee()
+print("Tea:", tea.prepare())
+print("Coffee:", coffee.prepare())`,
+    },
+    output: `Tea: Boil water -> Steep tea -> Pour in cup -> Add lemon
+Coffee: Boil water -> Brew coffee grounds -> Pour in cup -> Add sugar and milk`,
+  },
+  {
+    id: "composite",
+    pillar: "Design Patterns",
+    name: "Composite",
+    easy: "Composite is how folders work: a folder can contain files, but it can also contain more folders — which themselves contain files and folders. Composite lets you treat a single file and a whole folder full of files the exact same way, calling the same method on both and letting each one figure out what that means for itself.",
+    how: [
+      "Give both the simple items (files) and the containers (folders) the same method name, like getSize().",
+      "A simple item just returns its own answer directly.",
+      "A container loops over everything inside it — files or more folders — and combines their answers, so it works no matter how deeply things are nested.",
+    ],
+    when: "When you have tree-shaped data — file systems, UI components containing other components, org charts — and want to treat a single item and a whole group of them the same way.",
+    big: "Working with a composite touches every node once, so it's O(n) in the total number of items, including nested ones.",
+    mistakes: [
+      "Giving containers and simple items different method names, forcing you to check 'is this a file or a folder?' everywhere instead of calling the same method on both.",
+      "Accidentally letting a folder contain itself, causing infinite loops when you try to add up its size.",
+    ],
+    code: {
+      JavaScript: `class File {
+  constructor(name, size) {
+    this.name = name;
+    this.size = size;
+  }
+  getSize() { return this.size; } // simple item: just its own answer
+}
+
+class Folder {
+  constructor(name) {
+    this.name = name;
+    this.children = [];
+  }
+  add(child) {
+    this.children.push(child);
+    return this;
+  }
+  getSize() {
+    let total = 0;
+    for (const child of this.children) total += child.getSize(); // same method, file or folder
+    return total;
+  }
+}
+
+const file1 = new File("resume.pdf", 200);
+const file2 = new File("photo.jpg", 500);
+const photos = new Folder("Photos");
+photos.add(file2);
+const documents = new Folder("Documents");
+documents.add(file1).add(photos);
+
+console.log("resume.pdf size:", file1.getSize());
+console.log("Photos folder size:", photos.getSize());
+console.log("Documents folder size:", documents.getSize());`,
+      Python: `class File:
+    def __init__(self, name, size):
+        self.name = name
+        self.size = size
+    def get_size(self):
+        return self.size  # simple item: just its own answer
+
+class Folder:
+    def __init__(self, name):
+        self.name = name
+        self.children = []
+    def add(self, child):
+        self.children.append(child)
+        return self
+    def get_size(self):
+        total = 0
+        for child in self.children:
+            total += child.get_size()  # same method, file or folder
+        return total
+
+file1 = File("resume.pdf", 200)
+file2 = File("photo.jpg", 500)
+photos = Folder("Photos")
+photos.add(file2)
+documents = Folder("Documents")
+documents.add(file1).add(photos)
+
+print("resume.pdf size:", file1.get_size())
+print("Photos folder size:", photos.get_size())
+print("Documents folder size:", documents.get_size())`,
+    },
+    output: `resume.pdf size: 200
+Photos folder size: 500
+Documents folder size: 700`,
+  },
+  {
+    id: "proxy",
+    pillar: "Design Patterns",
+    name: "Proxy",
+    easy: "A proxy is a security guard standing in front of an office. Anyone who wants to go in has to go through the guard first — the guard checks your badge, and only if you pass does the guard let you through to the real office. In code, a proxy object stands in front of the real object and controls access to it: checking permissions, caching results, or logging calls before letting the real thing run.",
+    how: [
+      "Create a proxy object with the exact same method names as the real object.",
+      "Have callers talk to the proxy instead of the real object directly.",
+      "The proxy does its own check first (permission, cache, logging) and only forwards the call to the real object when it decides to.",
+    ],
+    when: "When you need to control or add a step before reaching an object — permission checks, caching expensive results, lazy-loading something heavy, or logging every access.",
+    big: "The proxy's own check is O(1) extra work before (optionally) doing whatever the real object costs.",
+    mistakes: [
+      "Forgetting to actually forward the call to the real object when access should be allowed, so nothing happens even for valid requests.",
+      "Putting so much unrelated logic in the proxy that it stops being a simple gatekeeper and becomes its own tangled system.",
+    ],
+    code: {
+      JavaScript: `class RealOffice {
+  enter() { return "Entered the office"; }
+}
+
+class SecurityProxy {
+  constructor(office, hasBadge) {
+    this.office = office;
+    this.hasBadge = hasBadge;
+  }
+  enter() {
+    if (!this.hasBadge) return "Access denied: no badge"; // guard blocks it
+    return this.office.enter(); // guard waves them through
+  }
+}
+
+const office = new RealOffice();
+const guestProxy = new SecurityProxy(office, false);
+const employeeProxy = new SecurityProxy(office, true);
+
+console.log(guestProxy.enter());
+console.log(employeeProxy.enter());`,
+      Python: `class RealOffice:
+    def enter(self):
+        return "Entered the office"
+
+class SecurityProxy:
+    def __init__(self, office, has_badge):
+        self.office = office
+        self.has_badge = has_badge
+    def enter(self):
+        if not self.has_badge:
+            return "Access denied: no badge"  # guard blocks it
+        return self.office.enter()  # guard waves them through
+
+office = RealOffice()
+guest_proxy = SecurityProxy(office, False)
+employee_proxy = SecurityProxy(office, True)
+
+print(guest_proxy.enter())
+print(employee_proxy.enter())`,
+    },
+    output: `Access denied: no badge
+Entered the office`,
+  },
 ];
 
 export default lessons;
