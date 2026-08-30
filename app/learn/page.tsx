@@ -13,7 +13,12 @@ export const metadata: Metadata = {
 };
 
 function slug(pillar: string) {
-  return pillar.toLowerCase().replace(/\s+/g, "-");
+  // Lowercase, turn any run of non-alphanumerics into a single hyphen, trim edges.
+  // e.g. "Web & Internet" -> "web-internet"
+  return pillar
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export default function LearnPage() {
