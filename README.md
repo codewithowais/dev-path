@@ -2,7 +2,7 @@
 
 A beginner-friendly learning + career hub. Learn to code in plain words, in the language you like, with the **exact output** you should expect — plus career **paths** (what to learn) and career **growth trees** (where your job title can go next).
 
-**194 lessons across 10 topics, every code sample actually run and output-verified in both JavaScript and Python.**
+**194 lessons across 10 topics**, each with an everyday analogy and a **live, runnable code editor** — edit the JavaScript and hit Run to see real output (Python shows its verified output). Every sample is actually executed and output-verified in both languages.
 
 Built with Next.js (App Router) + TypeScript + Tailwind CSS v4. Deployable to Vercel. Calm "wayfinder" design with tasteful, reduced-motion-safe animations.
 
@@ -12,7 +12,7 @@ Built with Next.js (App Router) + TypeScript + Tailwind CSS v4. Deployable to Ve
 | --- | --- | --- |
 | **Paths** | "What should I learn?" — 14 ordered roadmaps (Foundations, Frontend, Backend, Full-stack, AI, DevOps, Mobile, Data Analyst, Data Scientist, Cybersecurity, Cloud, QA, Game Dev, UI/UX→Dev) | `/` · `/paths/[slug]` |
 | **Grow** | "Where can my career go?" — a ladder from Student → Senior that branches into IC vs Manager, 16 role-specific growth trees, and confusing job titles in plain words | `/grow` |
-| **Learn** | The lessons — **10 pillars**: Programming Basics, Data Structures, Algorithms, Databases, Web & Internet, Design Patterns, System Design, Cloud, Data Science, Generative AI | `/learn` |
+| **Learn** | The lessons — **10 pillars** (Programming Basics, Data Structures, Algorithms, Databases, Web & Internet, Design Patterns, System Design, Cloud, Data Science, Generative AI). Searchable, scannable grid; each lesson opens to a short explanation beside a live editor | `/learn` · `/learn/[id]` |
 
 Every path card and role card is clickable and opens the matching roadmap.
 

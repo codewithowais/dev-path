@@ -100,7 +100,7 @@ export function Nav() {
       {open && (
         <ul
           id="mobile-menu"
-          className="dp-stagger flex flex-col gap-1 border-t border-line px-5 pb-4 pt-2 sm:hidden"
+          className="flex flex-col gap-1 border-t border-line px-5 pb-4 pt-2 sm:hidden"
         >
           {LINKS.map((link) => {
             const active = isActive(pathname, link.href);

@@ -33,6 +33,10 @@ export function lessonsByPillar(pillar: Pillar): Lesson[] {
   return lessons.filter((l) => l.pillar === pillar);
 }
 
+export function getLesson(id: string): Lesson | undefined {
+  return lessons.find((l) => l.id === id);
+}
+
 export function availableLanguages(lesson: Lesson): Language[] {
   return Object.keys(lesson.code) as Language[];
 }

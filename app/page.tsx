@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-5">
       {/* Hero */}
-      <section className="dp-stagger py-14 sm:py-20">
+      <section className="py-14 sm:py-20">
         <span className="inline-flex items-center gap-2 rounded-pill border border-line bg-card px-3 py-1 text-sm font-semibold text-muted">
           <span className="h-2 w-2 rounded-full bg-output" aria-hidden="true" />
           For total beginners &amp; the career-confused
@@ -38,7 +38,7 @@ export default function HomePage() {
 
       {/* Paths */}
       <section id="paths" className="scroll-mt-24 pb-6">
-        <header className="dp-in max-w-2xl">
+        <header className="max-w-2xl">
           <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
             Paths
           </p>

@@ -1,33 +1,33 @@
 import type { Metadata } from "next";
-import {
-  pillars,
-  pillarBlurb,
-  lessonsByPillar,
-} from "@/content/lessons";
-import { LessonCard } from "@/components/LessonCard";
+import { lessons, pillars, pillarBlurb } from "@/content/lessons";
+import { LessonBrowser, type LessonItem } from "@/components/LessonBrowser";
 
 export const metadata: Metadata = {
-  title: "Learn — data structures, algorithms & design patterns",
+  title: "Learn — data structures, algorithms, design & more",
   description:
-    "Beginner-friendly lessons on data structures, algorithms, and design patterns. Every one has an everyday analogy, step-by-step how-it-works, runnable JavaScript & Python code, and its verified expected output.",
+    "194 beginner-friendly lessons across 10 topics — each with an everyday analogy, a live code editor you can run, and verified expected output in JavaScript & Python.",
 };
 
-function slug(pillar: string) {
-  // Lowercase, turn any run of non-alphanumerics into a single hyphen, trim edges.
-  // e.g. "Web & Internet" -> "web-internet"
-  return pillar
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+/** First sentence of the analogy, trimmed to a card-sized blurb. */
+function blurbOf(easy: string): string {
+  const first = easy.split(/(?<=[.!?])\s/)[0] ?? easy;
+  return first.length > 110 ? first.slice(0, 107).trimEnd() + "…" : first;
 }
 
 export default function LearnPage() {
-  // Only show pillars that actually have lessons yet.
-  const activePillars = pillars.filter((p) => lessonsByPillar(p).length > 0);
+  const items: LessonItem[] = lessons.map((l) => ({
+    id: l.id,
+    name: l.name,
+    pillar: l.pillar,
+    blurb: blurbOf(l.easy),
+    big: l.big,
+  }));
+
+  const activePillars = pillars.filter((p) => items.some((l) => l.pillar === p));
 
   return (
-    <div className="mx-auto max-w-4xl px-5">
-      <section className="dp-stagger py-14 sm:py-16">
+    <div className="mx-auto max-w-6xl px-5">
+      <section className="py-12 sm:py-14">
         <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
           Learn
         </p>
@@ -35,51 +35,13 @@ export default function LearnPage() {
           The hard stuff, made simple
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Every lesson starts with an everyday analogy, walks through how it works
-          step by step, and ends with runnable code and the exact output you
-          should expect. Tap any lesson to open it.
+          {lessons.length} lessons across {activePillars.length} topics. Each one
+          has an everyday analogy, a code editor you can actually run, and the
+          exact output to expect. Search or browse, then open one.
         </p>
-
-        {/* Jump nav */}
-        <nav aria-label="Lesson categories" className="mt-8 flex flex-wrap gap-2">
-          {activePillars.map((pillar) => (
-            <a
-              key={pillar}
-              href={`#${slug(pillar)}`}
-              className="rounded-pill border border-line bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-primary/50"
-            >
-              {pillar}
-            </a>
-          ))}
-        </nav>
       </section>
 
-      {activePillars.map((pillar) => {
-        const items = lessonsByPillar(pillar);
-        return (
-          <section
-            key={pillar}
-            id={slug(pillar)}
-            aria-labelledby={`${slug(pillar)}-heading`}
-            className="scroll-mt-24 pb-12"
-          >
-            <header className="dp-in border-b border-line pb-4">
-              <h2
-                id={`${slug(pillar)}-heading`}
-                className="font-display text-2xl font-bold text-ink"
-              >
-                {pillar}
-              </h2>
-              <p className="mt-1 text-muted">{pillarBlurb[pillar]}</p>
-            </header>
-            <div className="mt-5 space-y-3">
-              {items.map((lesson) => (
-                <LessonCard key={lesson.id} lesson={lesson} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      <LessonBrowser items={items} pillars={activePillars} pillarBlurb={pillarBlurb} />
     </div>
   );
 }

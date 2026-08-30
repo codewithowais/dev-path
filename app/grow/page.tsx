@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function GrowPage() {
   return (
     <div className="mx-auto max-w-5xl px-5">
-      <section className="dp-stagger py-14 sm:py-16">
+      <section className="py-14 sm:py-16">
         <p className="font-mono text-sm font-semibold uppercase tracking-wider text-here">
           Grow
         </p>
@@ -26,7 +26,7 @@ export default function GrowPage() {
         </p>
       </section>
 
-      <section aria-labelledby="ladder-heading" className="dp-in pb-8">
+      <section aria-labelledby="ladder-heading" className="pb-8">
         <h2 id="ladder-heading" className="sr-only">
           The career ladder
         </h2>
@@ -34,7 +34,7 @@ export default function GrowPage() {
       </section>
 
       <section aria-labelledby="role-trees-heading" className="py-14">
-        <header className="dp-in max-w-2xl">
+        <header className="max-w-2xl">
           <h2
             id="role-trees-heading"
             className="font-display text-3xl font-bold text-ink"
@@ -51,7 +51,7 @@ export default function GrowPage() {
       </section>
 
       <section aria-labelledby="titles-heading" className="py-14">
-        <header className="dp-in max-w-2xl">
+        <header className="max-w-2xl">
           <h2
             id="titles-heading"
             className="font-display text-3xl font-bold text-ink"

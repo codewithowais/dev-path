@@ -15,7 +15,7 @@ export function GrowthTree() {
       </p>
 
       {/* The shared ladder */}
-      <ol className="dp-stagger relative mt-8 space-y-4">
+      <ol className="relative mt-8 space-y-4">
         <span
           aria-hidden="true"
           className="absolute left-[19px] top-3 bottom-3 w-1 rounded-full bg-line"
@@ -97,7 +97,7 @@ export function GrowthTree() {
                 {branch.sub}
               </p>
             </header>
-            <ol className="dp-stagger relative mt-5 space-y-4">
+            <ol className="relative mt-5 space-y-4">
               <span
                 aria-hidden="true"
                 className="absolute left-[11px] top-2 bottom-2 w-0.5"

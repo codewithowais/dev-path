@@ -27,7 +27,7 @@ export function Roadmap({ path }: Props) {
         }
       `}</style>
 
-      <ol className="dp-stagger relative mt-8 space-y-6">
+      <ol className="relative mt-8 space-y-6">
         {/* The connecting line runs behind the waypoints, drawing in from the top */}
         <span
           aria-hidden="true"
@@ -42,7 +42,7 @@ export function Roadmap({ path }: Props) {
             <li key={title} className="relative flex gap-4 pl-0">
               <span
                 aria-hidden="true"
-                className={`dp-pop relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                className={`relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
                   isStart
                     ? "border-transparent text-white"
                     : "border-[color:var(--accent)] bg-card text-[color:var(--accent)]"

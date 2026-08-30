@@ -2,7 +2,7 @@ import { titleGuide } from "@/content/career";
 
 export function TitleGuide() {
   return (
-    <div className="dp-stagger grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {titleGuide.map((qa) => (
         <details
           key={qa.term}
@@ -19,7 +19,7 @@ export function TitleGuide() {
               +
             </span>
           </summary>
-          <p className="dp-in-fade mt-3 text-sm leading-relaxed text-muted">
+          <p className="mt-3 text-sm leading-relaxed text-muted">
             {qa.answer}
           </p>
         </details>
