@@ -6,7 +6,7 @@ export function TitleGuide() {
       {titleGuide.map((qa) => (
         <details
           key={qa.term}
-          className="dp-lift group rounded-card border border-line bg-card p-5 open:shadow-md open:shadow-black/5"
+          className="dp-lift dp-shadow-sm group rounded-card border border-line bg-card p-5"
         >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
             <h3 className="font-display text-base font-bold text-ink">

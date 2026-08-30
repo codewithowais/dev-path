@@ -60,7 +60,7 @@ export default function HomePage() {
       <Reveal variant="up" className="grid grid-cols-1 gap-4 py-12 sm:grid-cols-2">
         <Link
           href="/grow"
-          className="dp-lift group rounded-card border border-line bg-card p-6 hover:border-here/50 hover:shadow-md hover:shadow-black/5"
+          className="dp-lift dp-shadow-sm group rounded-card border border-line bg-card p-6 hover:border-here/50"
         >
           <p className="font-mono text-sm font-semibold uppercase tracking-wider text-here">
             Grow
@@ -79,7 +79,7 @@ export default function HomePage() {
         </Link>
         <Link
           href="/learn"
-          className="dp-lift group rounded-card border border-line bg-card p-6 hover:border-primary/50 hover:shadow-md hover:shadow-black/5"
+          className="dp-lift dp-shadow-sm group rounded-card border border-line bg-card p-6 hover:border-primary/50"
         >
           <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
             Learn

@@ -83,7 +83,7 @@ export function GrowthTree() {
         {branches.map((branch) => (
           <section
             key={branch.title}
-            className="dp-lift rounded-card border-2 bg-card p-5"
+            className="dp-lift dp-shadow-sm rounded-card border-2 bg-card p-5"
             style={{ borderColor: `${branch.color}55` }}
           >
             <header>

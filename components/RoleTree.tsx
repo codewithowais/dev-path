@@ -31,7 +31,7 @@ export function RoleTree() {
       {roleTrees.map((role) => (
         <section
           key={role.id}
-          className="dp-lift relative rounded-card border-2 bg-card p-5 hover:shadow-md hover:shadow-black/5"
+          className="dp-lift dp-shadow-sm relative rounded-card border-2 bg-card p-5"
           style={{ borderColor: `${role.color}55` }}
         >
           <header>

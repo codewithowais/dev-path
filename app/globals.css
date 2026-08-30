@@ -52,6 +52,32 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Soft atmospheric wash so pages aren't flat grey — brand-tinted glows,
+   fixed so they feel like ambient light. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 560px at 100% -8%, rgba(91, 75, 235, 0.08), transparent 62%),
+    radial-gradient(900px 500px at -6% 4%, rgba(18, 184, 134, 0.06), transparent 55%),
+    radial-gradient(700px 500px at 60% 110%, rgba(255, 138, 61, 0.05), transparent 60%);
+}
+
+/* Soft, layered card shadow for depth. */
+.dp-shadow {
+  box-shadow:
+    0 1px 2px rgba(25, 28, 51, 0.04),
+    0 14px 34px -18px rgba(25, 28, 51, 0.22);
+}
+.dp-shadow-sm {
+  box-shadow:
+    0 1px 2px rgba(25, 28, 51, 0.04),
+    0 8px 20px -14px rgba(25, 28, 51, 0.18);
+}
+
 /* Respect users who prefer less motion */
 @media (prefers-reduced-motion: reduce) {
   html {

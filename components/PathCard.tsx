@@ -10,7 +10,7 @@ export function PathCard({ path }: Props) {
   return (
     <Link
       href={`/paths/${path.id}`}
-      className="group dp-lift flex h-full flex-col rounded-card border-2 border-line bg-card p-5 text-left hover:border-[color:var(--accent)] hover:shadow-md hover:shadow-black/5"
+      className="group dp-lift dp-shadow-sm flex h-full flex-col rounded-card border-2 border-line bg-card p-5 text-left hover:border-[color:var(--accent)]"
       style={{ ["--accent" as string]: path.color }}
     >
       <span
