@@ -38,7 +38,7 @@ export function LessonCard({ lesson }: Props) {
             )}
             <span
               aria-hidden="true"
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-muted transition-transform ${
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-muted transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease)] ${
                 open ? "rotate-45" : ""
               }`}
             >
@@ -53,7 +53,7 @@ export function LessonCard({ lesson }: Props) {
           id={panelId}
           role="region"
           aria-labelledby={headingId}
-          className="border-t border-line px-5 pb-6 pt-5"
+          className="dp-in-fade dp-stagger border-t border-line px-5 pb-6 pt-5"
         >
           {/* 1. The idea in plain English */}
           <Section label="The idea, in plain English">

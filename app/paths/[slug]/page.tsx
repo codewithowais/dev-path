@@ -35,7 +35,7 @@ export default async function PathDetailPage({ params }: Params) {
           <span aria-hidden="true">←</span> All paths
         </Link>
 
-        <header className="mt-6">
+        <header className="dp-stagger mt-6">
           <span
             className="inline-flex w-fit items-center rounded-pill px-3 py-1 text-xs font-semibold"
             style={{ backgroundColor: `${path.color}1a`, color: path.color }}
@@ -50,11 +50,11 @@ export default async function PathDetailPage({ params }: Params) {
           </p>
         </header>
 
-        <section className="mt-10 rounded-card border border-line bg-card p-6 sm:p-8">
+        <section className="dp-in mt-10 rounded-card border border-line bg-card p-6 sm:p-8">
           <Roadmap path={path} />
         </section>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="dp-in mt-8 flex flex-wrap gap-3">
           <Link
             href="/learn"
             className="rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"

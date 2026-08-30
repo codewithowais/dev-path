@@ -22,7 +22,7 @@ export default function LearnPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-5">
-      <section className="py-14 sm:py-16">
+      <section className="dp-stagger py-14 sm:py-16">
         <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
           Learn
         </p>
@@ -58,7 +58,7 @@ export default function LearnPage() {
             aria-labelledby={`${slug(pillar)}-heading`}
             className="scroll-mt-24 pb-12"
           >
-            <header className="border-b border-line pb-4">
+            <header className="dp-in border-b border-line pb-4">
               <h2
                 id={`${slug(pillar)}-heading`}
                 className="font-display text-2xl font-bold text-ink"

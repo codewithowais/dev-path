@@ -27,7 +27,7 @@ export function Nav() {
       >
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-lg"
+          className="group flex items-center gap-2.5 rounded-lg"
           onClick={() => setOpen(false)}
         >
           <WayfinderMark />
@@ -45,7 +45,7 @@ export function Nav() {
                 <Link
                   href={link.href}
                   aria-current={active ? "page" : undefined}
-                  className={`rounded-pill px-4 py-2 text-sm font-semibold transition-colors ${
+                  className={`rounded-pill px-4 py-2 text-sm font-semibold transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] ${
                     active
                       ? "bg-primary-soft text-primary"
                       : "text-muted hover:bg-line/60 hover:text-ink"
@@ -61,13 +61,22 @@ export function Nav() {
         {/* Mobile toggle */}
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink sm:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink transition-[background-color,transform] duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:bg-line/60 active:scale-95 sm:hidden"
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((v) => !v)}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className={`transition-transform duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] ${
+              open ? "rotate-90" : "rotate-0"
+            }`}
+          >
             {open ? (
               <path
                 d="M6 6l12 12M18 6L6 18"
@@ -91,7 +100,7 @@ export function Nav() {
       {open && (
         <ul
           id="mobile-menu"
-          className="flex flex-col gap-1 border-t border-line px-5 pb-4 pt-2 sm:hidden"
+          className="dp-stagger flex flex-col gap-1 border-t border-line px-5 pb-4 pt-2 sm:hidden"
         >
           {LINKS.map((link) => {
             const active = isActive(pathname, link.href);
@@ -101,7 +110,7 @@ export function Nav() {
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   onClick={() => setOpen(false)}
-                  className={`flex flex-col rounded-xl px-4 py-3 ${
+                  className={`flex flex-col rounded-xl px-4 py-3 transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] ${
                     active ? "bg-primary-soft text-primary" : "text-ink hover:bg-line/50"
                   }`}
                 >
@@ -120,7 +129,7 @@ export function Nav() {
 /** The wayfinder mark — a waypoint pin on a path. */
 function WayfinderMark() {
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white">
+    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white transition-transform duration-[var(--dp-dur-fast)] ease-[var(--dp-ease-spring)] group-hover:scale-105">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
           d="M5 19c3-6 5-2 8-6"
@@ -129,7 +138,14 @@ function WayfinderMark() {
           strokeLinecap="round"
           strokeDasharray="0.1 3.2"
         />
-        <circle cx="16" cy="7" r="3.2" stroke="currentColor" strokeWidth="2" />
+        <circle
+          cx="16"
+          cy="7"
+          r="3.2"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="origin-center transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] [transform-box:fill-box] group-hover:scale-125"
+        />
       </svg>
     </span>
   );

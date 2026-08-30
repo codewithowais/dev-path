@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-5">
       {/* Hero */}
-      <section className="py-14 sm:py-20">
+      <section className="dp-stagger py-14 sm:py-20">
         <span className="inline-flex items-center gap-2 rounded-pill border border-line bg-card px-3 py-1 text-sm font-semibold text-muted">
           <span className="h-2 w-2 rounded-full bg-output" aria-hidden="true" />
           For total beginners &amp; the career-confused
@@ -38,7 +38,7 @@ export default function HomePage() {
 
       {/* Paths */}
       <section id="paths" className="scroll-mt-24 pb-6">
-        <header className="max-w-2xl">
+        <header className="dp-in max-w-2xl">
           <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
             Paths
           </p>
@@ -59,7 +59,7 @@ export default function HomePage() {
       <section className="grid grid-cols-1 gap-4 py-12 sm:grid-cols-2">
         <Link
           href="/grow"
-          className="group rounded-card border border-line bg-card p-6 transition-all hover:border-here/50 hover:shadow-md hover:shadow-black/5"
+          className="dp-lift group rounded-card border border-line bg-card p-6 hover:border-here/50 hover:shadow-md hover:shadow-black/5"
         >
           <p className="font-mono text-sm font-semibold uppercase tracking-wider text-here">
             Grow
@@ -78,7 +78,7 @@ export default function HomePage() {
         </Link>
         <Link
           href="/learn"
-          className="group rounded-card border border-line bg-card p-6 transition-all hover:border-primary/50 hover:shadow-md hover:shadow-black/5"
+          className="dp-lift group rounded-card border border-line bg-card p-6 hover:border-primary/50 hover:shadow-md hover:shadow-black/5"
         >
           <p className="font-mono text-sm font-semibold uppercase tracking-wider text-primary">
             Learn

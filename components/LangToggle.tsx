@@ -26,7 +26,7 @@ export function LangToggle({ languages, active, onChange, idBase }: Props) {
             aria-selected={isActive}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(lang)}
-            className={`rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+            className={`rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-all duration-[var(--dp-dur)] ease-[var(--dp-ease)] ${
               isActive
                 ? "bg-card text-ink shadow-sm"
                 : "text-muted hover:text-ink"

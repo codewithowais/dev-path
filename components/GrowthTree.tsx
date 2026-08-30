@@ -15,7 +15,7 @@ export function GrowthTree() {
       </p>
 
       {/* The shared ladder */}
-      <ol className="relative mt-8 space-y-4">
+      <ol className="dp-stagger relative mt-8 space-y-4">
         <span
           aria-hidden="true"
           className="absolute left-[19px] top-3 bottom-3 w-1 rounded-full bg-line"
@@ -36,7 +36,7 @@ export function GrowthTree() {
                 type="button"
                 onClick={() => setHereId(isHere ? null : rung.id)}
                 aria-pressed={isHere}
-                className={`flex-1 rounded-card border-2 bg-card p-4 text-left transition-all ${
+                className={`dp-lift flex-1 rounded-card border-2 bg-card p-4 text-left transition-all ${
                   isHere
                     ? "border-here shadow-md shadow-black/5"
                     : "border-line hover:border-here/40"
@@ -47,7 +47,7 @@ export function GrowthTree() {
                     {rung.role}
                   </h3>
                   {isHere ? (
-                    <span className="rounded-pill bg-here px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                    <span className="dp-pulse-here rounded-pill bg-here px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
                       You are here
                     </span>
                   ) : (
@@ -83,7 +83,7 @@ export function GrowthTree() {
         {branches.map((branch) => (
           <section
             key={branch.title}
-            className="rounded-card border-2 bg-card p-5"
+            className="dp-lift rounded-card border-2 bg-card p-5"
             style={{ borderColor: `${branch.color}55` }}
           >
             <header>
@@ -97,7 +97,7 @@ export function GrowthTree() {
                 {branch.sub}
               </p>
             </header>
-            <ol className="relative mt-5 space-y-4">
+            <ol className="dp-stagger relative mt-5 space-y-4">
               <span
                 aria-hidden="true"
                 className="absolute left-[11px] top-2 bottom-2 w-0.5"

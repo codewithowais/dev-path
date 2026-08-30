@@ -29,7 +29,9 @@ export function CodeBlock({ code, label }: Props) {
         <button
           type="button"
           onClick={copy}
-          className="rounded-md px-2 py-1 text-xs font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          className={`rounded-md px-2 py-1 text-xs font-semibold transition-all duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:scale-105 hover:bg-white/10 ${
+            copied ? "scale-105 text-output" : "text-white/70 hover:text-white"
+          }`}
         >
           {copied ? "Copied!" : "Copy"}
         </button>

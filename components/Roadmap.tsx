@@ -16,11 +16,25 @@ export function Roadmap({ path }: Props) {
       </h3>
       <p className="mt-1 text-muted">Learn top to bottom. One step at a time.</p>
 
-      <ol className="relative mt-8 space-y-6">
-        {/* The connecting line runs behind the waypoints */}
+      <style>{`
+        @keyframes dp-roadmap-line {
+          from {
+            transform: scaleY(0);
+          }
+          to {
+            transform: scaleY(1);
+          }
+        }
+      `}</style>
+
+      <ol className="dp-stagger relative mt-8 space-y-6">
+        {/* The connecting line runs behind the waypoints, drawing in from the top */}
         <span
           aria-hidden="true"
-          className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-line"
+          className="absolute left-[15px] top-2 bottom-2 w-0.5 origin-top bg-line"
+          style={{
+            animation: "dp-roadmap-line var(--dp-dur-slow) var(--dp-ease) both",
+          }}
         />
         {path.steps.map(([title, description], i) => {
           const isStart = i === 0;
@@ -28,7 +42,7 @@ export function Roadmap({ path }: Props) {
             <li key={title} className="relative flex gap-4 pl-0">
               <span
                 aria-hidden="true"
-                className={`relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                className={`dp-pop relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
                   isStart
                     ? "border-transparent text-white"
                     : "border-[color:var(--accent)] bg-card text-[color:var(--accent)]"

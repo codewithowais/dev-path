@@ -27,11 +27,11 @@ function hrefFor(roleId: string): string {
 
 export function RoleTree() {
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+    <div className="dp-stagger grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
       {roleTrees.map((role) => (
         <section
           key={role.id}
-          className="relative rounded-card border-2 bg-card p-5 transition-shadow hover:shadow-md hover:shadow-black/5"
+          className="dp-lift relative rounded-card border-2 bg-card p-5 hover:shadow-md hover:shadow-black/5"
           style={{ borderColor: `${role.color}55` }}
         >
           <header>
