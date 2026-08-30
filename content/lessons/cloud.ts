@@ -1078,6 +1078,685 @@ Call at tick 11: WARM (container already running) -> work 20 = 20ms
 Call at tick 20: COLD start (container was down) -> startup 100 + work 20 = 120ms
 Summary: 3 cold starts, 3 warm calls, total time 420ms`,
   },
+  {
+    id: "object-storage-buckets-keys",
+    pillar: "Cloud",
+    name: "Object Storage (Buckets & Keys)",
+    easy: "Picture a self-storage facility with an endless number of rooms, and every room has an endless number of lockers. Each locker has a unique label taped to the front — not a folder path, just one long label like '2024/jan/sunset.png'. That's object storage. The room is a 'bucket' — a named container you create once. The label on each locker is its 'key' — a unique name (no two lockers in the same room share a label). What's inside the locker — the actual file, like a photo or a video — is the 'object'. Even though keys often look like folder paths with slashes in them, there are no real subfolders here; it's genuinely one flat room of infinitely many labeled lockers, and every locker is reachable directly by its label without walking through any folders to find it.",
+    how: [
+      "Create a bucket first — a named container that will hold your objects (like naming the storage room before renting lockers in it).",
+      "Store something with 'put': give it a bucket, a unique key (the label), and the object itself. If that exact key already exists in that bucket, this simply overwrites it.",
+      "Fetch something with 'get': give the bucket and key. If a locker with that exact label exists, you get its contents back (a HIT); if not, you get nothing (a MISS) — there's no partial match.",
+      "Browse what's in a bucket with 'list', optionally filtering by prefix (everything whose key starts with a given string) — the closest thing to 'listing a folder', even though it's really just a string match over flat labels.",
+    ],
+    when: "Storing files that don't need a database's structure — user-uploaded photos, video files, PDFs, backups, log archives. Anything from a few kilobytes to many gigabytes, that you mostly write once and read many times, is a natural fit for object storage instead of trying to cram it into a regular database.",
+    big: "Put and get are O(1) — a direct lookup by key, regardless of how many other objects exist in the bucket. Listing by prefix costs O(n) in the number of matching keys, since every match has to be found and returned.",
+    mistakes: [
+      "Expecting real folders and subfolder operations (like renaming a 'folder') — a key with slashes in it is still just one flat string; renaming a 'folder' means rewriting every key that starts with that prefix, one by one.",
+      "Assuming 'get' does partial or fuzzy matching on the key — it's an exact match only; even one different character is a MISS, not a close hit.",
+      "Reusing the same key for different content without meaning to — 'put' silently overwrites, so a naming collision quietly destroys the previous object with no built-in warning.",
+    ],
+    code: {
+      JavaScript: `class ObjectStore {
+  constructor() {
+    this.buckets = {}; // bucket name -> { key: sizeInBytes }
+  }
+
+  createBucket(name) {
+    this.buckets[name] = {};
+  }
+
+  put(bucket, key, sizeBytes) {
+    this.buckets[bucket][key] = sizeBytes;
+  }
+
+  get(bucket, key) {
+    const objects = this.buckets[bucket];
+    if (Object.prototype.hasOwnProperty.call(objects, key)) {
+      return { hit: true, size: objects[key] };
+    }
+    return { hit: false, size: null };
+  }
+
+  list(bucket, prefix) {
+    const objects = this.buckets[bucket];
+    const keys = Object.keys(objects).filter((key) => key.startsWith(prefix));
+    keys.sort();
+    return keys;
+  }
+}
+
+const store = new ObjectStore();
+const lines = [];
+
+store.createBucket("photos");
+lines.push("Created bucket 'photos'");
+
+const uploads = [
+  ["2024/jan/sunset.png", 612],
+  ["2024/jan/party.png", 305],
+  ["2024/feb/cat.png", 802],
+  ["2023/dec/fireworks.png", 1200],
+];
+
+for (const [key, size] of uploads) {
+  store.put("photos", key, size);
+  lines.push("Uploaded photos/" + key + " (" + size + " bytes)");
+}
+
+const listed = store.list("photos", "2024/jan/");
+lines.push("Listing photos/2024/jan/* -> " + listed.join(", "));
+
+const hit = store.get("photos", "2024/jan/sunset.png");
+lines.push("GET photos/2024/jan/sunset.png -> HIT (" + hit.size + " bytes)");
+
+const miss = store.get("photos", "2024/jan/notfound.png");
+lines.push("GET photos/2024/jan/notfound.png -> MISS (no such key)");
+
+console.log(lines.join("\\n"));`,
+      Python: `class ObjectStore:
+    def __init__(self):
+        self.buckets = {}  # bucket name -> {key: size_in_bytes}
+
+    def create_bucket(self, name):
+        self.buckets[name] = {}
+
+    def put(self, bucket, key, size_bytes):
+        self.buckets[bucket][key] = size_bytes
+
+    def get(self, bucket, key):
+        objects = self.buckets[bucket]
+        if key in objects:
+            return {"hit": True, "size": objects[key]}
+        return {"hit": False, "size": None}
+
+    def list(self, bucket, prefix):
+        objects = self.buckets[bucket]
+        keys = [key for key in objects.keys() if key.startswith(prefix)]
+        keys.sort()
+        return keys
+
+
+store = ObjectStore()
+lines = []
+
+store.create_bucket("photos")
+lines.append("Created bucket 'photos'")
+
+uploads = [
+    ("2024/jan/sunset.png", 612),
+    ("2024/jan/party.png", 305),
+    ("2024/feb/cat.png", 802),
+    ("2023/dec/fireworks.png", 1200),
+]
+
+for key, size in uploads:
+    store.put("photos", key, size)
+    lines.append(f"Uploaded photos/{key} ({size} bytes)")
+
+listed = store.list("photos", "2024/jan/")
+lines.append(f"Listing photos/2024/jan/* -> {', '.join(listed)}")
+
+hit = store.get("photos", "2024/jan/sunset.png")
+lines.append(f"GET photos/2024/jan/sunset.png -> HIT ({hit['size']} bytes)")
+
+miss = store.get("photos", "2024/jan/notfound.png")
+lines.append("GET photos/2024/jan/notfound.png -> MISS (no such key)")
+
+print("\\n".join(lines))`,
+    },
+    output: `Created bucket 'photos'
+Uploaded photos/2024/jan/sunset.png (612 bytes)
+Uploaded photos/2024/jan/party.png (305 bytes)
+Uploaded photos/2024/feb/cat.png (802 bytes)
+Uploaded photos/2023/dec/fireworks.png (1200 bytes)
+Listing photos/2024/jan/* -> 2024/jan/party.png, 2024/jan/sunset.png
+GET photos/2024/jan/sunset.png -> HIT (612 bytes)
+GET photos/2024/jan/notfound.png -> MISS (no such key)`,
+  },
+  {
+    id: "iam-access-control",
+    pillar: "Cloud",
+    name: "Access Control (IAM Roles & Permissions)",
+    easy: "Think of a big office building where every employee carries a keycard. Not every keycard opens every door — a keycard is programmed to open only the doors that employee actually needs, like their own floor and the break room, but not the server room or the vault. IAM (Identity and Access Management) works the same way in the cloud. Instead of doors, you have actions like 'read a file' or 'delete a database'. Instead of one keycard per door, you define 'roles' — reusable bundles of permissions, like a job title. You then hand a role (or several) to each user, the same way you'd hand someone a keycard programmed for their job.",
+    how: [
+      "Define each role once, as a list of permissions it grants — for example, a 'viewer' role might only grant 'read'.",
+      "Assign one or more roles to each user — a person can carry more than one keycard, and they get the combined permissions of every role they hold.",
+      "When a user tries to do something, collect every permission from every role they have, and check whether the attempted action is in that combined set.",
+      "If it's in the set, allow the action. If it isn't — or the user has no roles at all — deny it.",
+    ],
+    when: "Any system with more than one type of user — regular users, support staff, admins — where you need to make sure people can only do what their job requires. This is the backbone of 'least privilege': give each person exactly the access they need, and nothing more, so a mistake or a stolen account can't do more damage than necessary.",
+    big: "Checking access is O(r × p) in the worst case for a user with r roles averaging p permissions each — trivially fast in practice, since real permission sets are small. The value isn't speed, it's safety: a clear, centralized rule for who can do what.",
+    mistakes: [
+      "Giving everyone the admin role 'just to be safe' — that defeats the entire point of roles and means one compromised account can do anything.",
+      "Forgetting that a user with zero roles assigned should be denied everything by default, not accidentally allowed because there's nothing there to deny.",
+      "Piling up one-off permissions per user instead of reusable roles — it works at first, but becomes impossible to audit ('wait, why does this one user have delete access?') as the team grows.",
+    ],
+    code: {
+      JavaScript: `const roles = {
+  viewer: ["read"],
+  editor: ["read", "write"],
+  admin: ["read", "write", "delete"],
+};
+
+const users = {
+  alice: ["viewer"],
+  bob: ["editor"],
+  carol: ["admin", "viewer"],
+  dave: [],
+};
+
+function permissionsFor(userRoles) {
+  const perms = new Set();
+  for (const role of userRoles) {
+    for (const perm of roles[role]) {
+      perms.add(perm);
+    }
+  }
+  return Array.from(perms).sort();
+}
+
+function checkAccess(username, action) {
+  const userRoles = users[username];
+  if (!userRoles || userRoles.length === 0) {
+    return "denied (no roles assigned)";
+  }
+  const perms = permissionsFor(userRoles);
+  return perms.indexOf(action) !== -1 ? "allowed" : "denied";
+}
+
+const lines = [];
+
+for (const role of Object.keys(roles)) {
+  lines.push("Role '" + role + "' grants: " + roles[role].join(", "));
+}
+
+for (const username of Object.keys(users)) {
+  const userRoles = users[username];
+  const roleText = userRoles.length > 0 ? userRoles.join(", ") : "none";
+  lines.push("User '" + username + "' has role(s): " + roleText);
+}
+
+const checks = [
+  ["alice", "read"],
+  ["alice", "delete"],
+  ["bob", "write"],
+  ["carol", "delete"],
+  ["dave", "read"],
+];
+
+for (const [username, action] of checks) {
+  const result = checkAccess(username, action);
+  lines.push("Access check: " + username + " -> " + action + ": " + result);
+}
+
+console.log(lines.join("\\n"));`,
+      Python: `roles = {
+    "viewer": ["read"],
+    "editor": ["read", "write"],
+    "admin": ["read", "write", "delete"],
+}
+
+users = {
+    "alice": ["viewer"],
+    "bob": ["editor"],
+    "carol": ["admin", "viewer"],
+    "dave": [],
+}
+
+
+def permissions_for(user_roles):
+    perms = set()
+    for role in user_roles:
+        for perm in roles[role]:
+            perms.add(perm)
+    return sorted(perms)
+
+
+def check_access(username, action):
+    user_roles = users.get(username)
+    if not user_roles:
+        return "denied (no roles assigned)"
+    perms = permissions_for(user_roles)
+    return "allowed" if action in perms else "denied"
+
+
+lines = []
+
+for role in roles:
+    lines.append(f"Role '{role}' grants: {', '.join(roles[role])}")
+
+for username in users:
+    user_roles = users[username]
+    role_text = ", ".join(user_roles) if len(user_roles) > 0 else "none"
+    lines.append(f"User '{username}' has role(s): {role_text}")
+
+checks = [
+    ("alice", "read"),
+    ("alice", "delete"),
+    ("bob", "write"),
+    ("carol", "delete"),
+    ("dave", "read"),
+]
+
+for username, action in checks:
+    result = check_access(username, action)
+    lines.append(f"Access check: {username} -> {action}: {result}")
+
+print("\\n".join(lines))`,
+    },
+    output: `Role 'viewer' grants: read
+Role 'editor' grants: read, write
+Role 'admin' grants: read, write, delete
+User 'alice' has role(s): viewer
+User 'bob' has role(s): editor
+User 'carol' has role(s): admin, viewer
+User 'dave' has role(s): none
+Access check: alice -> read: allowed
+Access check: alice -> delete: denied
+Access check: bob -> write: allowed
+Access check: carol -> delete: allowed
+Access check: dave -> read: denied (no roles assigned)`,
+  },
+  {
+    id: "per-tenant-quotas",
+    pillar: "Cloud",
+    name: "Per-Tenant Quotas",
+    easy: "Imagine an apartment building where every unit has its own water meter and its own monthly cap. If one tenant runs the tap all day, it only counts against their own meter — it doesn't use up water that belongs to the tenant next door, and it doesn't get shut off because someone else went over. A 'tenant' in cloud software means the same thing as in the building: one customer (or one company's account) using a shared system. A 'quota' is that customer's personal cap — a fixed amount of some resource (storage, API calls, uploaded minutes of video) they're allowed to use before the system says no more, at least until the cap resets.",
+    how: [
+      "Give every tenant their own running usage counter, starting at zero, and their own quota (the cap they're allowed to reach).",
+      "When a tenant makes a request that consumes some amount of the resource, check: would adding this amount push them over their quota?",
+      "If there's room, allow it and add the amount to that tenant's counter — only that tenant's counter changes.",
+      "If it would go over, deny the request and leave their counter untouched — one tenant hammering the system can't eat into anyone else's allowance.",
+    ],
+    when: "Any system serving multiple customers off shared infrastructure — a SaaS product, a multi-tenant API, cloud storage sold by the gigabyte. Per-tenant quotas keep one customer's traffic spike or runaway script from starving everyone else, and they're also just how usage-based billing tiers get enforced.",
+    big: "Checking and updating a tenant's quota is O(1) — one lookup, one comparison, maybe one addition. The design value is isolation: no matter how many tenants share the system, one tenant's usage can never be read as another's.",
+    mistakes: [
+      "Tracking one shared counter for everyone instead of one per tenant — that turns a single noisy customer into an outage for every other customer sharing the pool.",
+      "Letting a request partially succeed when it would go over quota (using up whatever room is left) instead of cleanly allowing it in full or denying it in full — partial writes get confusing fast.",
+      "Forgetting to handle a tenant that doesn't exist in the system at all — that should be denied outright, not silently treated as having unlimited quota.",
+    ],
+    code: {
+      JavaScript: `const quotas = {
+  tenantA: 100,
+  tenantB: 50,
+};
+
+const usage = {
+  tenantA: 0,
+  tenantB: 0,
+};
+
+function requestUsage(tenant, amount) {
+  if (!Object.prototype.hasOwnProperty.call(quotas, tenant)) {
+    return "denied, unknown tenant";
+  }
+  const wouldBe = usage[tenant] + amount;
+  if (wouldBe > quotas[tenant]) {
+    return "denied, quota exceeded (usage " + usage[tenant] + "/" + quotas[tenant] + ", would be " + wouldBe + ")";
+  }
+  usage[tenant] = wouldBe;
+  return "allowed (usage " + usage[tenant] + "/" + quotas[tenant] + ")";
+}
+
+const events = [
+  ["tenantA", 40],
+  ["tenantB", 30],
+  ["tenantA", 50],
+  ["tenantB", 25],
+  ["tenantA", 20],
+  ["tenantC", 10],
+];
+
+const lines = [];
+for (const [tenant, amount] of events) {
+  const result = requestUsage(tenant, amount);
+  lines.push(tenant + " requests " + amount + " units -> " + result);
+}
+
+lines.push("Final usage: tenantA " + usage.tenantA + "/" + quotas.tenantA + ", tenantB " + usage.tenantB + "/" + quotas.tenantB);
+
+console.log(lines.join("\\n"));`,
+      Python: `quotas = {
+    "tenantA": 100,
+    "tenantB": 50,
+}
+
+usage = {
+    "tenantA": 0,
+    "tenantB": 0,
+}
+
+
+def request_usage(tenant, amount):
+    if tenant not in quotas:
+        return "denied, unknown tenant"
+    would_be = usage[tenant] + amount
+    if would_be > quotas[tenant]:
+        return f"denied, quota exceeded (usage {usage[tenant]}/{quotas[tenant]}, would be {would_be})"
+    usage[tenant] = would_be
+    return f"allowed (usage {usage[tenant]}/{quotas[tenant]})"
+
+
+events = [
+    ("tenantA", 40),
+    ("tenantB", 30),
+    ("tenantA", 50),
+    ("tenantB", 25),
+    ("tenantA", 20),
+    ("tenantC", 10),
+]
+
+lines = []
+for tenant, amount in events:
+    result = request_usage(tenant, amount)
+    lines.append(f"{tenant} requests {amount} units -> {result}")
+
+lines.append(f"Final usage: tenantA {usage['tenantA']}/{quotas['tenantA']}, tenantB {usage['tenantB']}/{quotas['tenantB']}")
+
+print("\\n".join(lines))`,
+    },
+    output: `tenantA requests 40 units -> allowed (usage 40/100)
+tenantB requests 30 units -> allowed (usage 30/50)
+tenantA requests 50 units -> allowed (usage 90/100)
+tenantB requests 25 units -> denied, quota exceeded (usage 30/50, would be 55)
+tenantA requests 20 units -> denied, quota exceeded (usage 90/100, would be 110)
+tenantC requests 10 units -> denied, unknown tenant
+Final usage: tenantA 90/100, tenantB 30/50`,
+  },
+  {
+    id: "multi-region-failover",
+    pillar: "Cloud",
+    name: "Multi-Region Failover",
+    easy: "Imagine a company with three regional warehouses — one in the east, one in the west, one overseas — and a standing rule: always ship from the east warehouse if it's open, otherwise the west one, otherwise the overseas one, otherwise nothing goes out at all. Multi-region failover applies that same standing rule to cloud regions — separate copies of your infrastructure running in different geographic data centers. Instead of just one primary and one backup, you keep an ordered priority list of regions. Traffic goes to the highest-priority region that's currently healthy, and automatically shifts down the list the moment something above it goes down — then shifts back up once it recovers.",
+    how: [
+      "Keep an ordered priority list of regions, from most preferred to least — this order is your failover plan, decided ahead of time.",
+      "On each check, walk the list in order and pick the first region that's currently healthy — that's who serves traffic right now.",
+      "If a higher-priority region that was down comes back healthy, traffic moves back up to it automatically ('failback') — you don't have to manually undo anything.",
+      "If every single region in the list is down at once, there's nowhere left to send traffic — that's a full outage, not just a failover.",
+    ],
+    when: "Running a service that truly cannot go down even if an entire data center — or an entire geographic region — has a bad day (power outage, natural disaster, a cloud provider's regional failure). A single backup server only survives a server failing; multi-region failover survives a whole region failing.",
+    big: "Picking a region is O(k) for k regions in the priority list — just walk the list until you find a healthy one. The real cost being managed is blast radius: this contains an entire region's outage instead of taking your whole service down with it.",
+    mistakes: [
+      "Putting all regions physically close together (like three data centers in the same city) — that defeats the purpose if a single regional event (a storm, a power grid failure) can take all of them out together.",
+      "Failing back to a recovering region the instant it answers once — the same trap as a circuit breaker's half-open test, one healthy check doesn't prove it's stable, not flapping.",
+      "Not testing what actually happens when every region is down — 'that'll never happen' is exactly the assumption that turns a bad day into a total outage with no plan.",
+    ],
+    code: {
+      JavaScript: `function chooseRegion(health, priority) {
+  for (const region of priority) {
+    if (health[region]) {
+      return region;
+    }
+  }
+  return null;
+}
+
+const priority = ["us-east", "us-west", "eu-west"];
+
+const healthSchedule = [
+  { "us-east": true, "us-west": true, "eu-west": true },
+  { "us-east": false, "us-west": true, "eu-west": true },
+  { "us-east": false, "us-west": false, "eu-west": true },
+  { "us-east": false, "us-west": false, "eu-west": false },
+  { "us-east": true, "us-west": true, "eu-west": true },
+];
+
+const lines = [];
+let lastServing = null;
+let failovers = 0;
+let failbacks = 0;
+let outages = 0;
+
+for (let i = 0; i < healthSchedule.length; i++) {
+  const health = healthSchedule[i];
+  const chosen = chooseRegion(health, priority);
+  const downRegions = priority.filter((region) => !health[region]);
+
+  let desc;
+  if (chosen === null) {
+    desc = "all regions down -> OUTAGE, no region available";
+    outages++;
+  } else if (downRegions.length === 0) {
+    desc = "all regions healthy -> serving from " + chosen;
+  } else {
+    desc = "down: " + downRegions.join(", ") + " -> serving from " + chosen;
+  }
+
+  let transition = "";
+  if (chosen !== null && lastServing !== null && chosen !== lastServing) {
+    if (priority.indexOf(chosen) > priority.indexOf(lastServing)) {
+      transition = " (failover)";
+      failovers++;
+    } else {
+      transition = " (failback)";
+      failbacks++;
+    }
+  }
+
+  if (chosen !== null) {
+    lastServing = chosen;
+  }
+
+  lines.push("Tick " + (i + 1) + ": " + desc + transition);
+}
+
+console.log(lines.join("\\n"));
+console.log("Summary: " + failovers + " failovers, " + failbacks + " failback, " + outages + " outage tick out of " + healthSchedule.length + " total ticks");`,
+      Python: `def choose_region(health, priority):
+    for region in priority:
+        if health[region]:
+            return region
+    return None
+
+
+priority = ["us-east", "us-west", "eu-west"]
+
+health_schedule = [
+    {"us-east": True, "us-west": True, "eu-west": True},
+    {"us-east": False, "us-west": True, "eu-west": True},
+    {"us-east": False, "us-west": False, "eu-west": True},
+    {"us-east": False, "us-west": False, "eu-west": False},
+    {"us-east": True, "us-west": True, "eu-west": True},
+]
+
+lines = []
+last_serving = None
+failovers = 0
+failbacks = 0
+outages = 0
+
+for i in range(len(health_schedule)):
+    health = health_schedule[i]
+    chosen = choose_region(health, priority)
+    down_regions = [region for region in priority if not health[region]]
+
+    if chosen is None:
+        desc = "all regions down -> OUTAGE, no region available"
+        outages += 1
+    elif len(down_regions) == 0:
+        desc = f"all regions healthy -> serving from {chosen}"
+    else:
+        desc = f"down: {', '.join(down_regions)} -> serving from {chosen}"
+
+    transition = ""
+    if chosen is not None and last_serving is not None and chosen != last_serving:
+        if priority.index(chosen) > priority.index(last_serving):
+            transition = " (failover)"
+            failovers += 1
+        else:
+            transition = " (failback)"
+            failbacks += 1
+
+    if chosen is not None:
+        last_serving = chosen
+
+    lines.append(f"Tick {i + 1}: {desc}{transition}")
+
+print("\\n".join(lines))
+print(f"Summary: {failovers} failovers, {failbacks} failback, {outages} outage tick out of {len(health_schedule)} total ticks")`,
+    },
+    output: `Tick 1: all regions healthy -> serving from us-east
+Tick 2: down: us-east -> serving from us-west (failover)
+Tick 3: down: us-east, us-west -> serving from eu-west (failover)
+Tick 4: all regions down -> OUTAGE, no region available
+Tick 5: all regions healthy -> serving from us-east (failback)
+Summary: 2 failovers, 1 failback, 1 outage tick out of 5 total ticks`,
+  },
+  {
+    id: "secrets-management",
+    pillar: "Cloud",
+    name: "Secrets Management",
+    easy: "Picture a workplace where passwords used to live on sticky notes stuck to monitors — anyone walking by could read them, and when a password changed, someone had to remember to peel off the old note and write a new one. A secrets manager replaces every sticky note with a vault. Passwords, API keys, and other 'secrets' (sensitive values your app needs but humans shouldn't casually see) live inside it instead of sitting in code or config files in plain view. The vault decides who's allowed to open it, hands out the current value only to those with permission, and keeps a version history so you can rotate — replace a secret with a fresh one — without instantly breaking whatever was still using the old one.",
+    how: [
+      "Store each secret under a name, along with the list of roles allowed to read it — like storing something in the vault along with the list of people who know the combination.",
+      "When something asks for a secret, first check whether its role is on the allowed list. No match, no value — reject it before ever touching the vault contents.",
+      "If the role is allowed, hand back the current (latest) version by default. Never print or log the raw secret in full — mask it, showing just enough to confirm which secret it is.",
+      "To rotate a secret, store a new value under the same name as a new version, keeping the old version around (rather than deleting it instantly) so anything still mid-flight with the old value doesn't break immediately.",
+    ],
+    when: "Any time your code needs a password, API key, certificate, or token to talk to something else. Secrets management keeps those values out of source code and config files (where they'd get committed to history forever), controls exactly who and what can read them, and makes rotating a leaked or expiring secret a routine operation instead of a scramble.",
+    big: "Storing and fetching a secret are both O(1) lookups. The real value isn't computational — it's reducing exposure: fewer places a secret sits in plain text, and a fast, controlled way to rotate one out.",
+    mistakes: [
+      "Hardcoding a secret directly in source code 'just for now' — 'for now' becomes forever the moment it's committed, since it stays in the project's history even after you remove it.",
+      "Printing or logging a secret's full value anywhere, even for debugging — logs get copied, forwarded, and stored longer than anyone expects.",
+      "Deleting the old version the instant you rotate a secret — anything still using the old value (a slow-restarting server, a cached config) breaks immediately instead of getting a grace period to pick up the new one.",
+    ],
+    code: {
+      JavaScript: `function mask(value) {
+  if (value.length < 2) {
+    return "*".repeat(value.length);
+  }
+  const middle = "*".repeat(value.length - 2);
+  return value[0] + middle + value[value.length - 1];
+}
+
+class SecretsManager {
+  constructor() {
+    this.secrets = {}; // name -> { allowedRoles, versions: [value, value, ...] }
+  }
+
+  store(name, value, allowedRoles) {
+    this.secrets[name] = { allowedRoles: allowedRoles.slice().sort(), versions: [value] };
+  }
+
+  rotate(name, newValue) {
+    this.secrets[name].versions.push(newValue);
+    return this.secrets[name].versions.length;
+  }
+
+  get(name, role, version) {
+    const secret = this.secrets[name];
+    if (secret.allowedRoles.indexOf(role) === -1) {
+      return { allowed: false, message: "denied (role not permitted)" };
+    }
+    const latestVersion = secret.versions.length;
+    const useVersion = version === undefined ? latestVersion : version;
+    const value = secret.versions[useVersion - 1];
+    const maskedValue = mask(value);
+    if (useVersion < latestVersion) {
+      return { allowed: true, message: "allowed but OUTDATED (v" + useVersion + ", value " + maskedValue + ") - rotate callers off old versions" };
+    }
+    return { allowed: true, message: "allowed (v" + useVersion + ", value " + maskedValue + ")" };
+  }
+}
+
+const manager = new SecretsManager();
+const lines = [];
+
+manager.store("db-password", "p@ss1", ["backend", "admin"]);
+lines.push("Stored secret 'db-password' (v1), allowed roles: " + manager.secrets["db-password"].allowedRoles.join(", "));
+
+manager.store("api-key", "key1", ["admin"]);
+lines.push("Stored secret 'api-key' (v1), allowed roles: " + manager.secrets["api-key"].allowedRoles.join(", "));
+
+let result = manager.get("db-password", "backend");
+lines.push("GET db-password as 'backend' -> " + result.message);
+
+result = manager.get("db-password", "frontend");
+lines.push("GET db-password as 'frontend' -> " + result.message);
+
+result = manager.get("api-key", "backend");
+lines.push("GET api-key as 'backend' -> " + result.message);
+
+const newVersion = manager.rotate("db-password", "p@ss2");
+lines.push("Rotated 'db-password' -> now v" + newVersion);
+
+result = manager.get("db-password", "backend");
+lines.push("GET db-password as 'backend' (latest) -> " + result.message);
+
+result = manager.get("db-password", "backend", 1);
+lines.push("GET db-password as 'backend' (v1 explicitly) -> " + result.message);
+
+console.log(lines.join("\\n"));`,
+      Python: `def mask(value):
+    if len(value) < 2:
+        return "*" * len(value)
+    middle = "*" * (len(value) - 2)
+    return value[0] + middle + value[-1]
+
+
+class SecretsManager:
+    def __init__(self):
+        self.secrets = {}  # name -> {"allowed_roles": [...], "versions": [value, ...]}
+
+    def store(self, name, value, allowed_roles):
+        self.secrets[name] = {"allowed_roles": sorted(allowed_roles), "versions": [value]}
+
+    def rotate(self, name, new_value):
+        self.secrets[name]["versions"].append(new_value)
+        return len(self.secrets[name]["versions"])
+
+    def get(self, name, role, version=None):
+        secret = self.secrets[name]
+        if role not in secret["allowed_roles"]:
+            return {"allowed": False, "message": "denied (role not permitted)"}
+        latest_version = len(secret["versions"])
+        use_version = latest_version if version is None else version
+        value = secret["versions"][use_version - 1]
+        masked_value = mask(value)
+        if use_version < latest_version:
+            return {"allowed": True, "message": f"allowed but OUTDATED (v{use_version}, value {masked_value}) - rotate callers off old versions"}
+        return {"allowed": True, "message": f"allowed (v{use_version}, value {masked_value})"}
+
+
+manager = SecretsManager()
+lines = []
+
+manager.store("db-password", "p@ss1", ["backend", "admin"])
+lines.append(f"Stored secret 'db-password' (v1), allowed roles: {', '.join(manager.secrets['db-password']['allowed_roles'])}")
+
+manager.store("api-key", "key1", ["admin"])
+lines.append(f"Stored secret 'api-key' (v1), allowed roles: {', '.join(manager.secrets['api-key']['allowed_roles'])}")
+
+result = manager.get("db-password", "backend")
+lines.append(f"GET db-password as 'backend' -> {result['message']}")
+
+result = manager.get("db-password", "frontend")
+lines.append(f"GET db-password as 'frontend' -> {result['message']}")
+
+result = manager.get("api-key", "backend")
+lines.append(f"GET api-key as 'backend' -> {result['message']}")
+
+new_version = manager.rotate("db-password", "p@ss2")
+lines.append(f"Rotated 'db-password' -> now v{new_version}")
+
+result = manager.get("db-password", "backend")
+lines.append(f"GET db-password as 'backend' (latest) -> {result['message']}")
+
+result = manager.get("db-password", "backend", 1)
+lines.append(f"GET db-password as 'backend' (v1 explicitly) -> {result['message']}")
+
+print("\\n".join(lines))`,
+    },
+    output: `Stored secret 'db-password' (v1), allowed roles: admin, backend
+Stored secret 'api-key' (v1), allowed roles: admin
+GET db-password as 'backend' -> allowed (v1, value p***1)
+GET db-password as 'frontend' -> denied (role not permitted)
+GET api-key as 'backend' -> denied (role not permitted)
+Rotated 'db-password' -> now v2
+GET db-password as 'backend' (latest) -> allowed (v2, value p***2)
+GET db-password as 'backend' (v1 explicitly) -> allowed but OUTDATED (v1, value p***1) - rotate callers off old versions`,
+  },
 ];
 
 export default lessons;

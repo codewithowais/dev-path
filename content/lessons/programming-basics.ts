@@ -344,6 +344,249 @@ Can watch (10, has ticket): no
 Can enter free (member, not kid): yes
 Need umbrella: yes`,
   },
+  {
+    id: "operators-arithmetic-comparison",
+    pillar: "Programming Basics",
+    name: "Operators (Arithmetic & Comparison)",
+    easy: "Operators are the little symbols that DO something with your values — like the +, -, x, and / buttons on a calculator. 'Arithmetic' operators do math (add, subtract, multiply, divide). 'Comparison' operators are like a balance scale: they weigh two values against each other and answer with a yes/no (a 'boolean') — is this side bigger, smaller, or exactly equal?",
+    how: [
+      "Arithmetic operators are `+` (add), `-` (subtract), `*` (multiply), and division, which comes in two flavors: regular division and 'whole number' division that throws away any leftover (the leftover itself is called the 'remainder', found with `%`).",
+      "Comparison operators are `==`/`===` (is equal), `>` (greater than), `<` (less than), and `<=`/`>=` (less/greater than OR equal) — every one of these hands back a boolean, `true` or `false`.",
+      "You can mix operators together, like checking `a > b`, and the computer works out the math or comparison the same way you would with pen and paper, left to right.",
+    ],
+    when: "Anytime you're doing math on numbers, or anytime your code needs to decide 'is this bigger?', 'is this the same?' — splitting a bill evenly, checking if someone's old enough, scoring a quiz.",
+    mistakes: [
+      "Using a single `=` (which SETS a value) when you meant `==` or `===` (which CHECKS if two values are equal) — a very common beginner slip.",
+      "Forgetting that regular division can leave a fraction — if you only want whole numbers, you need a specific 'whole number division' tool, not just `/`.",
+    ],
+    code: {
+      JavaScript: `const a = 17;
+const b = 5;
+
+console.log("Add:", a + b);
+console.log("Subtract:", a - b);
+console.log("Multiply:", a * b);
+console.log("Divide (whole):", Math.floor(a / b));
+console.log("Remainder:", a % b);
+console.log("Is equal:", a === b ? "yes" : "no");
+console.log("Is greater:", a > b ? "yes" : "no");
+console.log("Is less or equal:", a <= b ? "yes" : "no");`,
+      Python: `a = 17
+b = 5
+
+print("Add:", a + b)
+print("Subtract:", a - b)
+print("Multiply:", a * b)
+print("Divide (whole):", a // b)
+print("Remainder:", a % b)
+print("Is equal:", "yes" if a == b else "no")
+print("Is greater:", "yes" if a > b else "no")
+print("Is less or equal:", "yes" if a <= b else "no")`,
+    },
+    output: `Add: 22
+Subtract: 12
+Multiply: 85
+Divide (whole): 3
+Remainder: 2
+Is equal: no
+Is greater: yes
+Is less or equal: no`,
+  },
+  {
+    id: "type-conversion",
+    pillar: "Programming Basics",
+    name: "Type Conversion (Casting)",
+    easy: "Type conversion (also called 'casting') is like exchanging currency: the value stays meaningfully the same, but you change the FORM it's in so it works where you need it — turning the text \"9.5\" into the actual number 9.5, or turning the number 42 into the text \"42\" so you can glue it onto a sentence.",
+    how: [
+      "Text that looks like a number (like `\"9.5\"`) can be converted into a real number so you can do math with it — in JavaScript with `parseFloat`, in Python with `float`.",
+      "A number can be converted into text so you can join it with other text — in JavaScript with `String(...)`, in Python with `str(...)`.",
+      "A number with a decimal point can be converted down to a whole number by cutting off everything after the decimal — this is called 'truncating', not rounding.",
+    ],
+    when: "Whenever data arrives in the 'wrong' form for what you want to do with it — a price typed into a form arrives as text, but you need it as a number to multiply; a score is a number, but you need it as text to display in a sentence.",
+    mistakes: [
+      "Trying to do math directly on text without converting it first — most languages will either error or glue the text together instead of adding numbers.",
+      "Assuming converting a decimal to a whole number rounds it — it actually just chops off the decimal part, so `9.8` becomes `9`, not `10`.",
+    ],
+    code: {
+      JavaScript: `const priceText = "9.5";
+const price = parseFloat(priceText);
+const quantity = 3;
+const total = price * quantity;
+
+console.log("Price text:", priceText);
+console.log("Price number:", price);
+console.log("Total:", total.toFixed(2));
+
+const count = 42;
+const countText = String(count);
+console.log("Count as text:", "Item #" + countText);
+
+console.log("Whole number from float:", Math.floor(9.8));`,
+      Python: `price_text = "9.5"
+price = float(price_text)
+quantity = 3
+total = price * quantity
+
+print("Price text:", price_text)
+print("Price number:", price)
+print("Total:", f"{total:.2f}")
+
+count = 42
+count_text = str(count)
+print("Count as text:", "Item #" + count_text)
+
+print("Whole number from float:", int(9.8))`,
+    },
+    output: `Price text: 9.5
+Price number: 9.5
+Total: 28.50
+Count as text: Item #42
+Whole number from float: 9`,
+  },
+  {
+    id: "error-handling-try-catch",
+    pillar: "Programming Basics",
+    name: "Error Handling (try/catch)",
+    easy: "Error handling is a safety net under a tightrope walker. If the walker (your code) slips — say, you try to divide by zero — the net (called `try`/`catch`) catches the fall so the whole show doesn't shut down. Instead of the program crashing, you get a chance to say 'something went wrong, here's what to do instead.'",
+    how: [
+      "Put risky code — code that might blow up — inside a `try` block.",
+      "If something goes wrong inside `try`, the computer immediately jumps to the matching `catch` block instead of crashing, and hands you details about what went wrong.",
+      "A `finally` block (if you add one) runs no matter what happened — whether the `try` succeeded or the `catch` caught a problem — useful for cleanup steps you never want to skip.",
+    ],
+    when: "Anytime something might fail in a way you can predict but not prevent — reading a file that might not exist, dividing by a number that might be zero, asking a website for data when the internet might be down.",
+    mistakes: [
+      "Wrapping your ENTIRE program in one giant `try`, which hides exactly where something went wrong — keep `try` blocks small and focused.",
+      "Catching an error and then doing nothing with it (an empty `catch`), which silently hides bugs instead of fixing or reporting them.",
+    ],
+    code: {
+      JavaScript: `function safeDivide(a, b) {
+  try {
+    if (b === 0) {
+      throw new Error("Cannot divide by zero");
+    }
+    return "Result: " + (a / b).toFixed(2);
+  } catch (err) {
+    return "Error: " + err.message;
+  } finally {
+    console.log("Attempted:", a + " / " + b);
+  }
+}
+
+console.log(safeDivide(10, 2));
+console.log(safeDivide(10, 0));`,
+      Python: `def safe_divide(a, b):
+    try:
+        if b == 0:
+            raise ValueError("Cannot divide by zero")
+        return "Result: " + f"{a / b:.2f}"
+    except ValueError as err:
+        return "Error: " + str(err)
+    finally:
+        print("Attempted:", str(a) + " / " + str(b))
+
+print(safe_divide(10, 2))
+print(safe_divide(10, 0))`,
+    },
+    output: `Attempted: 10 / 2
+Result: 5.00
+Attempted: 10 / 0
+Error: Cannot divide by zero`,
+  },
+  {
+    id: "scope-local-global",
+    pillar: "Programming Basics",
+    name: "Scope (Local vs Global)",
+    easy: "Scope is about WHERE a variable can be seen and used. A 'global' variable is like an announcement over the school's loudspeaker — every classroom hears it. A 'local' variable is like a note passed around inside just ONE classroom — kids in other classrooms have no idea it exists, and it disappears once that class ends.",
+    how: [
+      "A variable created outside of any function is 'global' — every function in the file can read it.",
+      "A variable created INSIDE a function is 'local' to that function — it's a fresh box that only exists while the function is running, then it's thrown away.",
+      "If a local variable has the SAME name as a global one, the local one wins inside that function — it temporarily 'shadows' (hides) the global, without changing the global's own value at all.",
+    ],
+    when: "Anytime you're deciding where to put a variable — keep values local to a function whenever possible, so different parts of a big program don't accidentally step on each other's data. Reach for a global only for things truly needed everywhere, like a shared setting.",
+    mistakes: [
+      "Trying to use a local variable outside the function it was created in — it simply doesn't exist out there, and the computer will complain it can't find it.",
+      "Assuming changing a local variable that shares a global's name also changes the global — it doesn't; they're two separate boxes that just happen to have the same label.",
+    ],
+    code: {
+      JavaScript: `let score = 100; // global: visible to every function below
+
+function bonusRound() {
+  let score = 100; // local: a brand-new, separate box for this function only
+  score += 50;
+  return score;
+}
+
+console.log("Bonus round result:", bonusRound());
+console.log("Global score after:", score);`,
+      Python: `score = 100  # global: visible to every function below
+
+def bonus_round():
+    score = 100  # local: a brand-new, separate box for this function only
+    score += 50
+    return score
+
+print("Bonus round result:", bonus_round())
+print("Global score after:", score)`,
+    },
+    output: `Bonus round result: 150
+Global score after: 100`,
+  },
+  {
+    id: "ternary-switch",
+    pillar: "Programming Basics",
+    name: "Ternary & Switch (Multi-Way Choice)",
+    easy: "A ternary is a tiny if/else squeezed onto one line — like a shortcut fork in the road when you only have two paths and a quick question to pick between them ('old enough? then adult, else minor'). A switch is for when you have MANY paths branching from one value, like a vending machine: press button 1 for chips, button 2 for soda, button 3 for candy — and if nothing matches, a default slot.",
+    how: [
+      "A ternary has the shape `condition ? valueIfTrue : valueIfFalse` — it's an expression, so it hands back a value directly instead of needing a full if/else block.",
+      "A switch checks one value against a list of `case`s, one after another, and runs the code under whichever `case` matches — a `break` afterward stops it from falling into the next case by accident.",
+      "If none of the cases match, a `default` case (or the language's equivalent) catches everything else, just like the final `else` in an if/else chain.",
+    ],
+    when: "Reach for a ternary when you're picking between exactly two short values, like choosing a label or a default. Reach for a switch (or its equivalent) when one value can take on several distinct options, and each one needs its own clear branch — like matching a day number to a day name.",
+    mistakes: [
+      "Cramming a big, complicated decision into a ternary — if the true/false branches are long or nested, a plain if/else reads far more clearly.",
+      "Forgetting `break` in a switch (in languages that need it), which lets execution 'fall through' into the next case by mistake instead of stopping.",
+    ],
+    code: {
+      JavaScript: `const age = 20;
+const status = age >= 18 ? "adult" : "minor";
+console.log("Status:", status);
+
+const day = 3;
+let dayName;
+switch (day) {
+  case 1:
+    dayName = "Monday";
+    break;
+  case 2:
+    dayName = "Tuesday";
+    break;
+  case 3:
+    dayName = "Wednesday";
+    break;
+  default:
+    dayName = "Unknown";
+}
+console.log("Day:", dayName);`,
+      Python: `age = 20
+status = "adult" if age >= 18 else "minor"
+print("Status:", status)
+
+# Python has no built-in switch (on versions before 3.10's "match"),
+# so an if/elif chain is the classic stand-in — same "check, then jump" idea.
+day = 3
+if day == 1:
+    day_name = "Monday"
+elif day == 2:
+    day_name = "Tuesday"
+elif day == 3:
+    day_name = "Wednesday"
+else:
+    day_name = "Unknown"
+print("Day:", day_name)`,
+    },
+    output: `Status: adult
+Day: Wednesday`,
+  },
 ];
 
 export default lessons;

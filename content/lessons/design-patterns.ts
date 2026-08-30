@@ -1304,6 +1304,398 @@ print("Electric car:", electric_car.drive())`,
     output: `Gas car: Gas engine vroom -> car moving
 Electric car: Electric engine hum -> car moving`,
   },
+  {
+    id: "flyweight",
+    pillar: "Design Patterns",
+    name: "Flyweight",
+    easy: "Flyweight is sharing one copy of a reused thing instead of making a fresh copy every time. Think of a forest with ten thousand trees — every 'Oak' tree looks identical (same shape, same texture), so instead of storing that heavy picture ten thousand times, all the oak trees just point to the ONE shared 'Oak' picture and only remember their own tiny bit of unique info, like where they're planted.",
+    how: [
+      "Split an object's data into 'shared' parts (the same for many instances) and 'unique' parts (different for each one).",
+      "Keep a factory that hands out the shared part — the first time a certain kind is asked for, it's created and stored; every time after, the same stored copy is handed back.",
+      "Each individual object only keeps its own unique data and borrows the shared part when it needs it, so nothing heavy gets duplicated.",
+    ],
+    when: "When you need huge numbers of similar objects and storing full data in every single one would waste a lot of memory — trees in a game world, characters in a text editor, or icons in a big list.",
+    big: "Reusing a shared instance is O(1) lookup; the memory saved grows with however many objects would otherwise have duplicated the same data.",
+    mistakes: [
+      "Storing the unique, per-object data (like position) inside the shared object, which breaks the sharing since every user would overwrite it.",
+      "Sharing objects that aren't actually safe to share, because something quietly depends on each copy being separate.",
+    ],
+    code: {
+      JavaScript: `class TreeType {
+  constructor(name, color) {
+    this.name = name;
+    this.color = color;
+  }
+  draw(x, y) {
+    return this.name + "(" + this.color + ") at (" + x + "," + y + ")";
+  }
+}
+
+class TreeFactory {
+  constructor() {
+    this.types = {};
+  }
+  getType(name, color) {
+    const key = name + "_" + color;
+    if (!this.types[key]) {
+      this.types[key] = new TreeType(name, color); // create once, share after
+    }
+    return this.types[key];
+  }
+}
+
+const factory = new TreeFactory();
+const oak1 = factory.getType("Oak", "Green");
+const oak2 = factory.getType("Oak", "Green");
+const pine1 = factory.getType("Pine", "DarkGreen");
+
+console.log(oak1.draw(1, 2));
+console.log(oak2.draw(5, 6));
+console.log(pine1.draw(9, 1));
+console.log("Same oak type object?", oak1 === oak2 ? "yes" : "no");
+console.log("Shared types stored:", Object.keys(factory.types).length);`,
+      Python: `class TreeType:
+    def __init__(self, name, color):
+        self.name = name
+        self.color = color
+    def draw(self, x, y):
+        return self.name + "(" + self.color + ") at (" + str(x) + "," + str(y) + ")"
+
+class TreeFactory:
+    def __init__(self):
+        self.types = {}
+    def get_type(self, name, color):
+        key = name + "_" + color
+        if key not in self.types:
+            self.types[key] = TreeType(name, color)  # create once, share after
+        return self.types[key]
+
+factory = TreeFactory()
+oak1 = factory.get_type("Oak", "Green")
+oak2 = factory.get_type("Oak", "Green")
+pine1 = factory.get_type("Pine", "DarkGreen")
+
+print(oak1.draw(1, 2))
+print(oak2.draw(5, 6))
+print(pine1.draw(9, 1))
+print("Same oak type object?", "yes" if oak1 is oak2 else "no")
+print("Shared types stored:", len(factory.types))`,
+    },
+    output: `Oak(Green) at (1,2)
+Oak(Green) at (5,6)
+Pine(DarkGreen) at (9,1)
+Same oak type object? yes
+Shared types stored: 2`,
+  },
+  {
+    id: "visitor",
+    pillar: "Design Patterns",
+    name: "Visitor",
+    easy: "A visitor is a museum tour guide who knows how to talk about many different exhibits. The paintings and statues don't need to know how to describe themselves — the guide 'visits' each one and knows exactly what to say about it. In code, a visitor object carries a new operation, and each object just lets the visitor look at it, instead of the object having to implement every possible operation itself.",
+    how: [
+      "Give each kind of object an `accept(visitor)` method that just calls the matching method on the visitor, like `visitor.visitCircle(this)`.",
+      "Write a visitor class with one method per kind of object it knows how to handle.",
+      "To add a brand-new operation, write a whole new visitor class — the original objects never need to change.",
+    ],
+    when: "When you need to run several different operations over a group of related objects (shapes, file types, AST nodes) and don't want to keep editing every object's class each time you add one more operation.",
+    big: "Visiting all n objects is O(n); each visit itself is O(1) plus whatever that operation costs.",
+    mistakes: [
+      "Forgetting to add a matching method to every visitor when a new object type is introduced, causing that type to be silently unhandled.",
+      "Putting so much unrelated logic in one visitor that it should really have been split into several focused visitors.",
+    ],
+    code: {
+      JavaScript: `class Circle {
+  constructor(radius) { this.radius = radius; }
+  accept(visitor) { return visitor.visitCircle(this); }
+}
+class Square {
+  constructor(side) { this.side = side; }
+  accept(visitor) { return visitor.visitSquare(this); }
+}
+
+class AreaVisitor {
+  visitCircle(c) { return "Circle area (approx): " + (c.radius * c.radius * 3); }
+  visitSquare(s) { return "Square area: " + (s.side * s.side); }
+}
+
+class DescribeVisitor {
+  visitCircle(c) { return "A circle with radius " + c.radius; }
+  visitSquare(s) { return "A square with side " + s.side; }
+}
+
+const shapes = [new Circle(2), new Square(4)];
+const areaVisitor = new AreaVisitor();
+const describeVisitor = new DescribeVisitor();
+
+for (const shape of shapes) {
+  console.log(shape.accept(areaVisitor));
+}
+for (const shape of shapes) {
+  console.log(shape.accept(describeVisitor));
+}`,
+      Python: `class Circle:
+    def __init__(self, radius):
+        self.radius = radius
+    def accept(self, visitor):
+        return visitor.visit_circle(self)
+
+class Square:
+    def __init__(self, side):
+        self.side = side
+    def accept(self, visitor):
+        return visitor.visit_square(self)
+
+class AreaVisitor:
+    def visit_circle(self, c):
+        return "Circle area (approx): " + str(c.radius * c.radius * 3)
+    def visit_square(self, s):
+        return "Square area: " + str(s.side * s.side)
+
+class DescribeVisitor:
+    def visit_circle(self, c):
+        return "A circle with radius " + str(c.radius)
+    def visit_square(self, s):
+        return "A square with side " + str(s.side)
+
+shapes = [Circle(2), Square(4)]
+area_visitor = AreaVisitor()
+describe_visitor = DescribeVisitor()
+
+for shape in shapes:
+    print(shape.accept(area_visitor))
+for shape in shapes:
+    print(shape.accept(describe_visitor))`,
+    },
+    output: `Circle area (approx): 12
+Square area: 16
+A circle with radius 2
+A square with side 4`,
+  },
+  {
+    id: "null-object",
+    pillar: "Design Patterns",
+    name: "Null Object",
+    easy: "A null object is a stand-in that politely does nothing instead of leaving an empty gap. Think of a hotel giving a guest with no special requests a blank preference card that just says 'no requests' — the staff can still read it like any other card, instead of getting confused by a missing card. In code, instead of returning nothing (null) and forcing everyone to check for it, you return a harmless stand-in object that safely does nothing when used.",
+    how: [
+      "Design a 'null' version of your object that has the exact same methods as the real one.",
+      "Instead of those methods doing real work, they return a safe, harmless default.",
+      "Any code that was going to check 'is this null before I use it?' can now skip that check completely and just call the methods normally.",
+    ],
+    when: "When something might not be found (a missing user, an unset logger, an empty cart) and you're tired of sprinkling null checks everywhere before using it.",
+    big: "Using a null object costs the same O(1) as using a real one — the win is fewer scattered checks, not speed.",
+    mistakes: [
+      "Forgetting to give the null object every method the real object has, so it still crashes on the one method nobody thought to stub out.",
+      "Using a null object where you actually needed to know 'this was missing' for an important decision, and silently hiding that fact instead.",
+    ],
+    code: {
+      JavaScript: `class RealUser {
+  constructor(name) { this.name = name; }
+  greet() { return "Hello, " + this.name + "!"; }
+  isNull() { return false; }
+}
+
+class NullUser {
+  greet() { return "Hello, guest!"; } // safe default, no crash
+  isNull() { return true; }
+}
+
+function findUser(id) {
+  const users = { 1: "Alice", 2: "Bob" };
+  const name = users[id];
+  return name ? new RealUser(name) : new NullUser(); // never returns null
+}
+
+const user1 = findUser(1);
+const user2 = findUser(99);
+
+console.log(user1.greet());
+console.log(user2.greet());
+console.log("Is user2 null object?", user2.isNull() ? "yes" : "no");`,
+      Python: `class RealUser:
+    def __init__(self, name):
+        self.name = name
+    def greet(self):
+        return "Hello, " + self.name + "!"
+    def is_null(self):
+        return False
+
+class NullUser:
+    def greet(self):
+        return "Hello, guest!"  # safe default, no crash
+    def is_null(self):
+        return True
+
+def find_user(user_id):
+    users = {1: "Alice", 2: "Bob"}
+    name = users.get(user_id)
+    return RealUser(name) if name else NullUser()  # never returns None
+
+user1 = find_user(1)
+user2 = find_user(99)
+
+print(user1.greet())
+print(user2.greet())
+print("Is user2 null object?", "yes" if user2.is_null() else "no")`,
+    },
+    output: `Hello, Alice!
+Hello, guest!
+Is user2 null object? yes`,
+  },
+  {
+    id: "repository",
+    pillar: "Design Patterns",
+    name: "Repository",
+    easy: "A repository is a librarian who fetches books for you no matter where they're actually kept — on the main shelves, in the back room, or in another building. You just ask the librarian for a book by name; you never need to know the storage details. In code, a repository sits between your app and wherever the data really lives, offering simple methods like 'add' and 'find' so the rest of your code never touches storage details directly.",
+    how: [
+      "Build one repository object that owns talking to the real data store (a list here, but it could be a database or an API).",
+      "Give it simple methods like `add`, `findByName`, and `all` that hide exactly how the data is stored.",
+      "The rest of your code only ever calls those simple methods — swap the storage underneath, and nothing else has to change.",
+    ],
+    when: "When you want the rest of your app to stop caring whether data lives in a database, a file, or an in-memory list — and to make swapping that storage, or faking it in tests, easy.",
+    big: "Adding is O(1); finding by scanning is O(n) in the number of stored items (a real database could do better with an index).",
+    mistakes: [
+      "Letting storage details (like raw database queries) leak out past the repository into the rest of the app, defeating the point of hiding them.",
+      "Returning nothing consistent for 'not found' — sometimes null, sometimes an error — instead of picking one clear rule.",
+    ],
+    code: {
+      JavaScript: `class UserRepository {
+  constructor() {
+    this.users = []; // pretend this is a database table
+  }
+  add(user) {
+    this.users.push(user);
+  }
+  findByName(name) {
+    return this.users.find((u) => u.name === name) || null;
+  }
+  all() {
+    return this.users;
+  }
+}
+
+const repo = new UserRepository();
+repo.add({ name: "Alice", age: 30 });
+repo.add({ name: "Bob", age: 25 });
+
+const found = repo.findByName("Bob");
+console.log("Found:", found.name + ", age " + found.age);
+console.log("Total users:", repo.all().length);
+console.log("Missing user:", repo.findByName("Zoe") === null ? "yes" : "no");`,
+      Python: `class UserRepository:
+    def __init__(self):
+        self.users = []  # pretend this is a database table
+    def add(self, user):
+        self.users.append(user)
+    def find_by_name(self, name):
+        for u in self.users:
+            if u["name"] == name:
+                return u
+        return None
+    def all(self):
+        return self.users
+
+repo = UserRepository()
+repo.add({"name": "Alice", "age": 30})
+repo.add({"name": "Bob", "age": 25})
+
+found = repo.find_by_name("Bob")
+print("Found:", found["name"] + ", age " + str(found["age"]))
+print("Total users:", len(repo.all()))
+print("Missing user:", "yes" if repo.find_by_name("Zoe") is None else "no")`,
+    },
+    output: `Found: Bob, age 25
+Total users: 2
+Missing user: yes`,
+  },
+  {
+    id: "object-pool",
+    pillar: "Design Patterns",
+    name: "Object Pool",
+    easy: "An object pool is a library lending out books. The library doesn't print a brand-new book for every visitor — it keeps a fixed set of copies, lends one out when you ask, and takes it back onto the shelf when you're done so the next person can borrow that same copy. In code, a pool keeps a set of expensive-to-create objects ready to reuse instead of constantly building and throwing them away.",
+    how: [
+      "Create a fixed batch of objects up front and keep them in an 'available' list.",
+      "When someone needs one, hand out an object from that list and move it to an 'in use' list.",
+      "When they're done, put it back in the 'available' list so the next request reuses the very same object instead of building a new one.",
+    ],
+    when: "When creating an object is expensive (database connections, network sockets, big buffers) and you'd rather reuse a small set of them than constantly create and destroy new ones.",
+    big: "Acquiring or releasing one object is O(1); the savings come from skipping repeated expensive creation.",
+    mistakes: [
+      "Forgetting to release an object back to the pool, so the pool slowly runs out even though nothing is really using them anymore.",
+      "Handing out an object still holding old data from its last use, instead of resetting it before lending it out again.",
+    ],
+    code: {
+      JavaScript: `class Connection {
+  constructor(num) { this.num = num; }
+  use() { return "Using connection #" + this.num; }
+}
+
+class ConnectionPool {
+  constructor(size) {
+    this.available = [];
+    for (let i = 1; i <= size; i++) this.available.push(new Connection(i)); // pre-built, ready to lend
+    this.inUse = [];
+  }
+  acquire() {
+    if (this.available.length === 0) return null; // none left to lend
+    const conn = this.available.shift();
+    this.inUse.push(conn);
+    return conn;
+  }
+  release(conn) {
+    this.inUse = this.inUse.filter((c) => c !== conn);
+    this.available.push(conn); // returned, ready to lend again
+  }
+}
+
+const pool = new ConnectionPool(2);
+const a = pool.acquire();
+const b = pool.acquire();
+console.log(a.use());
+console.log(b.use());
+console.log("Third request while both are out:", pool.acquire() === null ? "none available" : "got one");
+
+pool.release(a);
+const c = pool.acquire();
+console.log("After releasing one:", c.use());
+console.log("Same connection object reused?", c === a ? "yes" : "no");`,
+      Python: `class Connection:
+    def __init__(self, num):
+        self.num = num
+    def use(self):
+        return "Using connection #" + str(self.num)
+
+class ConnectionPool:
+    def __init__(self, size):
+        self.available = [Connection(i) for i in range(1, size + 1)]  # pre-built, ready to lend
+        self.in_use = []
+    def acquire(self):
+        if len(self.available) == 0:
+            return None  # none left to lend
+        conn = self.available.pop(0)
+        self.in_use.append(conn)
+        return conn
+    def release(self, conn):
+        self.in_use = [c for c in self.in_use if c is not conn]
+        self.available.append(conn)  # returned, ready to lend again
+
+pool = ConnectionPool(2)
+a = pool.acquire()
+b = pool.acquire()
+print(a.use())
+print(b.use())
+print("Third request while both are out:", "none available" if pool.acquire() is None else "got one")
+
+pool.release(a)
+c = pool.acquire()
+print("After releasing one:", c.use())
+print("Same connection object reused?", "yes" if c is a else "no")`,
+    },
+    output: `Using connection #1
+Using connection #2
+Third request while both are out: none available
+After releasing one: Using connection #1
+Same connection object reused? yes`,
+  },
 ];
 
 export default lessons;

@@ -1782,6 +1782,451 @@ Sum of indices 1..3: 15
 After update, total: 131
 After update, indices 1..3: 110`,
   },
+  {
+    id: "tuple",
+    pillar: "Data Structures",
+    name: "Tuple",
+    easy: "A tuple is a sealed gift box with numbered slots: slot 1 always holds the ribbon color, slot 2 always holds the size. You can peek inside and read any slot any time, but you can't swap out what's in slot 2 without unwrapping a whole new box — once a tuple is made, it's locked (immutable). Nothing inside it can change.",
+    how: [
+      "Group a fixed set of values together, in a fixed order, sealed at the moment you create it.",
+      "Read any value by its position (index), exactly like an array.",
+      "Unpack the whole tuple into separate named variables in one line, if the language supports it.",
+      "To 'change' anything, build and return a brand new tuple — the original one never mutates.",
+    ],
+    when: "Returning more than one value from a function (like a minimum and a maximum together), or representing a small fixed record — a color as (r, g, b), a point as (x, y) — where each position's meaning is fixed and should never accidentally shift.",
+    big: "Read by index: O(1) · Create: O(n) for n elements · No add/remove after creation — the size is locked in forever.",
+    mistakes: [
+      "Trying to mutate a tuple in place (like tup[0] = 5) — real tuples reject this outright; treat them as a stamped, read-only record, not a growable list.",
+      "Reaching for a tuple when you actually need a variable-length, growable collection — that job belongs to an array/list, not a tuple.",
+    ],
+    code: {
+      JavaScript: `const point = Object.freeze([3, 4]); // an immutable (x, y) pair
+console.log("x:", point[0]);
+console.log("y:", point[1]);
+
+const [px, py] = point; // unpack into named variables
+console.log("Unpacked:", px + "," + py);
+
+function minMax(nums) {
+  return Object.freeze([Math.min(...nums), Math.max(...nums)]);
+}
+const result = minMax([7, 2, 9, 4]);
+console.log("Min:", result[0]);
+console.log("Max:", result[1]);
+
+let blocked = false;
+try {
+  point[0] = 99; // sealed — this throws instead of silently changing anything
+} catch (e) {
+  blocked = true;
+}
+console.log("Blocked:", blocked ? "yes" : "no");
+console.log("Still:", point[0]);`,
+      Python: `point = (3, 4)  # an immutable (x, y) pair
+print("x:", point[0])
+print("y:", point[1])
+
+px, py = point  # unpack into named variables
+print("Unpacked:", f"{px},{py}")
+
+
+def min_max(nums):
+    return (min(nums), max(nums))
+
+
+result = min_max([7, 2, 9, 4])
+print("Min:", result[0])
+print("Max:", result[1])
+
+blocked = False
+try:
+    point[0] = 99  # sealed — this raises instead of silently changing anything
+except TypeError:
+    blocked = True
+
+print("Blocked:", "yes" if blocked else "no")
+print("Still:", point[0])`,
+    },
+    output: `x: 3
+y: 4
+Unpacked: 3,4
+Min: 2
+Max: 9
+Blocked: yes
+Still: 3`,
+    note: "JavaScript has no native tuple type, so this lesson simulates one with Object.freeze on an array — it seals the array so any write to it throws. Python's tuple is immutable by design, no freezing needed.",
+  },
+  {
+    id: "sorted-set",
+    pillar: "Data Structures",
+    name: "Sorted Set",
+    easy: "A sorted set is a bookshelf where, the moment you add a book, you slide it straight into alphabetical position instead of dumping it at the end. The shelf is always in order, and if you try to add a book that's already there, nothing changes — it's already shelved.",
+    how: [
+      "Keep only unique items, like a normal set — adding the same item twice changes nothing.",
+      "But also keep every item in sorted order at all times, not just any order.",
+      "Insert a new item by finding exactly where it belongs (its sorted position) and sliding it into that spot.",
+      "Because the layout is always sorted, questions like 'what's the smallest?' or 'what's everything between 20 and 60?' are cheap to answer.",
+    ],
+    when: "Leaderboards that must display scores in order at all times, range questions like 'every score between 50 and 90,' or removing duplicates from data while keeping it sorted for display.",
+    big: "Insert (array-backed, as below): O(n), because sliding items over to make room costs time even though finding the spot is fast · Contains: O(log n) via binary search on the sorted layout · A real balanced-tree-backed sorted set gets insert down to O(log n) too.",
+    mistakes: [
+      "Confusing a sorted set with a sorted list that allows duplicates — a sorted set silently drops repeats, a sorted list keeps every copy.",
+      "Assuming insert is always instant just because lookups are fast — keeping items in order costs something; a plain hash set inserts faster but keeps no order at all.",
+    ],
+    code: {
+      JavaScript: `class SortedSet {
+  constructor() { this.items = []; }
+  _indexOf(value) {
+    let lo = 0, hi = this.items.length;
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (this.items[mid] < value) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  }
+  add(value) {
+    const i = this._indexOf(value);
+    if (this.items[i] === value) return; // already present, ignore
+    this.items.splice(i, 0, value);
+  }
+  has(value) {
+    const i = this._indexOf(value);
+    return this.items[i] === value;
+  }
+  range(lo, hi) {
+    return this.items.filter((v) => v >= lo && v <= hi);
+  }
+}
+
+const scores = new SortedSet();
+[42, 17, 89, 42, 3, 56, 17].forEach((v) => scores.add(v));
+
+console.log("Sorted:", scores.items.join(" "));
+console.log("Smallest:", scores.items[0]);
+console.log("Largest:", scores.items[scores.items.length - 1]);
+console.log("Has 56:", scores.has(56) ? "yes" : "no");
+console.log("Has 99:", scores.has(99) ? "yes" : "no");
+console.log("Range 20-60:", scores.range(20, 60).join(" "));`,
+      Python: `import bisect
+
+class SortedSet:
+    def __init__(self):
+        self.items = []
+
+    def add(self, value):
+        i = bisect.bisect_left(self.items, value)
+        if i < len(self.items) and self.items[i] == value:
+            return  # already present, ignore
+        self.items.insert(i, value)
+
+    def has(self, value):
+        i = bisect.bisect_left(self.items, value)
+        return i < len(self.items) and self.items[i] == value
+
+    def range(self, lo, hi):
+        return [v for v in self.items if lo <= v <= hi]
+
+scores = SortedSet()
+for v in [42, 17, 89, 42, 3, 56, 17]:
+    scores.add(v)
+
+print("Sorted:", " ".join(str(v) for v in scores.items))
+print("Smallest:", scores.items[0])
+print("Largest:", scores.items[-1])
+print("Has 56:", "yes" if scores.has(56) else "no")
+print("Has 99:", "yes" if scores.has(99) else "no")
+print("Range 20-60:", " ".join(str(v) for v in scores.range(20, 60)))`,
+    },
+    output: `Sorted: 3 17 42 56 89
+Smallest: 3
+Largest: 89
+Has 56: yes
+Has 99: no
+Range 20-60: 42 56`,
+    note: "This lesson stores items in a plain sorted array with binary search to find insertion points — enough to see the idea. Production sorted sets (like Redis's ZSET) use a skip list or balanced tree underneath so insert is O(log n) too.",
+  },
+  {
+    id: "skip-list",
+    pillar: "Data Structures",
+    name: "Skip List",
+    easy: "A skip list is a subway map with express trains stacked over the local line. The local line (the bottom level) stops at every single station, in order — slow to cross town. An express line above it skips over several stops at once, and a super-express line above that skips even more. To find a station, ride the fastest line you can until you'd overshoot it, then drop down one line and keep going — landing on your stop after just a handful of hops instead of walking every local station.",
+    how: [
+      "Store items in sorted order across several stacked linked levels.",
+      "The bottom level is a complete, ordinary sorted linked list — every item lives there.",
+      "Higher levels hold only some of those same items, acting as 'express lanes' that skip over chunks of the level below.",
+      "To search: start at the top level, move forward while the next item is still less than the target, and drop down a level whenever moving forward would overshoot — repeat until you land at the bottom.",
+    ],
+    when: "Anywhere you want fast sorted-order search, insert, and delete without the rebalancing logic a balanced tree needs — Redis's sorted sets are built on skip lists internally.",
+    big: "Search, insert, delete: O(log n) on average, because each level lets you skip over a chunk of items at once instead of checking them one by one · Space: O(n), since higher levels only add a smaller number of extra shortcut pointers.",
+    mistakes: [
+      "Assuming a skip list is just a fancier array — it's really a stack of linked lists; the 'skipping' comes from having fewer items (and thus bigger jumps) at each level up.",
+      "Forgetting that every item must exist at the bottom level — higher levels are just optional shortcuts on top of that complete base list, not separate storage.",
+    ],
+    code: {
+      JavaScript: `class SkipListNode {
+  constructor(value, level) {
+    this.value = value;
+    this.next = new Array(level + 1).fill(null);
+  }
+}
+class SkipList {
+  constructor(maxLevel) {
+    this.maxLevel = maxLevel;
+    this.head = new SkipListNode(-Infinity, maxLevel);
+    this.topLevel = 0;
+    this.insertCount = 0;
+  }
+  _levelFor(n) { // deterministic level, based on how many times n divides evenly by 2
+    let level = 0;
+    while (n % 2 === 0 && level < this.maxLevel) {
+      n = Math.floor(n / 2);
+      level++;
+    }
+    return level;
+  }
+  insert(value) {
+    this.insertCount++;
+    const update = new Array(this.maxLevel + 1).fill(this.head);
+    let cur = this.head;
+    for (let level = this.topLevel; level >= 0; level--) {
+      while (cur.next[level] !== null && cur.next[level].value < value) {
+        cur = cur.next[level];
+      }
+      update[level] = cur;
+    }
+    const newLevel = this._levelFor(this.insertCount);
+    if (newLevel > this.topLevel) {
+      for (let level = this.topLevel + 1; level <= newLevel; level++) update[level] = this.head;
+      this.topLevel = newLevel;
+    }
+    const node = new SkipListNode(value, newLevel);
+    for (let level = 0; level <= newLevel; level++) {
+      node.next[level] = update[level].next[level];
+      update[level].next[level] = node;
+    }
+  }
+  contains(value) {
+    let cur = this.head;
+    for (let level = this.topLevel; level >= 0; level--) {
+      while (cur.next[level] !== null && cur.next[level].value < value) {
+        cur = cur.next[level];
+      }
+    }
+    cur = cur.next[0];
+    return cur !== null && cur.value === value;
+  }
+  levelSizes() {
+    const sizes = [];
+    for (let level = 0; level <= this.topLevel; level++) {
+      let count = 0;
+      let cur = this.head.next[level];
+      while (cur !== null) { count++; cur = cur.next[level]; }
+      sizes.push(count);
+    }
+    return sizes;
+  }
+  bottomRow() {
+    const out = [];
+    let cur = this.head.next[0];
+    while (cur !== null) { out.push(cur.value); cur = cur.next[0]; }
+    return out;
+  }
+}
+
+const list = new SkipList(3);
+[50, 10, 30, 70, 20, 60, 40, 80].forEach((v) => list.insert(v));
+
+console.log("Sorted:", list.bottomRow().join(" "));
+console.log("Level sizes:", list.levelSizes().join(" "));
+console.log("Has 40:", list.contains(40) ? "yes" : "no");
+console.log("Has 45:", list.contains(45) ? "yes" : "no");
+console.log("Has 80:", list.contains(80) ? "yes" : "no");`,
+      Python: `class SkipListNode:
+    def __init__(self, value, level):
+        self.value = value
+        self.next = [None] * (level + 1)
+
+class SkipList:
+    def __init__(self, max_level):
+        self.max_level = max_level
+        self.head = SkipListNode(float("-inf"), max_level)
+        self.top_level = 0
+        self.insert_count = 0
+
+    def _level_for(self, n):  # deterministic level, based on how many times n divides evenly by 2
+        level = 0
+        while n % 2 == 0 and level < self.max_level:
+            n //= 2
+            level += 1
+        return level
+
+    def insert(self, value):
+        self.insert_count += 1
+        update = [self.head] * (self.max_level + 1)
+        cur = self.head
+        for level in range(self.top_level, -1, -1):
+            while cur.next[level] is not None and cur.next[level].value < value:
+                cur = cur.next[level]
+            update[level] = cur
+
+        new_level = self._level_for(self.insert_count)
+        if new_level > self.top_level:
+            for level in range(self.top_level + 1, new_level + 1):
+                update[level] = self.head
+            self.top_level = new_level
+
+        node = SkipListNode(value, new_level)
+        for level in range(0, new_level + 1):
+            node.next[level] = update[level].next[level]
+            update[level].next[level] = node
+
+    def contains(self, value):
+        cur = self.head
+        for level in range(self.top_level, -1, -1):
+            while cur.next[level] is not None and cur.next[level].value < value:
+                cur = cur.next[level]
+        cur = cur.next[0]
+        return cur is not None and cur.value == value
+
+    def level_sizes(self):
+        sizes = []
+        for level in range(0, self.top_level + 1):
+            count = 0
+            cur = self.head.next[level]
+            while cur is not None:
+                count += 1
+                cur = cur.next[level]
+            sizes.append(count)
+        return sizes
+
+    def bottom_row(self):
+        out = []
+        cur = self.head.next[0]
+        while cur is not None:
+            out.append(cur.value)
+            cur = cur.next[0]
+        return out
+
+lst = SkipList(3)
+for v in [50, 10, 30, 70, 20, 60, 40, 80]:
+    lst.insert(v)
+
+print("Sorted:", " ".join(str(v) for v in lst.bottom_row()))
+print("Level sizes:", " ".join(str(v) for v in lst.level_sizes()))
+print("Has 40:", "yes" if lst.contains(40) else "no")
+print("Has 45:", "yes" if lst.contains(45) else "no")
+print("Has 80:", "yes" if lst.contains(80) else "no")`,
+    },
+    output: `Sorted: 10 20 30 40 50 60 70 80
+Level sizes: 8 4 2 1
+Has 40: yes
+Has 45: no
+Has 80: yes`,
+    note: "Real-world skip lists pick each node's level with a coin flip (a random process), which is what makes them 'probabilistically balanced.' This lesson picks levels with a fixed, deterministic rule instead — purely so the example is repeatable — but the search/insert logic is exactly the same as a production skip list.",
+  },
+  {
+    id: "sparse-matrix",
+    pillar: "Data Structures",
+    name: "Sparse Matrix",
+    easy: "A sparse matrix is a star catalog, not a photograph of the whole night sky. A photograph records every single pixel, including all the empty black space. A star catalog only lists where the actual stars are — their coordinates and brightness — and treats everywhere else as 'nothing, obviously.' A sparse matrix does the same for a huge grid that's almost entirely zeros: it only records where the non-zero values live.",
+    how: [
+      "Instead of a full rows x cols grid, keep a lookup keyed by (row, col) that only holds entries for non-zero values.",
+      "get(row, col): look up that key — if it's found, return its value; if not, the cell is 0 by definition.",
+      "set(row, col, value): if value is 0, remove that key entirely (there's no point storing a zero); otherwise, store or update it.",
+      "To scan or total the matrix, loop only over the stored (non-zero) entries — never over every empty cell.",
+    ],
+    when: "Huge grids that are almost entirely zero — scientific and engineering simulations, one-hot encoded machine-learning feature vectors, or graph connections for graphs with far fewer edges than the number of possible node pairs.",
+    big: "get/set one cell: O(1) on average, via a hash-map lookup · Space: O(k), where k is the number of non-zero entries — not rows x cols · A full scan (like summing every value): O(k), not O(rows x cols).",
+    mistakes: [
+      "Storing an explicit 0 anyway — that defeats the entire point; always treat 'missing from storage' as the zero value, never store zero itself.",
+      "Reaching for a sparse matrix when the data is mostly filled in — the overhead of a hash-map lookup per cell makes it slower than a plain 2D array once most cells actually hold a value.",
+    ],
+    code: {
+      JavaScript: `class SparseMatrix {
+  constructor(rows, cols) {
+    this.rows = rows;
+    this.cols = cols;
+    this.data = new Map(); // "row,col" -> non-zero value only
+  }
+  _key(r, c) { return r + "," + c; }
+  set(r, c, value) {
+    const key = this._key(r, c);
+    if (value === 0) {
+      this.data.delete(key); // storing a zero defeats the point — just remove it
+    } else {
+      this.data.set(key, value);
+    }
+  }
+  get(r, c) {
+    const key = this._key(r, c);
+    return this.data.has(key) ? this.data.get(key) : 0; // missing key means the cell is 0
+  }
+  nonZeroCount() { return this.data.size; }
+  sum() {
+    let total = 0;
+    for (const v of this.data.values()) total += v;
+    return total;
+  }
+}
+
+const grid = new SparseMatrix(5, 5);
+grid.set(0, 0, 5);
+grid.set(2, 3, 7);
+grid.set(4, 4, 2);
+grid.set(2, 3, 9); // overwrite an existing non-zero cell
+grid.set(0, 0, 0); // "clearing" a cell just removes it from storage
+
+console.log("Cell (2,3):", grid.get(2, 3));
+console.log("Cell (0,0):", grid.get(0, 0));
+console.log("Cell (1,1):", grid.get(1, 1));
+console.log("Stored cells:", grid.nonZeroCount());
+console.log("Sum:", grid.sum());`,
+      Python: `class SparseMatrix:
+    def __init__(self, rows, cols):
+        self.rows = rows
+        self.cols = cols
+        self.data = {}  # "row,col" -> non-zero value only
+
+    def _key(self, r, c):
+        return f"{r},{c}"
+
+    def set(self, r, c, value):
+        key = self._key(r, c)
+        if value == 0:
+            self.data.pop(key, None)  # storing a zero defeats the point — just remove it
+        else:
+            self.data[key] = value
+
+    def get(self, r, c):
+        key = self._key(r, c)
+        return self.data.get(key, 0)  # missing key means the cell is 0
+
+    def non_zero_count(self):
+        return len(self.data)
+
+    def sum(self):
+        return sum(self.data.values())
+
+grid = SparseMatrix(5, 5)
+grid.set(0, 0, 5)
+grid.set(2, 3, 7)
+grid.set(4, 4, 2)
+grid.set(2, 3, 9)  # overwrite an existing non-zero cell
+grid.set(0, 0, 0)  # "clearing" a cell just removes it from storage
+
+print("Cell (2,3):", grid.get(2, 3))
+print("Cell (0,0):", grid.get(0, 0))
+print("Cell (1,1):", grid.get(1, 1))
+print("Stored cells:", grid.non_zero_count())
+print("Sum:", grid.sum())`,
+    },
+    output: `Cell (2,3): 9
+Cell (0,0): 0
+Cell (1,1): 0
+Stored cells: 2
+Sum: 11`,
+  },
 ];
 
 export default lessons;

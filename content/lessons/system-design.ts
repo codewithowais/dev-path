@@ -1063,6 +1063,469 @@ t=3: blocked (queue size: 3)
 t=15: allowed (queue size: 3)
 t=16: blocked (queue size: 3)`,
   },
+  {
+    id: "write-ahead-log",
+    pillar: "System Design",
+    name: "Write-Ahead Log (Durability)",
+    easy: "Before an accountant erases a number on a whiteboard and writes the new one, a careful accountant first jots the change down in a permanent notebook — 'changing balance from 100 to 80.' If the power goes out right after the whiteboard is half-erased, the notebook still says exactly what was supposed to happen, so the accountant can finish the job later without losing track. A write-ahead log (WAL) does this for a computer system: before changing the real data, it first appends a record of that change to a durable, append-only log. If the process crashes mid-change, replaying the log rebuilds the data exactly as it should be — nothing is lost.",
+    how: [
+      "Before applying any change to the actual data, first append the change as a record to the write-ahead log (a durable, append-only file) — this record describes exactly what's about to happen.",
+      "Only after the log record is safely written, apply the same change to the real data store.",
+      "If the system crashes before finishing, on restart replay every record in the log from the start, reapplying each change — this reconstructs the data exactly as it was, even though the crash happened mid-work.",
+    ],
+    when: "When your app got popular and you can't afford to lose data if the server crashes mid-write — a database engine, a bank ledger, or a message queue all use a write-ahead log so that as long as the log write succeeded, the change can always be recovered after a crash, even if the actual data file never got updated.",
+    big: "O(1) time to append one log record · O(n) time to replay n log records during recovery.",
+    mistakes: [
+      "Applying the change to the data store before (or instead of) writing it to the log — if a crash happens in between, that change is lost forever, which defeats the entire purpose of a WAL.",
+      "Forgetting to actually replay the log on restart — the log only protects you if something reads it back and rebuilds state from it after a crash.",
+    ],
+    code: {
+      JavaScript: `function createWAL() {
+  return { log: [], data: {} };
+}
+
+function writeEntry(wal, key, value) {
+  // Step 1: append to the durable log FIRST — this is the part that must survive a crash.
+  wal.log.push({ key, value });
+  // Step 2: only now apply the change to the actual data store.
+  wal.data[key] = value;
+}
+
+function crashAndRestart(wal) {
+  // Simulate a crash: the in-memory data store is wiped, but the log survives (it's durable).
+  const recovered = { log: wal.log, data: {} };
+  for (const entry of recovered.log) {
+    recovered.data[entry.key] = entry.value;
+  }
+  return recovered;
+}
+
+function formatStore(store) {
+  const keys = Object.keys(store).sort();
+  return keys.map((k) => \`\${k}=\${store[k]}\`).join(", ");
+}
+
+let wal = createWAL();
+writeEntry(wal, "balance:alice", 100);
+writeEntry(wal, "balance:bob", 50);
+writeEntry(wal, "balance:alice", 80);
+console.log("Before crash:");
+console.log("log entries: " + wal.log.length);
+console.log("data: " + formatStore(wal.data));
+
+wal = crashAndRestart(wal);
+console.log("After crash + replay from the log:");
+console.log("log entries: " + wal.log.length);
+console.log("data: " + formatStore(wal.data));`,
+      Python: `def create_wal():
+    return {"log": [], "data": {}}
+
+def write_entry(wal, key, value):
+    # Step 1: append to the durable log FIRST — this is the part that must survive a crash.
+    wal["log"].append((key, value))
+    # Step 2: only now apply the change to the actual data store.
+    wal["data"][key] = value
+
+def crash_and_restart(wal):
+    # Simulate a crash: the in-memory data store is wiped, but the log survives (it's durable).
+    recovered = {"log": wal["log"], "data": {}}
+    for key, value in recovered["log"]:
+        recovered["data"][key] = value
+    return recovered
+
+def format_store(store):
+    keys = sorted(store.keys())
+    return ", ".join(f"{k}={store[k]}" for k in keys)
+
+wal = create_wal()
+write_entry(wal, "balance:alice", 100)
+write_entry(wal, "balance:bob", 50)
+write_entry(wal, "balance:alice", 80)
+print("Before crash:")
+print("log entries: " + str(len(wal["log"])))
+print("data: " + format_store(wal["data"]))
+
+wal = crash_and_restart(wal)
+print("After crash + replay from the log:")
+print("log entries: " + str(len(wal["log"])))
+print("data: " + format_store(wal["data"]))`,
+    },
+    output: `Before crash:
+log entries: 3
+data: balance:alice=80, balance:bob=50
+After crash + replay from the log:
+log entries: 3
+data: balance:alice=80, balance:bob=50`,
+  },
+  {
+    id: "cqrs",
+    pillar: "System Design",
+    name: "CQRS (Split Reads From Writes)",
+    easy: "Think of a restaurant kitchen and its menu board. The kitchen (the 'write side') is built for correctly cooking complicated orders one at a time. The menu board (the 'read side') is a simple, quick-to-scan summary customers glance at — nobody walks into the kitchen to check what's available. Whenever the kitchen changes something, it also updates the board. CQRS (Command Query Responsibility Segregation — a fancy way of saying 'writing and reading are two different jobs') splits a system the same way: commands (do this — place an order) go through a model built for correctness, and queries (tell me this — show my order history) go through a separate, simpler model built for fast reading.",
+    how: [
+      "Keep two models: a 'write model' that handles commands (create, update, delete) and enforces the real rules, and a 'read model' — a simplified, ready-to-read copy shaped exactly for what queries need.",
+      "Every time a command changes the write model, also update ('project') the read model so it reflects that change.",
+      "Queries only ever read from the read model — they never touch the write model — so reads stay fast and simple even as the write-side rules grow more complicated.",
+    ],
+    when: "When your app got popular enough that how you write data (careful, one record at a time, lots of validation) doesn't match how you read it (fast summaries across many records) — like an order system where placing an order is complex but showing 'orders per customer' needs to be instant — CQRS lets each side be optimized on its own instead of forcing one model to do both jobs well.",
+    big: "O(1) time to apply a command to the write model · O(1) time to project a change into the read model · queries become O(1) lookups on a precomputed structure instead of recomputing summaries from scratch every time.",
+    mistakes: [
+      "Letting a query read straight from the write model 'just this once' — that reintroduces the coupling CQRS exists to remove, and the fast read model quietly drifts out of sync.",
+      "Forgetting to update the read model after a command — the command succeeds on the write side, but users never see the change because nothing projected it into what they actually read.",
+    ],
+    code: {
+      JavaScript: `function createSystem() {
+  return { writeModel: [], readModel: {} }; // readModel: customer -> {count, total}
+}
+
+function placeOrder(system, orderId, customer, amount) {
+  // Command: validate + append to the write model (the source of truth).
+  system.writeModel.push({ orderId, customer, amount });
+  // Project the change into the read model, shaped for fast queries.
+  if (!system.readModel[customer]) system.readModel[customer] = { count: 0, total: 0 };
+  system.readModel[customer].count += 1;
+  system.readModel[customer].total += amount;
+}
+
+function queryCustomerSummary(system, customer) {
+  // Query: read only from the read model — never touch the write model.
+  const summary = system.readModel[customer];
+  if (!summary) return "0 orders, total $0";
+  return \`\${summary.count} orders, total $\${summary.total}\`;
+}
+
+const system = createSystem();
+placeOrder(system, 1, "alice", 30);
+placeOrder(system, 2, "bob", 45);
+placeOrder(system, 3, "alice", 20);
+
+console.log(\`Write model has \${system.writeModel.length} orders\`);
+console.log("alice: " + queryCustomerSummary(system, "alice"));
+console.log("bob: " + queryCustomerSummary(system, "bob"));
+console.log("carol: " + queryCustomerSummary(system, "carol"));
+
+placeOrder(system, 4, "bob", 15);
+console.log("After bob orders again:");
+console.log("bob: " + queryCustomerSummary(system, "bob"));`,
+      Python: `def create_system():
+    return {"write_model": [], "read_model": {}}  # read_model: customer -> {"count": .., "total": ..}
+
+def place_order(system, order_id, customer, amount):
+    # Command: validate + append to the write model (the source of truth).
+    system["write_model"].append({"order_id": order_id, "customer": customer, "amount": amount})
+    # Project the change into the read model, shaped for fast queries.
+    if customer not in system["read_model"]:
+        system["read_model"][customer] = {"count": 0, "total": 0}
+    system["read_model"][customer]["count"] += 1
+    system["read_model"][customer]["total"] += amount
+
+def query_customer_summary(system, customer):
+    # Query: read only from the read model — never touch the write model.
+    summary = system["read_model"].get(customer)
+    if summary is None:
+        return "0 orders, total $0"
+    return f"{summary['count']} orders, total \${summary['total']}"
+
+system = create_system()
+place_order(system, 1, "alice", 30)
+place_order(system, 2, "bob", 45)
+place_order(system, 3, "alice", 20)
+
+print(f"Write model has {len(system['write_model'])} orders")
+print("alice: " + query_customer_summary(system, "alice"))
+print("bob: " + query_customer_summary(system, "bob"))
+print("carol: " + query_customer_summary(system, "carol"))
+
+place_order(system, 4, "bob", 15)
+print("After bob orders again:")
+print("bob: " + query_customer_summary(system, "bob"))`,
+    },
+    output: `Write model has 3 orders
+alice: 2 orders, total $50
+bob: 1 orders, total $45
+carol: 0 orders, total $0
+After bob orders again:
+bob: 2 orders, total $60`,
+  },
+  {
+    id: "backpressure",
+    pillar: "System Design",
+    name: "Backpressure (Slow Down Producers)",
+    easy: "Picture pouring water into a funnel that drains slowly into a bottle. Pour faster than the funnel can drain and water overflows everywhere. Backpressure is the funnel pushing back before that happens: a slow consumer tells a fast producer 'I'm getting full — pause for a bit' instead of silently overflowing or crashing. Once the consumer catches up and there's room again, it tells the producer it's safe to resume.",
+    how: [
+      "Put a bounded buffer (a queue with a maximum size) between the producer and the consumer.",
+      "Before the producer pushes a new item, check the buffer against a high-water mark (an upper threshold). If the buffer has reached that mark, tell the producer to pause instead of accepting more.",
+      "As the consumer drains items from the buffer, it shrinks. Once it drops back to a low-water mark (a lower threshold), tell the producer it's safe to resume pushing.",
+    ],
+    when: "When your app got popular and a fast producer (like an API ingesting incoming events) can generate work faster than a slower consumer (like a database writer) can keep up — without backpressure, the buffer between them grows without limit and the whole process eventually runs out of memory and crashes.",
+    big: "O(1) time to check the buffer level and push or drain one item · O(capacity) space for the buffer, which stays bounded instead of growing forever.",
+    mistakes: [
+      "Letting the buffer grow with no maximum size at all — that only delays the crash instead of preventing it, since memory use is still unbounded.",
+      "Using the same threshold to pause and to resume — the producer would flip between paused and resumed on every single item right at that boundary; using a lower resume mark than the pause mark gives it breathing room instead.",
+    ],
+    code: {
+      JavaScript: `function createPipeline(highWaterMark, lowWaterMark) {
+  return { buffer: [], highWaterMark, lowWaterMark, paused: false };
+}
+
+function produce(pipeline, item) {
+  if (pipeline.paused) {
+    return "dropped"; // producer was told to pause — it must not push more
+  }
+  pipeline.buffer.push(item);
+  if (pipeline.buffer.length >= pipeline.highWaterMark) {
+    pipeline.paused = true; // buffer's getting full — apply backpressure
+  }
+  return "accepted";
+}
+
+function consume(pipeline, count) {
+  const drained = [];
+  for (let i = 0; i < count && pipeline.buffer.length > 0; i++) {
+    drained.push(pipeline.buffer.shift());
+  }
+  if (pipeline.paused && pipeline.buffer.length <= pipeline.lowWaterMark) {
+    pipeline.paused = false; // buffer drained enough — safe to resume
+  }
+  return drained;
+}
+
+const pipeline = createPipeline(4, 1); // pause at 4 items, resume once back down to 1
+console.log("Pipeline: pause at 4 items, resume at 1");
+
+const events = ["e1", "e2", "e3", "e4", "e5", "e6"];
+for (const e of events) {
+  const outcome = produce(pipeline, e);
+  console.log(\`produce \${e}: \${outcome} (buffer size: \${pipeline.buffer.length})\`);
+}
+
+console.log("producer paused: " + (pipeline.paused ? "yes" : "no"));
+const drained = consume(pipeline, 3);
+console.log(\`consumer drained: \${drained.join(", ")} (buffer size: \${pipeline.buffer.length})\`);
+console.log("producer paused: " + (pipeline.paused ? "yes" : "no"));
+
+const retry = produce(pipeline, "e7");
+console.log(\`produce e7: \${retry} (buffer size: \${pipeline.buffer.length})\`);`,
+      Python: `def create_pipeline(high_water_mark, low_water_mark):
+    return {"buffer": [], "high_water_mark": high_water_mark, "low_water_mark": low_water_mark, "paused": False}
+
+def produce(pipeline, item):
+    if pipeline["paused"]:
+        return "dropped"  # producer was told to pause — it must not push more
+    pipeline["buffer"].append(item)
+    if len(pipeline["buffer"]) >= pipeline["high_water_mark"]:
+        pipeline["paused"] = True  # buffer's getting full — apply backpressure
+    return "accepted"
+
+def consume(pipeline, count):
+    drained = []
+    for _ in range(count):
+        if pipeline["buffer"]:
+            drained.append(pipeline["buffer"].pop(0))
+    if pipeline["paused"] and len(pipeline["buffer"]) <= pipeline["low_water_mark"]:
+        pipeline["paused"] = False  # buffer drained enough — safe to resume
+    return drained
+
+pipeline = create_pipeline(4, 1)  # pause at 4 items, resume once back down to 1
+print("Pipeline: pause at 4 items, resume at 1")
+
+events = ["e1", "e2", "e3", "e4", "e5", "e6"]
+for e in events:
+    outcome = produce(pipeline, e)
+    print(f"produce {e}: {outcome} (buffer size: {len(pipeline['buffer'])})")
+
+print("producer paused: " + ("yes" if pipeline["paused"] else "no"))
+drained = consume(pipeline, 3)
+print(f"consumer drained: {', '.join(drained)} (buffer size: {len(pipeline['buffer'])})")
+print("producer paused: " + ("yes" if pipeline["paused"] else "no"))
+
+retry = produce(pipeline, "e7")
+print(f"produce e7: {retry} (buffer size: {len(pipeline['buffer'])})")`,
+    },
+    output: `Pipeline: pause at 4 items, resume at 1
+produce e1: accepted (buffer size: 1)
+produce e2: accepted (buffer size: 2)
+produce e3: accepted (buffer size: 3)
+produce e4: accepted (buffer size: 4)
+produce e5: dropped (buffer size: 4)
+produce e6: dropped (buffer size: 4)
+producer paused: yes
+consumer drained: e1, e2, e3 (buffer size: 1)
+producer paused: no
+produce e7: accepted (buffer size: 2)`,
+  },
+  {
+    id: "deduplication",
+    pillar: "System Design",
+    name: "Deduplication (Drop Duplicate Events)",
+    easy: "Think of a bouncer at a club with a guest list, checking off names as people enter. If the same name tries to walk in twice — maybe they wandered off and came back — the bouncer sees the name is already checked off and turns them away the second time; only the first entry counts. Deduplication does this for events flowing through a system: it remembers which events (by a unique ID) it has already handled, and silently drops any repeat instead of processing it again.",
+    how: [
+      "Give every event a unique identifier (an event ID) when it's created.",
+      "Keep a 'seen' set of event IDs the system has already processed.",
+      "When a new event arrives, check whether its ID is already in the seen set. If yes, drop it and do nothing. If no, process it for real and add its ID to the seen set.",
+    ],
+    when: "When your app got popular and events can arrive more than once — a flaky network retries a message, two servers both forward the same notification, or a queue redelivers a message it wasn't sure got processed — deduplication makes sure handling the same event twice doesn't double-count anything, like counting a 'like' twice or sending the same email twice.",
+    big: "O(1) time to check and record one event ID · O(n) space to remember n distinct event IDs seen so far (real systems expire old IDs after a while so this doesn't grow forever).",
+    mistakes: [
+      "Deduplicating by the event's content instead of a unique ID — two genuinely different events can have identical content (like two separate $10 purchases), and content-based dedup would wrongly drop the second, real one.",
+      "Never expiring old IDs from the seen set — in a real long-running system that set grows forever and eventually eats all your memory.",
+    ],
+    code: {
+      JavaScript: `function createDeduper() {
+  return { seen: {}, processedCount: 0 };
+}
+
+function handleEvent(deduper, eventId, payload, output) {
+  if (Object.prototype.hasOwnProperty.call(deduper.seen, eventId)) {
+    return "dropped";
+  }
+  deduper.seen[eventId] = true;
+  deduper.processedCount += 1;
+  output.push(payload);
+  return "processed";
+}
+
+const deduper = createDeduper();
+const processed = [];
+
+const events = [
+  ["evt-1", "like:post-9"],
+  ["evt-2", "like:post-3"],
+  ["evt-1", "like:post-9"], // network retried the same event
+  ["evt-3", "like:post-9"],
+  ["evt-2", "like:post-3"], // redelivered by the queue
+];
+
+for (const [id, payload] of events) {
+  const outcome = handleEvent(deduper, id, payload, processed);
+  console.log(\`\${id}: \${outcome}\`);
+}
+
+console.log("Processed payloads: " + processed.join(", "));
+console.log(\`Total processed: \${deduper.processedCount} out of \${events.length} events received\`);`,
+      Python: `def create_deduper():
+    return {"seen": {}, "processed_count": 0}
+
+def handle_event(deduper, event_id, payload, output):
+    if event_id in deduper["seen"]:
+        return "dropped"
+    deduper["seen"][event_id] = True
+    deduper["processed_count"] += 1
+    output.append(payload)
+    return "processed"
+
+deduper = create_deduper()
+processed = []
+
+events = [
+    ("evt-1", "like:post-9"),
+    ("evt-2", "like:post-3"),
+    ("evt-1", "like:post-9"),  # network retried the same event
+    ("evt-3", "like:post-9"),
+    ("evt-2", "like:post-3"),  # redelivered by the queue
+]
+
+for event_id, payload in events:
+    outcome = handle_event(deduper, event_id, payload, processed)
+    print(f"{event_id}: {outcome}")
+
+print("Processed payloads: " + ", ".join(processed))
+print(f"Total processed: {deduper['processed_count']} out of {len(events)} events received")`,
+    },
+    output: `evt-1: processed
+evt-2: processed
+evt-1: dropped
+evt-3: processed
+evt-2: dropped
+Processed payloads: like:post-9, like:post-3, like:post-9
+Total processed: 3 out of 5 events received`,
+  },
+  {
+    id: "content-addressable-storage",
+    pillar: "System Design",
+    name: "Content-Addressable Storage (Address by Hash)",
+    easy: "Imagine a library where books aren't filed by title but by a fingerprint computed from their exact contents — the fingerprint IS the shelf location. If two people bring in the exact same book (identical content), it lands on the exact same shelf spot, so the library only ever keeps one copy no matter how many times someone 'donates' it. Change even one word and the fingerprint changes completely, landing it on a brand-new shelf spot as a different book. That's content-addressable storage: instead of storing data under a name someone chose, you store it at an address computed from the data's own content — identical content always lands in the same place (automatic deduplication), and any change gets a brand-new address.",
+    how: [
+      "To store a piece of data, compute a deterministic hash of its exact content — this hash becomes the data's address.",
+      "Save the data in a lookup table keyed by that hash. If something with that exact hash is already stored, there's nothing new to do — it's already there, which is deduplication for free.",
+      "To retrieve data, you just need its hash (its address) — look it up directly, no separate naming system required. Any change to the content produces a different hash, so old content can never be silently overwritten — you simply end up with two different addresses.",
+    ],
+    when: "When your app got popular and you're storing lots of files or blobs where many turn out to be byte-for-byte identical — like Git storing file contents, a Docker image storing layers, or a backup system storing chunks — content-addressable storage automatically avoids storing the same content twice, and lets you verify data hasn't been tampered with by recomputing the hash and comparing it.",
+    big: "O(n) time to hash content of length n · O(1) time to store or look up once you already have the hash · space grows with the number of DISTINCT contents stored, not the number of times something was saved.",
+    mistakes: [
+      "Using a hash weak enough that two different pieces of content can produce the same address (a 'collision') — real systems use cryptographic hashes specifically to make this astronomically unlikely; this toy example uses a simple sum-of-character-codes hash purely to stay dependency-free and deterministic.",
+      "Assuming you can 'update' the content stored at a given address — you can't, because changing the content changes its hash entirely; content-addressable storage is inherently immutable, so an 'update' is really just storing new content at a new address.",
+    ],
+    code: {
+      JavaScript: `function contentHash(content) {
+  // A simple, deterministic hash: add up the character codes, wrap into a fixed range.
+  let sum = 0;
+  for (let i = 0; i < content.length; i++) sum += content.charCodeAt(i);
+  return \`addr-\${sum % 1000003}\`;
+}
+
+function put(store, content) {
+  const address = contentHash(content);
+  if (Object.prototype.hasOwnProperty.call(store, address)) {
+    return { address, isNew: false }; // identical content already lives here
+  }
+  store[address] = content;
+  return { address, isNew: true };
+}
+
+function get(store, address) {
+  return Object.prototype.hasOwnProperty.call(store, address) ? store[address] : null;
+}
+
+const store = {};
+console.log("Storing content-addressed blobs:");
+const contents = ["hello world", "goodbye world", "hello world", "hello world!"];
+for (const content of contents) {
+  const { address, isNew } = put(store, content);
+  const label = isNew ? "stored" : "already stored (dedup)";
+  console.log(\`"\${content}" -> \${address} (\${label})\`);
+}
+console.log(\`Distinct blobs stored: \${Object.keys(store).length} out of \${contents.length} put() calls\`);
+
+const lookupAddr = contentHash("hello world");
+console.log(\`get(\${lookupAddr}) -> "\${get(store, lookupAddr)}"\`);`,
+      Python: `def content_hash(content):
+    # A simple, deterministic hash: add up the character codes, wrap into a fixed range.
+    total = 0
+    for ch in content:
+        total += ord(ch)
+    return f"addr-{total % 1000003}"
+
+def put(store, content):
+    address = content_hash(content)
+    if address in store:
+        return address, False  # identical content already lives here
+    store[address] = content
+    return address, True
+
+def get(store, address):
+    return store.get(address)
+
+store = {}
+print("Storing content-addressed blobs:")
+contents = ["hello world", "goodbye world", "hello world", "hello world!"]
+for content in contents:
+    address, is_new = put(store, content)
+    label = "stored" if is_new else "already stored (dedup)"
+    print(f'"{content}" -> {address} ({label})')
+print(f"Distinct blobs stored: {len(store)} out of {len(contents)} put() calls")
+
+lookup_addr = content_hash("hello world")
+print(f'get({lookup_addr}) -> "{get(store, lookup_addr)}"')`,
+    },
+    output: `Storing content-addressed blobs:
+"hello world" -> addr-1116 (stored)
+"goodbye world" -> addr-1329 (stored)
+"hello world" -> addr-1116 (already stored (dedup))
+"hello world!" -> addr-1149 (stored)
+Distinct blobs stored: 3 out of 4 put() calls
+get(addr-1116) -> "hello world"`,
+  },
 ];
 
 export default lessons;

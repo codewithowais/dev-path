@@ -873,6 +873,520 @@ Step 3: x = 1.00
 Step 4: x = 0.50
 Final cost (x^2): 0.25`,
   },
+  {
+    id: "percentiles-quartiles",
+    pillar: "Data Science",
+    name: "Percentiles & Quartiles",
+    easy: "Imagine every runner in a marathon lined up from slowest to fastest, and someone tells you 'you finished in the 90th percentile.' That means 90% of runners were slower than you — you beat 90 out of every 100 people. A percentile just tells you where one value sits compared to everyone else, once everything is sorted. Quartiles are just percentiles cut into quarters: Q1 is the 25th percentile (a quarter of the way through), Q2 is the 50th percentile (the median, halfway through), and Q3 is the 75th percentile (three-quarters of the way through).",
+    how: [
+      "Sort all the values from smallest to largest.",
+      "To find the value at percentile p, work out its 'rank' — how far p percent of the way through the sorted list that lands, counting from the first item.",
+      "If that rank falls exactly on an item, that item is your answer. If it falls between two items, blend them proportionally (this is called interpolation) to get a value in between.",
+      "Q1, Q2 (the median), and Q3 are just this same percentile calculation run at p = 25, 50, and 75.",
+    ],
+    when: "Use percentiles whenever 'average' doesn't tell the whole story — like reporting website load times (the 95th percentile shows how bad the worst experiences get, which the mean would hide) or grading on a curve. Quartiles specifically are the backbone of the box plot and the interquartile range (IQR), a robust way to measure spread that ignores extreme outliers.",
+    big: "Sorting the data dominates the cost — O(n log n) time. Once sorted, computing any single percentile is O(1).",
+    mistakes: [
+      "Forgetting to sort first — percentiles and quartiles are meaningless on unsorted data.",
+      "Assuming every percentile lands exactly on a data point — often it falls between two values, and you need to interpolate rather than just rounding to the nearest one.",
+    ],
+    code: {
+      JavaScript: `function percentile(arr, p) {
+  const sorted = [...arr].sort((a, b) => a - b);
+  const n = sorted.length;
+  const rank = (p / 100) * (n - 1);
+  const lower = Math.floor(rank);
+  const upper = Math.ceil(rank);
+  const weight = rank - lower;
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] + weight * (sorted[upper] - sorted[lower]);
+}
+
+function quartiles(arr) {
+  return {
+    q1: percentile(arr, 25),
+    q2: percentile(arr, 50),
+    q3: percentile(arr, 75),
+  };
+}
+
+const data = [8, 21, 5, 14, 7, 18, 3, 13, 12];
+const sorted = [...data].sort((a, b) => a - b);
+const { q1, q2, q3 } = quartiles(data);
+const iqr = q3 - q1;
+const p90 = percentile(data, 90);
+
+console.log("Data:", data.join(" "));
+console.log("Sorted:", sorted.join(" "));
+console.log("Q1 (25th pct):", q1.toFixed(2));
+console.log("Q2 / Median (50th pct):", q2.toFixed(2));
+console.log("Q3 (75th pct):", q3.toFixed(2));
+console.log("IQR (Q3 - Q1):", iqr.toFixed(2));
+console.log("90th percentile:", p90.toFixed(2));`,
+      Python: `import math
+
+def percentile(arr, p):
+    sorted_arr = sorted(arr)
+    n = len(sorted_arr)
+    rank = (p / 100) * (n - 1)
+    lower = math.floor(rank)
+    upper = math.ceil(rank)
+    weight = rank - lower
+    if lower == upper:
+        return sorted_arr[lower]
+    return sorted_arr[lower] + weight * (sorted_arr[upper] - sorted_arr[lower])
+
+def quartiles(arr):
+    return percentile(arr, 25), percentile(arr, 50), percentile(arr, 75)
+
+data = [8, 21, 5, 14, 7, 18, 3, 13, 12]
+sorted_data = sorted(data)
+q1, q2, q3 = quartiles(data)
+iqr = q3 - q1
+p90 = percentile(data, 90)
+
+print("Data:", " ".join(str(v) for v in data))
+print("Sorted:", " ".join(str(v) for v in sorted_data))
+print("Q1 (25th pct):", f"{q1:.2f}")
+print("Q2 / Median (50th pct):", f"{q2:.2f}")
+print("Q3 (75th pct):", f"{q3:.2f}")
+print("IQR (Q3 - Q1):", f"{iqr:.2f}")
+print("90th percentile:", f"{p90:.2f}")`,
+    },
+    output: `Data: 8 21 5 14 7 18 3 13 12
+Sorted: 3 5 7 8 12 13 14 18 21
+Q1 (25th pct): 7.00
+Q2 / Median (50th pct): 12.00
+Q3 (75th pct): 14.00
+IQR (Q3 - Q1): 7.00
+90th percentile: 18.60`,
+  },
+  {
+    id: "naive-bayes-classifier",
+    pillar: "Data Science",
+    name: "Naive Bayes (tiny classifier)",
+    easy: "Imagine a mail sorter who's read thousands of letters and learned that words like 'win' and 'free' show up a lot in junk mail, while words like 'lunch' and 'meeting' show up a lot in real messages. When a new letter arrives, the sorter doesn't read it deeply — they just ask, for each word in it, 'how often did I see this word in spam versus real mail?' and multiply those odds together. Naive Bayes is that mail sorter turned into math: it's 'naive' because it (wrongly, but usefully) assumes every word's presence is independent of every other word, which makes the math simple and, surprisingly, still works well in practice.",
+    how: [
+      "Count how often every word appears in each class of training document (here: 'spam' and 'ham'), plus how many documents belong to each class.",
+      "For a new message, start with the 'prior' — how common each class is overall — and multiply in the probability of seeing each of the message's words in that class.",
+      "Add 1 to every word count before dividing (Laplace smoothing) so a word the model has never seen doesn't zero out the whole calculation.",
+      "Whichever class ends up with the higher score after this multiplication is the prediction — normalize the scores so they add up to 100% and read them as a probability.",
+    ],
+    when: "The classic go-to for text classification with small-to-medium data — spam filtering, sentiment tagging, routing support tickets by topic — anywhere 'which words appear' is a strong enough signal on its own, without needing word order or grammar.",
+    big: "O(n) to train, where n is the total number of words across all training documents — just counting. O(m) to classify a new message with m words, since each word needs one lookup.",
+    mistakes: [
+      "Skipping Laplace smoothing — without it, a single word the model has never seen in a class multiplies that class's score down to exactly zero, no matter how well every other word matched.",
+      "Treating Naive Bayes' 'independence' assumption as literally true — words in real language absolutely depend on each other, but the model works well anyway because it only needs to get the ranking between classes right, not the exact probabilities.",
+    ],
+    code: {
+      JavaScript: `function tokenize(text) {
+  return text.toLowerCase().split(" ");
+}
+
+function trainNB(docsByClass) {
+  const wordCounts = {};
+  const totalWords = {};
+  const vocab = new Set();
+  for (const cls in docsByClass) {
+    wordCounts[cls] = {};
+    totalWords[cls] = 0;
+    for (const doc of docsByClass[cls]) {
+      for (const word of tokenize(doc)) {
+        wordCounts[cls][word] = (wordCounts[cls][word] || 0) + 1;
+        totalWords[cls] += 1;
+        vocab.add(word);
+      }
+    }
+  }
+  return { wordCounts, totalWords, vocab };
+}
+
+function classify(model, docsByClass, text) {
+  const words = tokenize(text);
+  const classes = Object.keys(docsByClass);
+  const totalDocs = classes.reduce((sum, c) => sum + docsByClass[c].length, 0);
+  const V = model.vocab.size;
+
+  const scores = {};
+  for (const cls of classes) {
+    const prior = docsByClass[cls].length / totalDocs;
+    let likelihood = 1;
+    for (const word of words) {
+      const count = model.wordCounts[cls][word] || 0;
+      likelihood *= (count + 1) / (model.totalWords[cls] + V);
+    }
+    scores[cls] = prior * likelihood;
+  }
+
+  const total = classes.reduce((sum, c) => sum + scores[c], 0);
+  const posterior = {};
+  for (const cls of classes) posterior[cls] = scores[cls] / total;
+  return posterior;
+}
+
+const docsByClass = {
+  spam: ["win money now", "win a free prize", "free money for you"],
+  ham: ["let us meet for lunch", "are we still on for the meeting", "lunch and a meeting tomorrow"],
+};
+
+const model = trainNB(docsByClass);
+const testMessage = "win a free lunch";
+const posterior = classify(model, docsByClass, testMessage);
+const prediction = posterior.spam > posterior.ham ? "spam" : "ham";
+
+console.log("Test message:", testMessage);
+console.log("Vocabulary size:", model.vocab.size);
+console.log("P(spam):", posterior.spam.toFixed(2));
+console.log("P(ham):", posterior.ham.toFixed(2));
+console.log("Prediction:", prediction);`,
+      Python: `def tokenize(text):
+    return text.lower().split(" ")
+
+def train_nb(docs_by_class):
+    word_counts = {}
+    total_words = {}
+    vocab = set()
+    for cls in docs_by_class:
+        word_counts[cls] = {}
+        total_words[cls] = 0
+        for doc in docs_by_class[cls]:
+            for word in tokenize(doc):
+                word_counts[cls][word] = word_counts[cls].get(word, 0) + 1
+                total_words[cls] += 1
+                vocab.add(word)
+    return word_counts, total_words, vocab
+
+def classify(word_counts, total_words, vocab, docs_by_class, text):
+    words = tokenize(text)
+    classes = list(docs_by_class.keys())
+    total_docs = sum(len(docs_by_class[c]) for c in classes)
+    v = len(vocab)
+
+    scores = {}
+    for cls in classes:
+        prior = len(docs_by_class[cls]) / total_docs
+        likelihood = 1
+        for word in words:
+            count = word_counts[cls].get(word, 0)
+            likelihood *= (count + 1) / (total_words[cls] + v)
+        scores[cls] = prior * likelihood
+
+    total = sum(scores[c] for c in classes)
+    return {cls: scores[cls] / total for cls in classes}
+
+docs_by_class = {
+    "spam": ["win money now", "win a free prize", "free money for you"],
+    "ham": ["let us meet for lunch", "are we still on for the meeting", "lunch and a meeting tomorrow"],
+}
+
+word_counts, total_words, vocab = train_nb(docs_by_class)
+test_message = "win a free lunch"
+posterior = classify(word_counts, total_words, vocab, docs_by_class, test_message)
+prediction = "spam" if posterior["spam"] > posterior["ham"] else "ham"
+
+print("Test message:", test_message)
+print("Vocabulary size:", len(vocab))
+print("P(spam):", f"{posterior['spam']:.2f}")
+print("P(ham):", f"{posterior['ham']:.2f}")
+print("Prediction:", prediction)`,
+    },
+    output: `Test message: win a free lunch
+Vocabulary size: 20
+P(spam): 0.86
+P(ham): 0.14
+Prediction: spam`,
+  },
+  {
+    id: "precision-recall-f1",
+    pillar: "Data Science",
+    name: "Precision / Recall / F1",
+    easy: "Picture an airport security scanner flagging bags for a manual search. Precision asks: 'of all the bags you flagged, how many actually had something dangerous?' — it punishes false alarms. Recall asks a different question: 'of all the actually dangerous bags, how many did you catch?' — it punishes misses. You can game either one alone (flag every single bag for perfect recall, or flag almost nothing for perfect precision), so F1 combines them into one number — the harmonic mean — that only stays high when both precision and recall are reasonably good.",
+    how: [
+      "Start from the same counts as a confusion matrix: true positives (TP), false positives (FP), and false negatives (FN).",
+      "Precision = TP / (TP + FP) — out of everything you predicted positive, what fraction was actually positive.",
+      "Recall = TP / (TP + FN) — out of everything that was actually positive, what fraction did you predict positive.",
+      "F1 = 2 * precision * recall / (precision + recall) — the harmonic mean, which stays low if either precision or recall is low, unlike a plain average would.",
+    ],
+    when: "Reach for these whenever accuracy alone would be misleading — especially with imbalanced data, like fraud detection or disease screening, where missing a rare positive (low recall) or crying wolf too often (low precision) matters far more than the overall percentage correct. Which of precision or recall matters more depends on whether false alarms or missed cases cost you more.",
+    big: "O(n) time — one pass over the predictions to count TP, FP, and FN, then a handful of arithmetic operations.",
+    mistakes: [
+      "Optimizing only for accuracy on imbalanced data — a model that always predicts 'no' can still have terrible recall while looking fine on accuracy.",
+      "Reporting precision or recall alone without the other — a model can reach 100% recall by predicting positive for everything, which tanks its precision, and vice versa. F1 catches that trade-off; either number alone can hide it.",
+    ],
+    code: {
+      JavaScript: `function evaluate(actual, predicted) {
+  let tp = 0, fp = 0, fn = 0, tn = 0;
+  for (let i = 0; i < actual.length; i++) {
+    if (actual[i] === "yes" && predicted[i] === "yes") tp++;
+    else if (actual[i] === "no" && predicted[i] === "yes") fp++;
+    else if (actual[i] === "yes" && predicted[i] === "no") fn++;
+    else tn++;
+  }
+  return { tp, fp, fn, tn };
+}
+
+const actual = [...Array(12).fill("yes"), ...Array(8).fill("no")];
+const predicted = [
+  ...Array(9).fill("yes"),
+  ...Array(3).fill("no"),
+  ...Array(1).fill("yes"),
+  ...Array(7).fill("no"),
+];
+
+const { tp, fp, fn, tn } = evaluate(actual, predicted);
+const precision = tp / (tp + fp);
+const recall = tp / (tp + fn);
+const f1 = (2 * precision * recall) / (precision + recall);
+
+console.log("Total examples:", actual.length);
+console.log("TP:", tp);
+console.log("FP:", fp);
+console.log("FN:", fn);
+console.log("TN:", tn);
+console.log("Precision:", precision.toFixed(2));
+console.log("Recall:", recall.toFixed(2));
+console.log("F1 score:", f1.toFixed(2));`,
+      Python: `def evaluate(actual, predicted):
+    tp = fp = fn = tn = 0
+    for a, p in zip(actual, predicted):
+        if a == "yes" and p == "yes":
+            tp += 1
+        elif a == "no" and p == "yes":
+            fp += 1
+        elif a == "yes" and p == "no":
+            fn += 1
+        else:
+            tn += 1
+    return tp, fp, fn, tn
+
+actual = ["yes"] * 12 + ["no"] * 8
+predicted = ["yes"] * 9 + ["no"] * 3 + ["yes"] * 1 + ["no"] * 7
+
+tp, fp, fn, tn = evaluate(actual, predicted)
+precision = tp / (tp + fp)
+recall = tp / (tp + fn)
+f1 = (2 * precision * recall) / (precision + recall)
+
+print("Total examples:", len(actual))
+print("TP:", tp)
+print("FP:", fp)
+print("FN:", fn)
+print("TN:", tn)
+print("Precision:", f"{precision:.2f}")
+print("Recall:", f"{recall:.2f}")
+print("F1 score:", f"{f1:.2f}")`,
+    },
+    output: `Total examples: 20
+TP: 9
+FP: 1
+FN: 3
+TN: 7
+Precision: 0.90
+Recall: 0.75
+F1 score: 0.82`,
+  },
+  {
+    id: "sigmoid-logistic-function",
+    pillar: "Data Science",
+    name: "Sigmoid & Logistic function",
+    easy: "Say you want a model to output not just 'yes' or 'no' but 'how confident' — a number between 0 and 1, like a probability. The sigmoid function is the tool for that squeeze: feed it any real number, huge or tiny, positive or negative, and it always squashes the result into that 0-to-1 range, shaped like a smooth 'S'. Feed it a very negative number and it creeps toward 0. Feed it a very positive number and it creeps toward 1. Feed it exactly 0 and it lands right in the middle, at 0.5.",
+    how: [
+      "Take any real number z (often the weighted sum of a model's inputs, like in logistic regression).",
+      "Compute e raised to the power of negative z (e^-z) — this is what does the actual squashing.",
+      "Plug that into the formula: sigmoid(z) = 1 / (1 + e^-z). The result always lands strictly between 0 and 1.",
+      "To turn that probability into a yes/no decision, pick a threshold (usually 0.5) — sigmoid(z) at or above the threshold predicts 'yes', below it predicts 'no'.",
+    ],
+    when: "This is the engine inside logistic regression (predicting a yes/no outcome from numeric inputs) and the final layer of a neural network doing binary classification — anywhere you need a raw, unbounded number turned into something that behaves like a probability.",
+    big: "O(1) time per input — just one exponent and a couple of arithmetic operations.",
+    mistakes: [
+      "Forgetting the negative sign in e^-z — that flips the curve and reverses which direction counts as 'more confident'.",
+      "Treating sigmoid's output as a perfectly calibrated real-world probability — it's the model's confidence given what it learned, which can still be miscalibrated or just plain wrong.",
+      "Feeding in a very large positive or negative z and expecting the output to keep changing — sigmoid saturates near 0 and 1, so extreme inputs barely move the result (and barely move the gradient during training, either).",
+    ],
+    code: {
+      JavaScript: `function sigmoid(z) {
+  return 1 / (1 + Math.exp(-z));
+}
+
+const zs = [-2, -1, 0, 1, 2];
+const probabilities = zs.map(sigmoid);
+const predictions = probabilities.map((p) => (p >= 0.5 ? "yes" : "no"));
+
+console.log("z:", zs.join(" "));
+console.log("Sigmoid:", probabilities.map((p) => p.toFixed(2)).join(" "));
+console.log("Predictions:", predictions.join(" "));`,
+      Python: `import math
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+zs = [-2, -1, 0, 1, 2]
+probabilities = [sigmoid(z) for z in zs]
+predictions = ["yes" if p >= 0.5 else "no" for p in probabilities]
+
+print("z:", " ".join(str(v) for v in zs))
+print("Sigmoid:", " ".join(f"{p:.2f}" for p in probabilities))
+print("Predictions:", " ".join(predictions))`,
+    },
+    output: `z: -2 -1 0 1 2
+Sigmoid: 0.12 0.27 0.50 0.73 0.88
+Predictions: no no yes yes yes`,
+  },
+  {
+    id: "decision-stump-gini",
+    pillar: "Data Science",
+    name: "Decision Stump (one split via Gini impurity)",
+    easy: "A decision stump is the simplest possible decision tree: just one yes/no question, splitting your data into two groups. Think of it like the single best sorting question you could ask to separate a mixed bag of marbles into two piles that are each as 'pure' (mostly one color) as possible. Gini impurity is how we measure how 'mixed' a pile is — 0 means a pile is perfectly pure (all one label), and it climbs higher the more evenly mixed the pile is. A decision stump tries every possible splitting question and picks whichever one leaves the two resulting piles least mixed, on average.",
+    how: [
+      "Sort the data by its numeric feature, and consider a candidate threshold exactly halfway between every pair of neighboring values.",
+      "For each candidate threshold, split the data into a 'left' group (feature at or below the threshold) and a 'right' group (feature above it).",
+      "Compute the Gini impurity of each group: 1 minus the sum of the squared proportion of each label present in that group. A group with only one label present has Gini impurity 0.",
+      "Combine the two groups' impurities into one score, weighted by how many points fall in each group, and keep whichever threshold gives the lowest weighted impurity — that's the stump's one split.",
+    ],
+    when: "On its own, a stump is a fast, easy-to-read baseline classifier — one simple rule, like 'studied more than 2.5 hours? predict pass.' Its bigger role is as a building block: boosting algorithms like AdaBoost combine hundreds of weak stumps, each fixing the last one's mistakes, into one strong classifier.",
+    big: "With n points there are roughly n candidate thresholds, and scoring each one takes O(n) work to split and measure impurity — O(n^2) time for a single stump (real implementations sort once and sweep through in O(n log n) instead of rechecking everything from scratch).",
+    mistakes: [
+      "Picking the split that maximizes plain accuracy instead of minimizing impurity — Gini impurity generalizes more smoothly to more than two classes and to deeper trees built the same way.",
+      "Expecting one stump to be a full decision tree — it's a single split, a 'weak learner' on its own, not a complete model.",
+    ],
+    code: {
+      JavaScript: `function gini(labels) {
+  const counts = {};
+  for (const l of labels) counts[l] = (counts[l] || 0) + 1;
+  const n = labels.length;
+  let sumSq = 0;
+  for (const l in counts) {
+    const p = counts[l] / n;
+    sumSq += p * p;
+  }
+  return 1 - sumSq;
+}
+
+function majorityLabel(labels) {
+  const counts = {};
+  for (const l of labels) counts[l] = (counts[l] || 0) + 1;
+  let best = labels[0];
+  let bestCount = 0;
+  for (const l of labels) {
+    if (counts[l] > bestCount) {
+      bestCount = counts[l];
+      best = l;
+    }
+  }
+  return best;
+}
+
+function bestSplit(points) {
+  const xs = points.map((p) => p.x);
+  const uniqueXs = [...new Set(xs)].sort((a, b) => a - b);
+  const thresholds = [];
+  for (let i = 0; i < uniqueXs.length - 1; i++) {
+    thresholds.push((uniqueXs[i] + uniqueXs[i + 1]) / 2);
+  }
+
+  let bestThreshold = thresholds[0];
+  let bestGini = Infinity;
+  for (const t of thresholds) {
+    const left = points.filter((p) => p.x <= t);
+    const right = points.filter((p) => p.x > t);
+    const weighted =
+      (left.length / points.length) * gini(left.map((p) => p.label)) +
+      (right.length / points.length) * gini(right.map((p) => p.label));
+    if (weighted < bestGini) {
+      bestGini = weighted;
+      bestThreshold = t;
+    }
+  }
+  return { bestThreshold, bestGini };
+}
+
+const points = [
+  { x: 1, label: "no" },
+  { x: 2, label: "no" },
+  { x: 3, label: "yes" },
+  { x: 4, label: "no" },
+  { x: 5, label: "yes" },
+  { x: 6, label: "yes" },
+];
+
+const rootGini = gini(points.map((p) => p.label));
+const { bestThreshold, bestGini } = bestSplit(points);
+
+const left = points.filter((p) => p.x <= bestThreshold);
+const right = points.filter((p) => p.x > bestThreshold);
+const leftPrediction = majorityLabel(left.map((p) => p.label));
+const rightPrediction = majorityLabel(right.map((p) => p.label));
+
+console.log("Points (x,label):", points.map((p) => "(" + p.x + "," + p.label + ")").join(" "));
+console.log("Root Gini impurity:", rootGini.toFixed(2));
+console.log("Best split threshold: x <=", bestThreshold.toFixed(2));
+console.log("Weighted Gini after split:", bestGini.toFixed(2));
+console.log("Left group predicts:", leftPrediction);
+console.log("Right group predicts:", rightPrediction);`,
+      Python: `def gini(labels):
+    counts = {}
+    for l in labels:
+        counts[l] = counts.get(l, 0) + 1
+    n = len(labels)
+    sum_sq = 0
+    for l in counts:
+        p = counts[l] / n
+        sum_sq += p * p
+    return 1 - sum_sq
+
+def majority_label(labels):
+    counts = {}
+    for l in labels:
+        counts[l] = counts.get(l, 0) + 1
+    best = labels[0]
+    best_count = 0
+    for l in labels:
+        if counts[l] > best_count:
+            best_count = counts[l]
+            best = l
+    return best
+
+def best_split(points):
+    xs = [p[0] for p in points]
+    unique_xs = sorted(set(xs))
+    thresholds = [(unique_xs[i] + unique_xs[i + 1]) / 2 for i in range(len(unique_xs) - 1)]
+
+    best_threshold = thresholds[0]
+    best_gini = float("inf")
+    for t in thresholds:
+        left = [p for p in points if p[0] <= t]
+        right = [p for p in points if p[0] > t]
+        weighted = (len(left) / len(points)) * gini([p[1] for p in left]) + \\
+                   (len(right) / len(points)) * gini([p[1] for p in right])
+        if weighted < best_gini:
+            best_gini = weighted
+            best_threshold = t
+    return best_threshold, best_gini
+
+points = [(1, "no"), (2, "no"), (3, "yes"), (4, "no"), (5, "yes"), (6, "yes")]
+
+root_gini = gini([p[1] for p in points])
+best_threshold, best_gini = best_split(points)
+
+left = [p for p in points if p[0] <= best_threshold]
+right = [p for p in points if p[0] > best_threshold]
+left_prediction = majority_label([p[1] for p in left])
+right_prediction = majority_label([p[1] for p in right])
+
+print("Points (x,label):", " ".join("(" + str(x) + "," + label + ")" for x, label in points))
+print("Root Gini impurity:", f"{root_gini:.2f}")
+print("Best split threshold: x <=", f"{best_threshold:.2f}")
+print("Weighted Gini after split:", f"{best_gini:.2f}")
+print("Left group predicts:", left_prediction)
+print("Right group predicts:", right_prediction)`,
+    },
+    output: `Points (x,label): (1,no) (2,no) (3,yes) (4,no) (5,yes) (6,yes)
+Root Gini impurity: 0.50
+Best split threshold: x <= 2.50
+Weighted Gini after split: 0.25
+Left group predicts: no
+Right group predicts: yes`,
+  },
 ];
 
 export default lessons;

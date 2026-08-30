@@ -1015,6 +1015,607 @@ Attention from "sat":
   -> sat: score=2 weight=0.58
   context vector: [0.79, 0.79, 0.42]`,
   },
+  {
+    id: "embedding-arithmetic",
+    pillar: "Generative AI",
+    name: "Embedding Arithmetic",
+    easy: "\"Man is to woman as king is to ___?\" Most people instantly answer queen. Embeddings (the number-list representation of a word's meaning — see Cosine Similarity) can play this exact game with plain arithmetic: take king's numbers, subtract man's numbers, add woman's numbers, and the result vector lands almost exactly where queen's vector already sits. That's not a coincidence — it means the \"shift\" from man to woman is baked into the embedding space as a consistent direction, and adding that same shift to king slides you over to queen.",
+    how: [
+      "Start with three toy embeddings (small lists of numbers) for king, man, and woman.",
+      "Do the arithmetic position-by-position: subtract man's vector from king's vector (this removes 'maleness'), then add woman's vector (this adds 'femaleness' back in) — giving a brand-new result vector.",
+      "Since a real system doesn't know in advance which word that result vector 'means', search a small vocabulary of candidate word embeddings and use cosine similarity (see Cosine Similarity) to find whichever one the result vector is closest to.",
+    ],
+    when: "A neat demonstration that embedding spaces encode relationships (like gender, tense, or country-capital pairs) as consistent directions, not just individual word meanings — the classic proof-of-concept behind early embedding models like word2vec.",
+    big: "O(d) time for the vector arithmetic itself, where d is the number of dimensions · O(v · d) time to search a vocabulary of v candidate words.",
+    mistakes: [
+      "Assuming this works perfectly for every word pair in real embeddings — the king/man/woman example is the famous one specifically because it works cleanly; many analogies come out messier in practice.",
+      "Forgetting that the arithmetic alone doesn't produce a word — the result is just another point in the vector space, so you still need a similarity search over real words to turn it back into something readable.",
+    ],
+    code: {
+      JavaScript: `function cosineSimilarity(a, b) {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+function subtract(a, b) {
+  return a.map((v, i) => v - b[i]);
+}
+
+function add(a, b) {
+  return a.map((v, i) => v + b[i]);
+}
+
+// Toy integer "embeddings" — pretend these came out of a real model.
+const man = [1, 0, 0];
+const woman = [1, 2, 0];
+const king = [4, 0, 1];
+
+const result = add(subtract(king, man), woman);
+
+// A tiny "vocabulary" to search for the closest match to the result vector.
+const candidates = {
+  queen: [4, 2, 1],
+  prince: [3, 0, 1],
+  bread: [0, 0, 5],
+};
+
+console.log("king - man + woman = ?");
+console.log("Result vector:", result.join(", "));
+console.log("");
+console.log("Comparing the result to candidate words:");
+let best = null;
+let bestScore = -Infinity;
+for (const [word, vector] of Object.entries(candidates)) {
+  const score = cosineSimilarity(result, vector);
+  console.log(\`\${word}: similarity \${score.toFixed(2)}\`);
+  if (score > bestScore) {
+    bestScore = score;
+    best = word;
+  }
+}
+console.log("");
+console.log("Closest match:", best);`,
+      Python: `import math
+
+def cosine_similarity(a, b):
+    dot = sum(a[i] * b[i] for i in range(len(a)))
+    mag_a = math.sqrt(sum(x * x for x in a))
+    mag_b = math.sqrt(sum(x * x for x in b))
+    return dot / (mag_a * mag_b)
+
+def subtract(a, b):
+    return [a[i] - b[i] for i in range(len(a))]
+
+def add(a, b):
+    return [a[i] + b[i] for i in range(len(a))]
+
+# Toy integer "embeddings" — pretend these came out of a real model.
+man = [1, 0, 0]
+woman = [1, 2, 0]
+king = [4, 0, 1]
+
+result = add(subtract(king, man), woman)
+
+# A tiny "vocabulary" to search for the closest match to the result vector.
+candidates = {
+    "queen": [4, 2, 1],
+    "prince": [3, 0, 1],
+    "bread": [0, 0, 5],
+}
+
+print("king - man + woman = ?")
+print("Result vector:", ", ".join(str(v) for v in result))
+print("")
+print("Comparing the result to candidate words:")
+best = None
+best_score = float("-inf")
+for word, vector in candidates.items():
+    score = cosine_similarity(result, vector)
+    print(f"{word}: similarity {score:.2f}")
+    if score > best_score:
+        best_score = score
+        best = word
+
+print("")
+print("Closest match:", best)`,
+    },
+    output: `king - man + woman = ?
+Result vector: 4, 2, 1
+
+Comparing the result to candidate words:
+queen: similarity 1.00
+prince: similarity 0.90
+bread: similarity 0.22
+
+Closest match: queen`,
+  },
+  {
+    id: "beam-search",
+    pillar: "Generative AI",
+    name: "Beam Search",
+    easy: "Imagine choosing a hiking route by only ever taking whichever single trail looks best at each fork — that's called 'greedy'. Now imagine instead sending out a small search party that keeps a handful of the most promising routes alive at once, and only commits to one at the very end. Beam search is a language model's version of that search party: instead of locking in the single best next word at every step (which can back itself into a dead end), it keeps the top few candidate sequences — called 'beams' — alive at each step, and only picks the overall best one once generation is done.",
+    how: [
+      "Start with one empty sequence. At each step, extend every sequence currently being tracked by every possible next word, adding each new word's score to that sequence's running total.",
+      "Sort all of these extended candidates by their total score (breaking ties alphabetically, so the result is predictable), and keep only the top 'beam width' number of them — discard the rest.",
+      "Repeat for a fixed number of steps. At the very end, the highest-scoring sequence among the surviving beams is the answer.",
+    ],
+    when: "Generating a genuinely good overall sequence — like a full translated sentence — rather than one that only ever looks good one word at a time; a step up from always keeping just one running sequence, and a relative of Top-k Selection's 'keep more than one option alive' idea.",
+    big: "O(steps · beamWidth · vocabularySize) time — at every step, every surviving beam is extended by every word in the vocabulary before trimming back down to the beam width.",
+    mistakes: [
+      "Assuming beam search always finds the mathematically best possible sequence — it doesn't. It only ever keeps a small number of candidates alive, so a sequence that looked mediocre early on can get discarded before it has a chance to prove itself.",
+      "Confusing beam search with greedy decoding (a beam width of 1) — greedy commits to a single best-looking choice at every step and can end up stuck with a worse overall sequence, exactly what this example demonstrates.",
+    ],
+    code: {
+      JavaScript: `// Toy transition scores: score(previousWord, nextWord) — pretend a real
+// model produced these. "<s>" is the special start-of-sentence symbol.
+const scores = {
+  "<s>": { cat: 5, dog: 4, fish: 0 },
+  cat: { cat: 1, dog: 2, fish: 3 },
+  dog: { cat: 1, dog: 2, fish: 9 },
+  fish: { cat: 5, dog: 3, fish: 1 },
+};
+
+const vocabulary = ["cat", "dog", "fish"];
+const steps = 3;
+
+function search(beamWidth) {
+  let beams = [{ words: [], score: 0 }];
+  const trace = [];
+  for (let step = 1; step <= steps; step++) {
+    const candidates = [];
+    for (const beam of beams) {
+      const last = beam.words.length === 0 ? "<s>" : beam.words[beam.words.length - 1];
+      for (const word of vocabulary) {
+        candidates.push({ words: [...beam.words, word], score: beam.score + scores[last][word] });
+      }
+    }
+    candidates.sort((a, b) => b.score - a.score || (a.words.join(" ") < b.words.join(" ") ? -1 : 1));
+    beams = candidates.slice(0, beamWidth);
+    trace.push(beams);
+  }
+  return { beams, trace };
+}
+
+const beamWidth = 2;
+const { beams, trace } = search(beamWidth);
+
+console.log(\`Beam search with beam width \${beamWidth}:\`);
+trace.forEach((beamsAtStep, i) => {
+  console.log(\`Step \${i + 1} — top \${beamWidth} beams kept:\`);
+  for (const beam of beamsAtStep) {
+    console.log(\`  [\${beam.words.join(" ")}] score=\${beam.score}\`);
+  }
+});
+console.log("");
+console.log("Beam search result:", beams[0].words.join(" "), \`(score \${beams[0].score})\`);
+
+const greedy = search(1).beams[0];
+console.log("Greedy (beam width 1) result:", greedy.words.join(" "), \`(score \${greedy.score})\`);
+console.log("");
+console.log(
+  beams[0].score > greedy.score
+    ? "Beam search found a better overall sequence than greedy."
+    : "Beam search matched greedy this time."
+);`,
+      Python: `# Toy transition scores: score(previousWord, nextWord) — pretend a real
+# model produced these. "<s>" is the special start-of-sentence symbol.
+scores = {
+    "<s>": {"cat": 5, "dog": 4, "fish": 0},
+    "cat": {"cat": 1, "dog": 2, "fish": 3},
+    "dog": {"cat": 1, "dog": 2, "fish": 9},
+    "fish": {"cat": 5, "dog": 3, "fish": 1},
+}
+
+vocabulary = ["cat", "dog", "fish"]
+steps = 3
+
+def search(beam_width):
+    beams = [{"words": [], "score": 0}]
+    trace = []
+    for _ in range(steps):
+        candidates = []
+        for beam in beams:
+            last = "<s>" if len(beam["words"]) == 0 else beam["words"][-1]
+            for word in vocabulary:
+                candidates.append({"words": beam["words"] + [word], "score": beam["score"] + scores[last][word]})
+        candidates.sort(key=lambda c: (-c["score"], " ".join(c["words"])))
+        beams = candidates[:beam_width]
+        trace.append(beams)
+    return beams, trace
+
+beam_width = 2
+beams, trace = search(beam_width)
+
+print(f"Beam search with beam width {beam_width}:")
+for i, beams_at_step in enumerate(trace):
+    print(f"Step {i + 1} — top {beam_width} beams kept:")
+    for beam in beams_at_step:
+        print(f"  [{' '.join(beam['words'])}] score={beam['score']}")
+
+print("")
+print("Beam search result:", " ".join(beams[0]["words"]), f"(score {beams[0]['score']})")
+
+greedy = search(1)[0][0]
+print("Greedy (beam width 1) result:", " ".join(greedy["words"]), f"(score {greedy['score']})")
+
+print("")
+if beams[0]["score"] > greedy["score"]:
+    print("Beam search found a better overall sequence than greedy.")
+else:
+    print("Beam search matched greedy this time.")`,
+    },
+    output: `Beam search with beam width 2:
+Step 1 — top 2 beams kept:
+  [cat] score=5
+  [dog] score=4
+Step 2 — top 2 beams kept:
+  [dog fish] score=13
+  [cat fish] score=8
+Step 3 — top 2 beams kept:
+  [dog fish cat] score=18
+  [dog fish dog] score=16
+
+Beam search result: dog fish cat (score 18)
+Greedy (beam width 1) result: cat fish cat (score 13)
+
+Beam search found a better overall sequence than greedy.`,
+  },
+  {
+    id: "nucleus-sampling",
+    pillar: "Generative AI",
+    name: "Top-p / Nucleus Selection",
+    easy: "Top-k Selection always keeps a fixed head-count of top candidates — say, the top 3, no matter what. Nucleus sampling (also called top-p) does something more adaptive: keep candidates, starting from the most likely, until their combined probability first reaches a target share — say, 70%. That small group is called the 'nucleus'. When the model is very confident, the nucleus can be just one or two words; when it's genuinely unsure, the nucleus naturally grows to include more options.",
+    how: [
+      "Score every candidate next word and convert those scores into probabilities that add up to 1, using softmax (see Softmax & Temperature).",
+      "Sort the candidates from highest probability to lowest.",
+      "Walk down that sorted list, adding one candidate at a time to the 'nucleus' and keeping a running total, until the running total first reaches (or passes) the target cutoff p.",
+      "Recompute ('renormalize') probabilities using only the words in the nucleus, then pick among just that shortlist.",
+    ],
+    when: "Controlling text generation the same way Top-k Selection does, but adapting the size of the shortlist to how confident the model is at that specific step — a fixed k can be too wide when the model is very sure, or too narrow when it's genuinely torn between many options.",
+    big: "O(n log n) time to sort n candidates · O(n) time to walk the sorted list and build the nucleus.",
+    mistakes: [
+      "Confusing p (a target cumulative probability, like 0.70) with k from Top-k Selection (a fixed head-count) — they solve the same problem in different ways, and mixing up which knob you're tuning gives very differently-shaped shortlists.",
+      "Setting p too close to 1.0 — the nucleus ends up including almost every candidate, so top-p barely filters anything out, the same failure mode as setting k too large in top-k.",
+      "Forgetting to renormalize probabilities after trimming down to the nucleus — the leftover probabilities from the full candidate list no longer add up to 1 on their own.",
+    ],
+    code: {
+      JavaScript: `function softmax(logits) {
+  const exps = logits.map((x) => Math.exp(x));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map((e) => e / sum);
+}
+
+const candidates = [
+  { word: "cat", logit: 4 },
+  { word: "dog", logit: 3 },
+  { word: "fish", logit: 2 },
+  { word: "bird", logit: 1 },
+  { word: "ant", logit: 0 },
+];
+
+const p = 0.7;
+
+const sorted = [...candidates].sort((a, b) => b.logit - a.logit || (a.word < b.word ? -1 : 1));
+const probs = softmax(sorted.map((c) => c.logit));
+
+// Walk down the sorted list, adding words to the "nucleus" until their
+// combined probability first reaches (or passes) the cutoff p.
+const nucleus = [];
+let cumulative = 0;
+for (let i = 0; i < sorted.length; i++) {
+  nucleus.push({ word: sorted[i].word, prob: probs[i] });
+  cumulative += probs[i];
+  if (cumulative >= p) break;
+}
+
+const nucleusTotal = nucleus.reduce((sum, c) => sum + c.prob, 0);
+const renormalized = nucleus.map((c) => ({ word: c.word, prob: c.prob / nucleusTotal }));
+
+console.log("All candidates, sorted by probability:");
+sorted.forEach((c, i) => {
+  console.log(\`\${c.word}: probability \${probs[i].toFixed(2)}\`);
+});
+console.log("");
+console.log(\`Nucleus (smallest set with cumulative probability >= \${p.toFixed(2)}):\`);
+console.log(nucleus.map((c) => c.word).join(" "));
+console.log("");
+console.log("Renormalized probabilities within the nucleus:");
+for (const c of renormalized) {
+  console.log(\`\${c.word}: \${c.prob.toFixed(2)}\`);
+}
+console.log("");
+console.log("Selected token (highest probability in the nucleus):", renormalized[0].word);`,
+      Python: `import math
+
+def softmax(logits):
+    exps = [math.exp(x) for x in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+candidates = [
+    {"word": "cat", "logit": 4},
+    {"word": "dog", "logit": 3},
+    {"word": "fish", "logit": 2},
+    {"word": "bird", "logit": 1},
+    {"word": "ant", "logit": 0},
+]
+
+p = 0.7
+
+sorted_candidates = sorted(candidates, key=lambda c: (-c["logit"], c["word"]))
+probs = softmax([c["logit"] for c in sorted_candidates])
+
+# Walk down the sorted list, adding words to the "nucleus" until their
+# combined probability first reaches (or passes) the cutoff p.
+nucleus = []
+cumulative = 0
+for i in range(len(sorted_candidates)):
+    nucleus.append({"word": sorted_candidates[i]["word"], "prob": probs[i]})
+    cumulative += probs[i]
+    if cumulative >= p:
+        break
+
+nucleus_total = sum(c["prob"] for c in nucleus)
+renormalized = [{"word": c["word"], "prob": c["prob"] / nucleus_total} for c in nucleus]
+
+print("All candidates, sorted by probability:")
+for c, prob in zip(sorted_candidates, probs):
+    print(f"{c['word']}: probability {prob:.2f}")
+
+print("")
+print(f"Nucleus (smallest set with cumulative probability >= {p:.2f}):")
+print(" ".join(c["word"] for c in nucleus))
+
+print("")
+print("Renormalized probabilities within the nucleus:")
+for c in renormalized:
+    print(f"{c['word']}: {c['prob']:.2f}")
+
+print("")
+print("Selected token (highest probability in the nucleus):", renormalized[0]["word"])`,
+    },
+    output: `All candidates, sorted by probability:
+cat: probability 0.64
+dog: probability 0.23
+fish: probability 0.09
+bird: probability 0.03
+ant: probability 0.01
+
+Nucleus (smallest set with cumulative probability >= 0.70):
+cat dog
+
+Renormalized probabilities within the nucleus:
+cat: 0.73
+dog: 0.27
+
+Selected token (highest probability in the nucleus): cat`,
+  },
+  {
+    id: "perplexity",
+    pillar: "Generative AI",
+    name: "Perplexity",
+    easy: "Imagine reading a sentence out loud with a friend, and every time you say the next word, they silently guess whether they saw it coming. A friend who's rarely surprised — who keeps nodding 'yeah, I expected that' — knows you well. Perplexity is that idea turned into one number for a language model: it measures how surprised the model was, on average, by the words that actually came next in some real text. A model that assigns high probability to what actually happens is rarely surprised, and gets a LOW perplexity score. A model that keeps getting caught off guard gets a HIGH perplexity score.",
+    how: [
+      "For each word in a real piece of text, take the probability the model assigned to that exact word being next (in a real system, this comes from softmax over the whole vocabulary at that step).",
+      "Multiply all of those per-word probabilities together — that's the probability the model assigned to the entire sequence happening exactly as it did.",
+      "That combined probability shrinks fast as sentences get longer, so to make sequences of different lengths comparable, invert it (1 divided by it) and take the n-th root, where n is the number of words. The result is perplexity: a per-word 'how surprised, on average' score.",
+    ],
+    when: "The standard headline metric for comparing how well two language models predict real text, or for tracking whether a model is improving during training — lower is always better, whatever the model's exact architecture.",
+    big: "O(n) time, where n is the number of words being scored.",
+    mistakes: [
+      "Reading perplexity backwards — it's easy to instinctively assume 'higher score = better', but perplexity measures confusion, so lower always means a better fit to the real text.",
+      "Comparing perplexity scores that were computed differently — over different vocabularies, different tokenization, or different text — perplexity is only a fair comparison between models scored the exact same way on the exact same text.",
+    ],
+    code: {
+      JavaScript: `function perplexity(probs) {
+  // Combined probability the model assigned to the whole sequence.
+  let product = 1;
+  for (const p of probs) product *= p;
+  // Invert it and take the n-th root, so longer sequences are still
+  // comparable to shorter ones (a per-word "average surprise" score).
+  return Math.pow(1 / product, 1 / probs.length);
+}
+
+const sentence = ["the", "cat", "sat"];
+
+// Toy per-word probabilities two different models assigned to the ACTUAL
+// next word at each step (in a real model these come from softmax).
+const modelA = { name: "Model A (confident)", probs: [0.5, 0.5, 0.5] };
+const modelB = { name: "Model B (unsure)", probs: [0.2, 0.2, 0.2] };
+
+console.log("Real sentence:", sentence.join(" "));
+console.log("");
+
+for (const model of [modelA, modelB]) {
+  console.log(\`\${model.name}:\`);
+  sentence.forEach((word, i) => {
+    console.log(\`  probability assigned to "\${word}": \${model.probs[i].toFixed(2)}\`);
+  });
+  const ppl = perplexity(model.probs);
+  console.log(\`  perplexity: \${ppl.toFixed(2)}\`);
+  console.log("");
+}
+
+const better = perplexity(modelA.probs) < perplexity(modelB.probs) ? modelA.name : modelB.name;
+console.log(\`Lower perplexity means less surprised: \${better} fits the real sentence better.\`);`,
+      Python: `def perplexity(probs):
+    # Combined probability the model assigned to the whole sequence.
+    product = 1
+    for p in probs:
+        product *= p
+    # Invert it and take the n-th root, so longer sequences are still
+    # comparable to shorter ones (a per-word "average surprise" score).
+    return (1 / product) ** (1 / len(probs))
+
+sentence = ["the", "cat", "sat"]
+
+# Toy per-word probabilities two different models assigned to the ACTUAL
+# next word at each step (in a real model these come from softmax).
+model_a = {"name": "Model A (confident)", "probs": [0.5, 0.5, 0.5]}
+model_b = {"name": "Model B (unsure)", "probs": [0.2, 0.2, 0.2]}
+
+print("Real sentence:", " ".join(sentence))
+print("")
+
+for model in [model_a, model_b]:
+    print(f"{model['name']}:")
+    for i, word in enumerate(sentence):
+        print(f"  probability assigned to \\"{word}\\": {model['probs'][i]:.2f}")
+    ppl = perplexity(model["probs"])
+    print(f"  perplexity: {ppl:.2f}")
+    print("")
+
+better = model_a["name"] if perplexity(model_a["probs"]) < perplexity(model_b["probs"]) else model_b["name"]
+print(f"Lower perplexity means less surprised: {better} fits the real sentence better.")`,
+    },
+    output: `Real sentence: the cat sat
+
+Model A (confident):
+  probability assigned to "the": 0.50
+  probability assigned to "cat": 0.50
+  probability assigned to "sat": 0.50
+  perplexity: 2.00
+
+Model B (unsure):
+  probability assigned to "the": 0.20
+  probability assigned to "cat": 0.20
+  probability assigned to "sat": 0.20
+  perplexity: 5.00
+
+Lower perplexity means less surprised: Model A (confident) fits the real sentence better.`,
+  },
+  {
+    id: "masked-word-prediction",
+    pillar: "Generative AI",
+    name: "Masked-Word Prediction",
+    easy: "Think of a fill-in-the-blank quiz: \"The ___ sat on the mat.\" You use BOTH the words before the blank ('The') AND the words after it ('sat on the mat') to guess the missing word. That's masked-word prediction, the training trick behind models like BERT: hide a real word behind a [MASK] token, and train the model to guess it back using context from both directions at once. It's a close cousin of the N-gram Language Model — but where an n-gram model can only look backward, masked-word prediction gets to peek on both sides of the gap.",
+    how: [
+      "Take a small pile of ordinary training sentences (no blanks) and, for every word that isn't at the very start or end of a sentence, note down its left neighbor and its right neighbor.",
+      "Build a lookup: for every (left neighbor, right neighbor) pair seen during training, count how many times each actual word filled that exact slot.",
+      "Given a new sentence with a real word swapped out for [MASK], look at its left and right neighbors, look up which word filled that exact same slot most often during training, and predict that word (breaking ties alphabetically).",
+    ],
+    when: "The core training idea behind masked language models (like BERT) used for understanding text — unlike the N-gram Language Model, or the model behind Beam Search, which only ever predict what comes next, masked-word prediction lets a model build a representation of a word informed by context from both sides.",
+    big: "O(n) time to scan an n-word training corpus once and build the neighbor-count lookup · O(1) average time per prediction lookup once it's built.",
+    mistakes: [
+      "Confusing this with the N-gram Language Model — n-gram prediction only ever looks at words before the gap; masked-word prediction needs (and uses) words on both sides, which is exactly why it needs a full sentence with a hole in it, not just a running prefix.",
+      "Expecting this toy version to handle a slot it never saw exactly during training — real masked language models generalize using embeddings and similarity, but this simple lookup only recognizes an exact repeat of a (left, right) pair it already counted.",
+    ],
+    code: {
+      JavaScript: `const corpus = [
+  "the cat sat on the mat",
+  "the dog sat on the mat",
+  "the cat sat on the rug",
+  "a cat sat on the mat",
+];
+
+// For every interior word in every training sentence, record what word
+// filled the slot between its left neighbor and its right neighbor.
+const fillCounts = {}; // "left|right" -> { word -> count }
+for (const sentence of corpus) {
+  const words = sentence.split(" ");
+  for (let i = 1; i < words.length - 1; i++) {
+    const left = words[i - 1];
+    const right = words[i + 1];
+    const word = words[i];
+    const key = \`\${left}|\${right}\`;
+    if (!fillCounts[key]) fillCounts[key] = {};
+    fillCounts[key][word] = (fillCounts[key][word] || 0) + 1;
+  }
+}
+
+function predictMasked(left, right) {
+  const key = \`\${left}|\${right}\`;
+  const counts = fillCounts[key] || {};
+  const options = Object.entries(counts).sort(
+    (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)
+  );
+  return options;
+}
+
+console.log("Training sentences:");
+corpus.forEach((s) => console.log(\`  \${s}\`));
+console.log("");
+
+const testSentence = "the [MASK] sat on the mat";
+const left = "the";
+const right = "sat";
+console.log("Test sentence:", testSentence);
+console.log(\`Left context: "\${left}"   Right context: "\${right}"\`);
+console.log("");
+
+const options = predictMasked(left, right);
+console.log("Candidates seen in that exact slot during training:");
+for (const [word, count] of options) {
+  console.log(\`  \${word}: seen \${count} time(s)\`);
+}
+console.log("");
+console.log("Predicted word for [MASK]:", options[0][0]);`,
+      Python: `corpus = [
+    "the cat sat on the mat",
+    "the dog sat on the mat",
+    "the cat sat on the rug",
+    "a cat sat on the mat",
+]
+
+# For every interior word in every training sentence, record what word
+# filled the slot between its left neighbor and its right neighbor.
+fill_counts = {}  # "left|right" -> {word: count}
+for sentence in corpus:
+    words = sentence.split(" ")
+    for i in range(1, len(words) - 1):
+        left = words[i - 1]
+        right = words[i + 1]
+        word = words[i]
+        key = f"{left}|{right}"
+        fill_counts.setdefault(key, {})
+        fill_counts[key][word] = fill_counts[key].get(word, 0) + 1
+
+def predict_masked(left, right):
+    key = f"{left}|{right}"
+    counts = fill_counts.get(key, {})
+    options = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    return options
+
+print("Training sentences:")
+for s in corpus:
+    print(f"  {s}")
+print("")
+
+test_sentence = "the [MASK] sat on the mat"
+left = "the"
+right = "sat"
+print("Test sentence:", test_sentence)
+print(f'Left context: "{left}"   Right context: "{right}"')
+print("")
+
+options = predict_masked(left, right)
+print("Candidates seen in that exact slot during training:")
+for word, count in options:
+    print(f"  {word}: seen {count} time(s)")
+
+print("")
+print("Predicted word for [MASK]:", options[0][0])`,
+    },
+    output: `Training sentences:
+  the cat sat on the mat
+  the dog sat on the mat
+  the cat sat on the rug
+  a cat sat on the mat
+
+Test sentence: the [MASK] sat on the mat
+Left context: "the"   Right context: "sat"
+
+Candidates seen in that exact slot during training:
+  cat: seen 2 time(s)
+  dog: seen 1 time(s)
+
+Predicted word for [MASK]: cat`,
+  },
 ];
 
 export default lessons;

@@ -1736,6 +1736,387 @@ print("Majority element:", majority_element(votes))`,
     output: `Votes: 2 2 1 1 1 2 2
 Majority element: 2`,
   },
+  {
+    id: "longest-common-subsequence",
+    pillar: "Algorithms",
+    name: "Longest Common Subsequence (DP)",
+    easy: "Imagine two friends each type out the story of their week, one event per line. The longest common subsequence is the longest thread of events that show up in both stories, IN THE SAME ORDER — but not necessarily back-to-back, since other unrelated events can sit in between. It's not about matching whole chunks of text; it's about finding the longest 'both of us did these things, in this order' thread.",
+    how: [
+      "Build a grid where cell (i, j) answers: what's the longest common thread using only the first i letters of string A and the first j letters of string B?",
+      "If the letters at those positions match, the answer is one better than the diagonal cell before them (extend the thread by one letter).",
+      "If they don't match, the answer is the better of 'drop this letter from A' or 'drop this letter from B' — whichever neighboring cell is bigger. Fill the whole grid this way, then walk it backward from the corner to read out the actual matching letters.",
+    ],
+    when: "Comparing two sequences for shared structure — diffing two versions of a file, DNA sequence comparison, spell-check suggestions, or measuring how similar two pieces of text really are beyond a simple equality check.",
+    big: "O(n·m) time and O(n·m) space, where n and m are the two string lengths — one grid cell per pair of positions.",
+    mistakes: [
+      "Confusing 'subsequence' with 'substring' — a subsequence can skip letters and doesn't need to be contiguous, so 'ACE' is a subsequence of 'ABCDE' even though the letters aren't next to each other.",
+      "Getting the grid's off-by-one indexing wrong — row/column 0 represents 'zero letters used', so the actual string characters start at index i - 1 and j - 1, not i and j.",
+    ],
+    code: {
+      JavaScript: `function lcs(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1; // letters match — extend the thread
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]); // take the better neighbor
+      }
+    }
+  }
+
+  // Walk backward through the grid to read out the actual matching letters.
+  let i = m, j = n;
+  const chars = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      chars.push(a[i - 1]);
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+  chars.reverse();
+  return { length: dp[m][n], sequence: chars.join("") };
+}
+
+const a = "ABCBDAB";
+const b = "BDCABA";
+const result = lcs(a, b);
+console.log("String A:", a);
+console.log("String B:", b);
+console.log("LCS length:", result.length);
+console.log("LCS sequence:", result.sequence);`,
+      Python: `def lcs(a, b):
+    m, n = len(a), len(b)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if a[i - 1] == b[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1  # letters match — extend the thread
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])  # take the better neighbor
+
+    # Walk backward through the grid to read out the actual matching letters.
+    i, j = m, n
+    chars = []
+    while i > 0 and j > 0:
+        if a[i - 1] == b[j - 1]:
+            chars.append(a[i - 1])
+            i -= 1
+            j -= 1
+        elif dp[i - 1][j] >= dp[i][j - 1]:
+            i -= 1
+        else:
+            j -= 1
+    chars.reverse()
+    return dp[m][n], "".join(chars)
+
+a = "ABCBDAB"
+b = "BDCABA"
+length, sequence = lcs(a, b)
+print("String A:", a)
+print("String B:", b)
+print("LCS length:", length)
+print("LCS sequence:", sequence)`,
+    },
+    output: `String A: ABCBDAB
+String B: BDCABA
+LCS length: 4
+LCS sequence: BCBA`,
+  },
+  {
+    id: "coin-change-min-coins",
+    pillar: "Algorithms",
+    name: "Coin Change (Minimum Coins)",
+    easy: "This is the honest version of making change — no shortcuts, no assuming the biggest coin is always the smart pick. For every amount from 1 up to the target, you ask: what's the fewest coins that make exactly this much, built from answers you've already worked out for smaller amounts? By the time you reach the target amount, you've genuinely tried every combination, not just the greedy-looking one.",
+    how: [
+      "Make a table where table[amount] holds the fewest coins needed to make that exact amount, starting table[0] at 0 (zero coins for zero amount) and everything else as 'not yet known'.",
+      "For every amount from 1 up to the target, try using each coin: if that coin fits, check whether 'one more coin' plus the best answer for (amount minus that coin) beats what's currently in the table.",
+      "After filling the whole table, table[target] holds the answer — or a sign that it's impossible if no combination of coins can hit that exact amount.",
+    ],
+    when: "Making exact change with coin systems that AREN'T greedy-friendly, or any 'fewest steps to reach an exact total' problem — real currency systems, token/resource costs, or minimum moves in a game where each move has a fixed cost.",
+    big: "O(amount · number of coin types) time — for every amount, you check every coin once · O(amount) space for the table.",
+    mistakes: [
+      "Trusting greedy (always grab the biggest coin) to give the true minimum — with coins like [1, 3, 4], greedy on amount 6 would grab 4 then two 1s (3 coins), while the true best is 3 + 3 (2 coins). Only this table-based approach is guaranteed correct.",
+      "Forgetting to handle the 'impossible' case — if no combination of coins reaches the exact amount, the table cell for it should stay marked unreachable, not silently return a wrong number.",
+    ],
+    code: {
+      JavaScript: `function minCoins(amount, coins) {
+  const dp = new Array(amount + 1).fill(Infinity);
+  dp[0] = 0; // zero coins needed to make zero
+
+  for (let i = 1; i <= amount; i++) {
+    for (const coin of coins) {
+      if (coin <= i && dp[i - coin] + 1 < dp[i]) {
+        dp[i] = dp[i - coin] + 1;
+      }
+    }
+  }
+  return dp[amount] === Infinity ? -1 : dp[amount]; // -1 means impossible
+}
+
+const coins = [1, 3, 4];
+const amount = 6;
+console.log("Amount:", amount);
+console.log("Coins available:", coins.join(" "));
+console.log("Minimum coins needed:", minCoins(amount, coins));
+
+const coins2 = [2, 5];
+const amount2 = 3;
+console.log("Amount:", amount2);
+console.log("Coins available:", coins2.join(" "));
+console.log("Minimum coins needed:", minCoins(amount2, coins2));`,
+      Python: `import math
+
+def min_coins(amount, coins):
+    dp = [math.inf] * (amount + 1)
+    dp[0] = 0  # zero coins needed to make zero
+
+    for i in range(1, amount + 1):
+        for coin in coins:
+            if coin <= i and dp[i - coin] + 1 < dp[i]:
+                dp[i] = dp[i - coin] + 1
+    return -1 if dp[amount] == math.inf else dp[amount]  # -1 means impossible
+
+coins = [1, 3, 4]
+amount = 6
+print("Amount:", amount)
+print("Coins available:", " ".join(str(c) for c in coins))
+print("Minimum coins needed:", min_coins(amount, coins))
+
+coins2 = [2, 5]
+amount2 = 3
+print("Amount:", amount2)
+print("Coins available:", " ".join(str(c) for c in coins2))
+print("Minimum coins needed:", min_coins(amount2, coins2))`,
+    },
+    output: `Amount: 6
+Coins available: 1 3 4
+Minimum coins needed: 2
+Amount: 3
+Coins available: 2 5
+Minimum coins needed: -1`,
+  },
+  {
+    id: "dutch-national-flag",
+    pillar: "Algorithms",
+    name: "Dutch National Flag (3-Way Partition)",
+    easy: "Named after the Dutch flag's three horizontal stripes (red, white, blue), this trick sorts a list that only ever contains three distinct values — like 0s, 1s, and 2s — into their three neat groups in a single pass. Picture sorting a pile of laundry into three baskets (whites, colors, darks) by walking past each item exactly once, instead of picking it up over and over.",
+    how: [
+      "Keep three markers: 'low' (the boundary for 0s), 'mid' (the item currently being looked at), and 'high' (the boundary for 2s).",
+      "Look at the item at 'mid'. If it's a 0, swap it down to the 'low' boundary and advance both low and mid. If it's a 1, it's already in the middle group — just advance mid.",
+      "If it's a 2, swap it out to the 'high' boundary and pull high inward — but don't advance mid yet, since the item swapped in from the high end still needs to be checked. Stop once mid passes high.",
+    ],
+    when: "Sorting data that only has a small, fixed number of distinct categories — like sorting objects by three colors, classifying items as low/medium/high, or as a partitioning step inside quicksort when many items share the same value.",
+    big: "O(n) time — a single pass through the list, touching each item a constant number of times · O(1) extra space, since it sorts in place.",
+    mistakes: [
+      "Advancing 'mid' after every swap, including swaps with 'high' — the item just pulled in from the high end hasn't been checked yet, so mid must stay put in that case.",
+      "Using this approach on data with more than three distinct values — it's specifically built for exactly three categories, not general sorting.",
+    ],
+    code: {
+      JavaScript: `function dutchFlagSort(arr) {
+  const a = [...arr];
+  let low = 0, mid = 0, high = a.length - 1;
+
+  while (mid <= high) {
+    if (a[mid] === 0) {
+      [a[low], a[mid]] = [a[mid], a[low]]; // send 0 to the front group
+      low++; mid++;
+    } else if (a[mid] === 1) {
+      mid++; // already in the middle group
+    } else {
+      [a[mid], a[high]] = [a[high], a[mid]]; // send 2 to the back group
+      high--; // don't advance mid — the swapped-in item is still unchecked
+    }
+  }
+  return a;
+}
+
+const data = [2, 0, 2, 1, 1, 0];
+console.log("Before:", data.join(" "));
+console.log("Sorted:", dutchFlagSort(data).join(" "));`,
+      Python: `def dutch_flag_sort(arr):
+    a = arr[:]
+    low, mid, high = 0, 0, len(a) - 1
+
+    while mid <= high:
+        if a[mid] == 0:
+            a[low], a[mid] = a[mid], a[low]  # send 0 to the front group
+            low += 1
+            mid += 1
+        elif a[mid] == 1:
+            mid += 1  # already in the middle group
+        else:
+            a[mid], a[high] = a[high], a[mid]  # send 2 to the back group
+            high -= 1  # don't advance mid — the swapped-in item is still unchecked
+    return a
+
+data = [2, 0, 2, 1, 1, 0]
+print("Before:", " ".join(str(v) for v in data))
+print("Sorted:", " ".join(str(v) for v in dutch_flag_sort(data)))`,
+    },
+    output: `Before: 2 0 2 1 1 0
+Sorted: 0 0 1 1 2 2`,
+  },
+  {
+    id: "binary-search-on-answer",
+    pillar: "Algorithms",
+    name: "Binary Search on the Answer",
+    easy: "Normally binary search hunts for a value sitting inside a sorted list. This trick reuses the same halving idea for a different job: guessing the ANSWER to a problem instead of a position in a list. If you can quickly check 'would this guess work or not' and know that small guesses fail while big guesses succeed (or vice versa), you can binary search over the range of possible answers themselves — even though no actual list of answers exists anywhere.",
+    how: [
+      "Figure out the smallest and largest values the true answer could possibly be — that's your search range.",
+      "Try the middle guess in that range, and run a quick 'does this guess work?' check — something that must get easier to satisfy as the guess grows (or shrinks) in one consistent direction.",
+      "If the guess works, it might be more than needed — try smaller. If it fails, try bigger. Keep halving the range until it narrows down to the smallest guess that actually works.",
+    ],
+    when: "Optimization problems that ask for a minimum (or maximum) value satisfying some condition — the smallest ship capacity to deliver packages in time, the minimum speed to eat all your food before it's gone, or 'smallest X such that check(X) succeeds' whenever check() runs fast and the answer space is sorted by feasibility.",
+    big: "O(log(range) · cost of the feasibility check) time — each guess halves the range of possible answers, same as classic binary search, just spent on guesses instead of array positions.",
+    mistakes: [
+      "Picking a feasibility check that ISN'T consistently one-directional — binary search on the answer only works if 'works' and 'doesn't work' split the range cleanly into two halves, with no answer flip-flopping back and forth.",
+      "Setting the initial search range too narrow and accidentally excluding the true answer — the lower bound must be a guess that could realistically still fail, and the upper bound one that's guaranteed to succeed.",
+    ],
+    code: {
+      JavaScript: `function canShip(weights, days, capacity) {
+  let daysNeeded = 1;
+  let currentLoad = 0;
+  for (const w of weights) {
+    if (currentLoad + w > capacity) {
+      daysNeeded++;      // today's load is full — start a new day
+      currentLoad = 0;
+    }
+    currentLoad += w;
+  }
+  return daysNeeded <= days;
+}
+
+function minCapacity(weights, days) {
+  let low = Math.max(...weights);           // capacity must fit the heaviest package
+  let high = weights.reduce((a, b) => a + b, 0); // shipping it all in one day always works
+
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2); // guess a capacity
+    if (canShip(weights, days, mid)) {
+      high = mid;      // this capacity works — try smaller
+    } else {
+      low = mid + 1;   // too small — need more room
+    }
+  }
+  return low;
+}
+
+const weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const days = 5;
+console.log("Weights:", weights.join(" "));
+console.log("Days:", days);
+console.log("Minimum capacity:", minCapacity(weights, days));`,
+      Python: `def can_ship(weights, days, capacity):
+    days_needed = 1
+    current_load = 0
+    for w in weights:
+        if current_load + w > capacity:
+            days_needed += 1  # today's load is full — start a new day
+            current_load = 0
+        current_load += w
+    return days_needed <= days
+
+def min_capacity(weights, days):
+    low = max(weights)     # capacity must fit the heaviest package
+    high = sum(weights)    # shipping it all in one day always works
+
+    while low < high:
+        mid = (low + high) // 2  # guess a capacity
+        if can_ship(weights, days, mid):
+            high = mid       # this capacity works — try smaller
+        else:
+            low = mid + 1    # too small — need more room
+    return low
+
+weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+days = 5
+print("Weights:", " ".join(str(w) for w in weights))
+print("Days:", days)
+print("Minimum capacity:", min_capacity(weights, days))`,
+    },
+    output: `Weights: 1 2 3 4 5 6 7 8 9 10
+Days: 5
+Minimum capacity: 15`,
+  },
+  {
+    id: "spiral-matrix-traversal",
+    pillar: "Algorithms",
+    name: "Spiral Matrix Traversal",
+    easy: "Imagine peeling a rectangular sticker off a grid from the outside in: read across the top edge, down the right edge, back across the bottom edge, and up the left edge — then shrink the rectangle by one layer and repeat. That's a spiral traversal: visiting every item in a grid by walking its shrinking outer ring over and over until nothing's left.",
+    how: [
+      "Track four boundaries: top, bottom, left, and right — the edges of the rectangle still unvisited.",
+      "Walk across the top row (left to right), down the right column (top to bottom), across the bottom row (right to left), and up the left column (bottom to top) — shrinking each boundary inward right after you walk it.",
+      "Check before each of the last two walks that the boundaries haven't crossed yet (the rectangle might have collapsed into a single row or column). Repeat the whole ring-walk until top passes bottom or left passes right.",
+    ],
+    when: "Reading or processing a 2D grid in a specific visual order — image processing that scans outside-in, generating spiral-numbered puzzles, or any problem literally phrased as 'return the elements of this matrix in spiral order'.",
+    big: "O(rows · columns) time — every cell is visited exactly once · O(1) extra space besides the output list.",
+    mistakes: [
+      "Forgetting the 'boundaries haven't crossed' checks before the bottom-row and left-column walks — without them, a single row or single column gets walked twice, double-counting cells.",
+      "Shrinking a boundary at the wrong time (before finishing that edge's walk instead of right after) — that skips cells or reads the wrong row/column on the next leg.",
+    ],
+    code: {
+      JavaScript: `function spiralOrder(matrix) {
+  const result = [];
+  if (matrix.length === 0) return result;
+  let top = 0, bottom = matrix.length - 1;
+  let left = 0, right = matrix[0].length - 1;
+
+  while (top <= bottom && left <= right) {
+    for (let col = left; col <= right; col++) result.push(matrix[top][col]);
+    top++;
+    for (let row = top; row <= bottom; row++) result.push(matrix[row][right]);
+    right--;
+    if (top <= bottom) {
+      for (let col = right; col >= left; col--) result.push(matrix[bottom][col]);
+      bottom--;
+    }
+    if (left <= right) {
+      for (let row = bottom; row >= top; row--) result.push(matrix[row][left]);
+      left++;
+    }
+  }
+  return result;
+}
+
+const matrix = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]];
+console.log("Spiral order:", spiralOrder(matrix).join(" "));`,
+      Python: `def spiral_order(matrix):
+    result = []
+    if not matrix:
+        return result
+    top, bottom = 0, len(matrix) - 1
+    left, right = 0, len(matrix[0]) - 1
+
+    while top <= bottom and left <= right:
+        for col in range(left, right + 1):
+            result.append(matrix[top][col])
+        top += 1
+        for row in range(top, bottom + 1):
+            result.append(matrix[row][right])
+        right -= 1
+        if top <= bottom:
+            for col in range(right, left - 1, -1):
+                result.append(matrix[bottom][col])
+            bottom -= 1
+        if left <= right:
+            for row in range(bottom, top - 1, -1):
+                result.append(matrix[row][left])
+            left += 1
+    return result
+
+matrix = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+print("Spiral order:", " ".join(str(v) for v in spiral_order(matrix)))`,
+    },
+    output: `Spiral order: 1 2 3 4 8 12 11 10 9 5 6 7`,
+  },
 ];
 
 export default lessons;

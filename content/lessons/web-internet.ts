@@ -454,6 +454,396 @@ active = yes
 skills = math, code
 city = London`,
   },
+  {
+    id: "cookies-sessions",
+    pillar: "Web & Internet",
+    name: "Cookies & Sessions",
+    easy: "A cookie is like the wristband a club gives you at check-in: it's small, it's yours, and the doorman glances at it every time you walk back in instead of asking for your ID again. HTTP (HyperText Transfer Protocol — the language browsers and servers speak) normally forgets you the instant a request finishes, so a cookie is a little piece of data the server asks your browser to hold onto and resend on every future request, just so the server can recognize you. A session is the club's actual guest-list entry — the real record of who you are, stored on the server and looked up using the code printed on your wristband.",
+    how: [
+      "First visit, no wristband yet: the server has no way to tell you apart from a stranger.",
+      "When you log in, the server creates a session record (who you are, what you're allowed to do) and stores it under a fresh session ID.",
+      "The server tells your browser to remember that session ID as a cookie, and attach it to every future request to this site.",
+      "Your browser automatically resends the cookie on the next request, without you doing anything.",
+      "The server reads the cookie, looks up that session ID in its records, and instantly knows who's asking.",
+    ],
+    when: "Login systems, shopping carts, 'remember me', and anything else that needs to recall who you are across separate requests — since plain HTTP requests are otherwise independent and stateless.",
+    big: "O(1) session lookup — finding a session by its ID is a single hash-map lookup, no matter how many users are logged in.",
+    mistakes: [
+      "Thinking the cookie IS the session — the cookie is just the ticket with an ID printed on it; the actual data (who you are, your permissions) lives in the server's session store, not in the cookie itself.",
+      "Forgetting that if the cookie never gets sent back (a new browser, it expired, it was cleared), the server has no memory of you at all and treats you as a brand-new stranger.",
+    ],
+    code: {
+      JavaScript: `const sessions = {};
+let nextSessionId = 1;
+
+function login(username) {
+  // Create a session record server-side, and hand back its ID as the "cookie".
+  const sessionId = "sess-" + nextSessionId;
+  nextSessionId++;
+  sessions[sessionId] = { user: username };
+  return sessionId;
+}
+
+function whoIs(cookie) {
+  if (cookie === null) return "guest (no cookie sent)";
+  const session = sessions[cookie];
+  if (!session) return "guest (unknown session)";
+  return session.user;
+}
+
+console.log("Visit 1, no cookie:", whoIs(null));
+
+const cookie = login("ada");
+console.log("Logged in, cookie issued:", cookie);
+
+console.log("Visit 2, cookie sent:", whoIs(cookie));
+console.log("Visit 3, wrong cookie:", whoIs("sess-999"));`,
+      Python: `sessions = {}
+next_session_id = 1
+
+def login(username):
+    # Create a session record server-side, and hand back its ID as the "cookie".
+    global next_session_id
+    session_id = "sess-" + str(next_session_id)
+    next_session_id += 1
+    sessions[session_id] = {"user": username}
+    return session_id
+
+def who_is(cookie):
+    if cookie is None:
+        return "guest (no cookie sent)"
+    session = sessions.get(cookie)
+    if not session:
+        return "guest (unknown session)"
+    return session["user"]
+
+print("Visit 1, no cookie:", who_is(None))
+
+cookie = login("ada")
+print("Logged in, cookie issued:", cookie)
+
+print("Visit 2, cookie sent:", who_is(cookie))
+print("Visit 3, wrong cookie:", who_is("sess-999"))`,
+    },
+    output: `Visit 1, no cookie: guest (no cookie sent)
+Logged in, cookie issued: sess-1
+Visit 2, cookie sent: ada
+Visit 3, wrong cookie: guest (unknown session)`,
+  },
+  {
+    id: "jwt-auth-tokens",
+    pillar: "Web & Internet",
+    name: "Authentication Tokens (JWT)",
+    easy: "A JWT (JSON Web Token, said 'jot' — a signed, self-contained ticket that proves who you are) is like a concert wristband with your seat number printed right on it, plus a tamper-evident hologram sticker over the print: anyone can read the seat number, but nobody can change it without visibly breaking the hologram. The 'seat number' part is your claims (who you are, your role); the 'hologram' part is a signature the server computes from a secret only it knows. Because the proof travels with the ticket itself, the server doesn't need to keep a guest list (a session store) to check it — it just re-checks the hologram.",
+    how: [
+      "The server builds a payload of plain claims about you — like your user ID and role.",
+      "The server 'signs' that payload by running it through a formula together with a secret key it keeps private, producing a signature.",
+      "The server hands you a token: the payload plus its signature stuck together — no per-user record needs to be stored anywhere.",
+      "On a later request, you send the whole token back; the server recomputes the signature from the payload using its secret and compares it to the one attached.",
+      "If the freshly computed signature matches, the server trusts the payload's claims without looking anything up; if it doesn't match, the payload was tampered with (or someone guessed wrong) and the token is rejected.",
+    ],
+    when: "Stateless APIs that don't want to store per-user session data, mobile app logins, and microservices that need to verify who's calling without sharing a session database between them.",
+    big: "O(n) to sign or verify a payload of length n — verifying costs exactly as much as signing did.",
+    mistakes: [
+      "Assuming a JWT is encrypted or secret — the payload part is normally just plainly readable text, so never put real secrets (passwords, credit card numbers) inside one; the signature only proves it wasn't altered, not that it's hidden from view.",
+      "Reading the payload without checking the signature — skip that check, and anyone can hand-craft their own token claiming to be an admin, since nothing stopped them.",
+    ],
+    code: {
+      JavaScript: `const SECRET = "shh-server-secret";
+
+function sign(payloadText, secret) {
+  // Not real crypto -- a simple deterministic stand-in so both languages match.
+  let total = 0;
+  for (const ch of payloadText + secret) {
+    total += ch.charCodeAt(0);
+  }
+  return "sig" + total;
+}
+
+function makeToken(userId, role) {
+  const payloadText = userId + ":" + role;
+  const signature = sign(payloadText, SECRET);
+  return payloadText + "." + signature;
+}
+
+function verifyToken(token, secret) {
+  const [payloadText, signature] = token.split(".");
+  const expected = sign(payloadText, secret);
+  if (expected !== signature) return null;
+  const [userId, role] = payloadText.split(":");
+  return { userId, role };
+}
+
+const token = makeToken("42", "admin");
+console.log("Issued token:", token);
+
+const claims = verifyToken(token, SECRET);
+console.log("Verified user:", claims.userId, "role:", claims.role);
+
+const tampered = "42:superadmin." + token.split(".")[1];
+const result = verifyToken(tampered, SECRET);
+console.log("Tampered token accepted:", result ? "yes" : "no");
+
+const wrongSecret = verifyToken(token, "wrong-secret");
+console.log("Wrong secret accepted:", wrongSecret ? "yes" : "no");`,
+      Python: `SECRET = "shh-server-secret"
+
+def sign(payload_text, secret):
+    # Not real crypto -- a simple deterministic stand-in so both languages match.
+    total = 0
+    for ch in payload_text + secret:
+        total += ord(ch)
+    return "sig" + str(total)
+
+def make_token(user_id, role):
+    payload_text = user_id + ":" + role
+    signature = sign(payload_text, SECRET)
+    return payload_text + "." + signature
+
+def verify_token(token, secret):
+    payload_text, signature = token.split(".")
+    expected = sign(payload_text, secret)
+    if expected != signature:
+        return None
+    user_id, role = payload_text.split(":")
+    return {"userId": user_id, "role": role}
+
+token = make_token("42", "admin")
+print("Issued token:", token)
+
+claims = verify_token(token, SECRET)
+print("Verified user:", claims["userId"], "role:", claims["role"])
+
+tampered = "42:superadmin." + token.split(".")[1]
+result = verify_token(tampered, SECRET)
+print("Tampered token accepted:", "yes" if result else "no")
+
+wrong_secret = verify_token(token, "wrong-secret")
+print("Wrong secret accepted:", "yes" if wrong_secret else "no")`,
+    },
+    output: `Issued token: 42:admin.sig2403
+Verified user: 42 role: admin
+Tampered token accepted: no
+Wrong secret accepted: no`,
+  },
+  {
+    id: "http-caching",
+    pillar: "Web & Internet",
+    name: "HTTP Caching (ETag)",
+    easy: "HTTP caching is like leaving a dated sticky note on your fridge: once you've checked the milk and it's fine, the note lets you skip re-checking it every time you open the door — you just glance at the note. An ETag (ETag, short for 'Entity Tag' — a short fingerprint the server calculates from a piece of content) works the same way for a web page or file: the server hands your browser a fingerprint of the content, and next time, your browser says 'I already have the copy with fingerprint X — did it change?' If the server computes that same fingerprint again, it can say 'nope, still good' without resending the whole thing.",
+    how: [
+      "The server computes a fingerprint (the ETag) from the content it's about to send, and attaches it to the response.",
+      "The browser stores the content and its ETag together in its local cache.",
+      "Next time the browser wants that same resource, it sends the ETag it already has along with the request, instead of blindly assuming it needs a fresh copy.",
+      "The server recomputes the current content's fingerprint and compares it to the one the browser sent.",
+      "If the fingerprints match, the server replies '304 Not Modified' with no body, and the browser reuses its cached copy; if they differ, the server sends the full new content along with a new ETag.",
+    ],
+    when: "Images, stylesheets, scripts, and API responses that don't change on every request — anywhere re-downloading identical data would waste bandwidth and time.",
+    big: "O(n) to compute a fingerprint over content of length n, but a cache hit then costs O(1) to confirm — no resending the content at all.",
+    mistakes: [
+      "Assuming a cached response means 'old' or 'stale' data — a fresh 304 check confirms the content is still current, so a cache hit can be exactly as up to date as a full re-download, just faster.",
+      "Using a fingerprint function that doesn't change when the content changes — if even a tiny edit doesn't produce a new ETag, browsers keep serving stale content by mistake.",
+    ],
+    code: {
+      JavaScript: `function computeETag(content) {
+  // A stand-in fingerprint: real servers use a hash function, we use a checksum.
+  let total = 0;
+  for (const ch of content) {
+    total += ch.charCodeAt(0);
+  }
+  return "etag-" + total;
+}
+
+const pages = {
+  "/home": "Welcome home!",
+};
+
+function handleRequest(path, ifNoneMatch) {
+  const content = pages[path];
+  const etag = computeETag(content);
+  if (ifNoneMatch === etag) {
+    return { status: 304, body: "", etag };
+  }
+  return { status: 200, body: content, etag };
+}
+
+function describeResponse(label, response) {
+  console.log(label, "status:", response.status, "etag:", response.etag, "body:", response.body || "(empty)");
+}
+
+const first = handleRequest("/home", null);
+describeResponse("First request", first);
+
+const second = handleRequest("/home", first.etag);
+describeResponse("Second request (same etag)", second);
+
+pages["/home"] = "Welcome home! (updated)";
+const third = handleRequest("/home", first.etag);
+describeResponse("Third request (content changed)", third);`,
+      Python: `def compute_etag(content):
+    # A stand-in fingerprint: real servers use a hash function, we use a checksum.
+    total = 0
+    for ch in content:
+        total += ord(ch)
+    return "etag-" + str(total)
+
+pages = {
+    "/home": "Welcome home!",
+}
+
+def handle_request(path, if_none_match):
+    content = pages[path]
+    etag = compute_etag(content)
+    if if_none_match == etag:
+        return {"status": 304, "body": "", "etag": etag}
+    return {"status": 200, "body": content, "etag": etag}
+
+def describe_response(label, response):
+    print(label, "status:", response["status"], "etag:", response["etag"], "body:", response["body"] or "(empty)")
+
+first = handle_request("/home", None)
+describe_response("First request", first)
+
+second = handle_request("/home", first["etag"])
+describe_response("Second request (same etag)", second)
+
+pages["/home"] = "Welcome home! (updated)"
+third = handle_request("/home", first["etag"])
+describe_response("Third request (content changed)", third)`,
+    },
+    output: `First request status: 200 etag: etag-1206 body: Welcome home!
+Second request (same etag) status: 304 etag: etag-1206 body: (empty)
+Third request (content changed) status: 200 etag: etag-2062 body: Welcome home! (updated)`,
+  },
+  {
+    id: "cors-basics",
+    pillar: "Web & Internet",
+    name: "CORS (Cross-Origin Resource Sharing)",
+    easy: "CORS (Cross-Origin Resource Sharing — the rulebook deciding whether a website can fetch data from a different website's server) works like a bouncer at a club checking a guest list before letting someone from another building's group in: your browser is the bouncer, and before it lets a page's own code read data that came back from a different origin (a different domain, like api.example.com instead of mysite.com), it checks whether that server put the page's origin on an approved list.",
+    how: [
+      "A page loaded from one origin (say https://mysite.com) tries to fetch data from a different origin's server (say https://api.example.com).",
+      "The browser attaches the calling page's origin to the request, so the server can see exactly who's asking.",
+      "The server checks its own list of allowed origins and decides whether to include the requester's origin in its response.",
+      "If the requesting origin is on that allowed list, the browser lets the page's own code read the response; otherwise, the browser blocks the page from reading it, even if the server already sent the data back.",
+    ],
+    when: "Any web app whose JavaScript calls an API hosted on a different domain or subdomain than the page itself — the normal setup for a modern single-page app talking to a separate API server.",
+    big: "O(1) per request — just testing whether one origin string appears on an allow-list.",
+    mistakes: [
+      "Thinking CORS stops the server from ever receiving the request — it doesn't; the server still gets it and can still act on it. CORS is enforced by the browser, and it only blocks the page's own JavaScript from reading the response.",
+      "Allowing every origin just to make an error go away — it silences the browser's complaint, but throws away the entire point of the check, since now any website can read the API's responses.",
+    ],
+    code: {
+      JavaScript: `const allowedOrigins = ["https://mysite.com", "https://admin.mysite.com"];
+
+function handleCorsRequest(origin) {
+  const allowed = allowedOrigins.includes(origin);
+  const headerValue = allowed ? origin : "none";
+  return { allowed, headerValue };
+}
+
+function browserFetch(origin) {
+  const response = handleCorsRequest(origin);
+  const canRead = response.allowed;
+  console.log("Origin:", origin, "-> Access-Control-Allow-Origin:", response.headerValue, "-> page can read response:", canRead ? "yes" : "no");
+}
+
+browserFetch("https://mysite.com");
+browserFetch("https://admin.mysite.com");
+browserFetch("https://evil.test");`,
+      Python: `allowed_origins = ["https://mysite.com", "https://admin.mysite.com"]
+
+def handle_cors_request(origin):
+    allowed = origin in allowed_origins
+    header_value = origin if allowed else "none"
+    return {"allowed": allowed, "headerValue": header_value}
+
+def browser_fetch(origin):
+    response = handle_cors_request(origin)
+    can_read = response["allowed"]
+    print("Origin:", origin, "-> Access-Control-Allow-Origin:", response["headerValue"], "-> page can read response:", "yes" if can_read else "no")
+
+browser_fetch("https://mysite.com")
+browser_fetch("https://admin.mysite.com")
+browser_fetch("https://evil.test")`,
+    },
+    output: `Origin: https://mysite.com -> Access-Control-Allow-Origin: https://mysite.com -> page can read response: yes
+Origin: https://admin.mysite.com -> Access-Control-Allow-Origin: https://admin.mysite.com -> page can read response: yes
+Origin: https://evil.test -> Access-Control-Allow-Origin: none -> page can read response: no`,
+  },
+  {
+    id: "websockets-basics",
+    pillar: "Web & Internet",
+    name: "WebSockets (Real-Time Connections)",
+    easy: "Regular HTTP is like exchanging letters by mail: every time you want to say something new, you seal a fresh envelope (a brand-new request) and wait for a reply before you can send the next one. A WebSocket (a connection that, once opened, stays open in both directions) is like hanging up the letters and picking up the phone instead — you dial once, and after that, either side can just speak whenever it wants, without hanging up and redialing for every single sentence.",
+    how: [
+      "The client sends a special HTTP request asking to 'upgrade' the connection into a WebSocket.",
+      "The server agrees, and from that moment on, the very same connection stays open for both sides to use.",
+      "Either side, client or server, can send a message at any time — nobody has to ask permission first or wait to be asked.",
+      "Messages arrive in the order they were sent, and the connection stays open until either side deliberately closes it.",
+    ],
+    when: "Chat apps, live notifications, multiplayer games, live sports scores, and collaborative editing — anywhere the server needs to push updates the instant something happens, rather than waiting to be asked.",
+    big: "O(1) to send a message once the connection is open — there's no new connection setup cost per message, unlike issuing a fresh HTTP request each time.",
+    mistakes: [
+      "Assuming WebSockets replace HTTP entirely — most apps still use regular HTTP requests for most things, and only add a WebSocket connection for the specific parts that need instant, two-way updates.",
+      "Forgetting the connection can close unexpectedly (a dropped network, a server restart) — real code has to detect a closed connection and reconnect, or messages sent afterward simply go nowhere.",
+    ],
+    code: {
+      JavaScript: `function createConnection() {
+  return { open: true, log: [] };
+}
+
+function send(connection, from, message) {
+  if (!connection.open) {
+    connection.log.push(from + " tried to send after close: " + message);
+    return;
+  }
+  connection.log.push(from + ": " + message);
+}
+
+function closeConnection(connection) {
+  connection.open = false;
+  connection.log.push("connection closed");
+}
+
+const connection = createConnection();
+send(connection, "client", "hello server");
+send(connection, "server", "hello client");
+send(connection, "server", "score update: 2-1");
+closeConnection(connection);
+send(connection, "client", "are you there?");
+
+for (const line of connection.log) {
+  console.log(line);
+}`,
+      Python: `def create_connection():
+    return {"open": True, "log": []}
+
+def send(connection, from_, message):
+    if not connection["open"]:
+        connection["log"].append(from_ + " tried to send after close: " + message)
+        return
+    connection["log"].append(from_ + ": " + message)
+
+def close_connection(connection):
+    connection["open"] = False
+    connection["log"].append("connection closed")
+
+connection = create_connection()
+send(connection, "client", "hello server")
+send(connection, "server", "hello client")
+send(connection, "server", "score update: 2-1")
+close_connection(connection)
+send(connection, "client", "are you there?")
+
+for line in connection["log"]:
+    print(line)`,
+    },
+    output: `client: hello server
+server: hello client
+server: score update: 2-1
+connection closed
+client tried to send after close: are you there?`,
+  },
 ];
 
 export default lessons;

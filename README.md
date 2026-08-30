@@ -1,16 +1,20 @@
 # DevPath
 
-A beginner-friendly learning + career hub. Learn **data structures, algorithms, and design patterns** in plain words, in the language you like, with the **exact output** you should expect — plus career **paths** (what to learn) and career **growth trees** (where your job title can go next).
+A beginner-friendly learning + career hub. Learn to code in plain words, in the language you like, with the **exact output** you should expect — plus career **paths** (what to learn) and career **growth trees** (where your job title can go next).
 
-Built with Next.js (App Router) + TypeScript + Tailwind CSS v4. Deployable to Vercel.
+**194 lessons across 10 topics, every code sample actually run and output-verified in both JavaScript and Python.**
+
+Built with Next.js (App Router) + TypeScript + Tailwind CSS v4. Deployable to Vercel. Calm "wayfinder" design with tasteful, reduced-motion-safe animations.
 
 ## The three product areas
 
 | Area | Question it answers | Route |
 | --- | --- | --- |
-| **Paths** | "What should I learn?" — four ordered roadmaps (Frontend, Backend, Full-stack, AI Engineer) | `/` |
-| **Grow** | "Where can my career go?" — a ladder from Student → Senior that branches into IC vs Manager, plus confusing titles in plain words | `/grow` |
-| **Learn** | The lessons — data structures, algorithms, design patterns, each with an analogy, runnable code, and verified expected output | `/learn` |
+| **Paths** | "What should I learn?" — 14 ordered roadmaps (Foundations, Frontend, Backend, Full-stack, AI, DevOps, Mobile, Data Analyst, Data Scientist, Cybersecurity, Cloud, QA, Game Dev, UI/UX→Dev) | `/` · `/paths/[slug]` |
+| **Grow** | "Where can my career go?" — a ladder from Student → Senior that branches into IC vs Manager, 16 role-specific growth trees, and confusing job titles in plain words | `/grow` |
+| **Learn** | The lessons — **10 pillars**: Programming Basics, Data Structures, Algorithms, Databases, Web & Internet, Design Patterns, System Design, Cloud, Data Science, Generative AI | `/learn` |
+
+Every path card and role card is clickable and opens the matching roadmap.
 
 ## The content standard (the "teacher voice")
 
@@ -27,10 +31,16 @@ Rule: if a term is introduced, it's translated in the same breath ("IC = Individ
 
 ## Verified outputs
 
-Every code sample is **actually run** and its output checked against the `output` field in [`content/lessons.ts`](content/lessons.ts) — for **both** JavaScript and Python:
+Every code sample is **actually run** and its output checked against the `output` field in the per-pillar files under [`content/lessons/`](content/lessons/) — for **both** JavaScript and Python (388 checks):
 
 ```bash
 npm run verify
+```
+
+You can also verify a single pillar in isolation:
+
+```bash
+node scripts/verify-output.mjs content/lessons/algorithms.ts
 ```
 
 This is the guarantee behind the green "Expected output" blocks: if the code and the stated output ever drift apart, `npm run verify` fails.
