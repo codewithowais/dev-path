@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Prism from "prismjs";
 import "prismjs/components/prism-python";
 import type { Language } from "@/content/lessons";
@@ -78,8 +78,19 @@ export function CodeRunner({ code, output }: Props) {
   const highlighted = useMemo(() => {
     const grammar = lang === "Python" ? Prism.languages.python : Prism.languages.javascript;
     const name = lang === "Python" ? "python" : "javascript";
-    // trailing newline keeps the last line's box in sync with the textarea
-    return Prism.highlight(current, grammar, name) + "\n";
+    return Prism.highlight(current, grammar, name);
+  }, [current, lang]);
+
+  // Grow the textarea to fit its content (capped) so the transparent input
+  // layer always covers every highlighted line — no dead zone at the bottom.
+  const MAX_H = 440;
+  useEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, MAX_H) + "px";
+    syncScroll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, lang]);
 
   function syncScroll() {
@@ -188,7 +199,8 @@ export function CodeRunner({ code, output }: Props) {
             autoCapitalize="off"
             autoCorrect="off"
             aria-label={`${lang} code editor`}
-            className="dp-code relative max-h-[440px] min-h-[160px] w-full resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-white outline-none"
+            style={{ height: Math.min(lineCount * 20.8 + 24, MAX_H), maxHeight: MAX_H }}
+            className="dp-code relative block w-full resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-white outline-none"
           />
         </div>
       </div>
