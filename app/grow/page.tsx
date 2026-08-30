@@ -21,9 +21,9 @@ export default function GrowPage() {
           Where can my career go?
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Everyone climbs the same ladder first. After Senior, you choose: keep
-          getting deeper at building (the IC track), or lead a team of people (the
-          Manager track). Neither is better — they&apos;re just different.
+          Everyone climbs the same ladder first. After Senior, you choose your
+          path. You can keep building things yourself, or lead a team of people.
+          Neither is better — they are just different.
         </p>
       </section>
 

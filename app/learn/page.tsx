@@ -35,9 +35,9 @@ export default function LearnPage() {
           The hard stuff, made simple
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          {lessons.length} lessons across {activePillars.length} topics. Each one
-          has an everyday analogy, a code editor you can actually run, and the
-          exact output to expect. Search or browse, then open one.
+          {lessons.length} lessons across {activePillars.length} topics. Every
+          lesson gives you an everyday example, a code editor you can run, and
+          the exact result to expect. Search or browse, then open one.
         </p>
       </section>
 

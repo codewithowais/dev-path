@@ -16,10 +16,8 @@ export default function HomePage() {
           <span className="text-primary">in plain words.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
-          Figure out what to learn, see where your job title can go next, and
-          understand data structures, algorithms, and design patterns explained
-          like a patient friend — with runnable code and the exact output you
-          should expect.
+          New to coding? Start here. We explain each idea in plain words. You get
+          an everyday example, code you can run, and the exact result to expect.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -69,8 +67,8 @@ export default function HomePage() {
             Where can my career go?
           </h3>
           <p className="mt-2 text-sm text-muted">
-            Climb the ladder from Student to Senior — then see it branch into
-            building (IC) or leading people (Manager).
+            Climb from Student to Senior. Then pick your next step: keep
+            building, or lead a team.
           </p>
           <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-here">
             See the growth tree
@@ -88,8 +86,8 @@ export default function HomePage() {
             Understand the hard stuff
           </h3>
           <p className="mt-2 text-sm text-muted">
-            Data structures, algorithms, and design patterns — each with an
-            everyday analogy, runnable code, and its expected output.
+            Data structures, algorithms, design patterns, and more. Each one has
+            an everyday example and code you can run.
           </p>
           <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
             Open the lessons

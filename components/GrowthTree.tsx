@@ -10,8 +10,8 @@ export function GrowthTree() {
   return (
     <div>
       <p className="text-muted">
-        Tap the rung where you are now to mark it. The ladder is climbed bottom to
-        top — everyone starts at the bottom.
+        Tap the rung where you are now. You climb the ladder from the bottom up.
+        Everyone starts at the bottom.
       </p>
 
       {/* The shared ladder */}
