@@ -90,7 +90,6 @@ export function CodeRunner({ code, output }: Props) {
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, MAX_H) + "px";
     syncScroll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, lang]);
 
   function syncScroll() {
