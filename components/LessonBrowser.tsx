@@ -18,6 +18,20 @@ type Props = {
   pillarBlurb: Record<Pillar, string>;
 };
 
+/** An accent colour + icon per pillar so the list reads as a designed set. */
+const PILLAR_META: Record<Pillar, { color: string; icon: string }> = {
+  "Programming Basics": { color: "#5B4BEB", icon: "🧱" },
+  "Data Structures": { color: "#12B886", icon: "📦" },
+  Algorithms: { color: "#FF8A3D", icon: "⚡" },
+  Databases: { color: "#1098AD", icon: "🗄️" },
+  "Web & Internet": { color: "#4263EB", icon: "🌐" },
+  "Design Patterns": { color: "#7048E8", icon: "🧩" },
+  "System Design": { color: "#E8590C", icon: "🏗️" },
+  Cloud: { color: "#15AABF", icon: "☁️" },
+  "Data Science": { color: "#E64980", icon: "📊" },
+  "Generative AI": { color: "#0CA678", icon: "✨" },
+};
+
 function slug(pillar: string) {
   return pillar
     .toLowerCase()
@@ -31,8 +45,6 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
   const q = query.trim().toLowerCase();
   const searching = q.length > 0;
 
-  // If the user arrives with a #pillar hash (e.g. from a lesson's back link),
-  // open that pillar and scroll to it.
   useEffect(() => {
     const id = decodeURIComponent(window.location.hash.slice(1));
     if (!id || !pillars.some((p) => slug(p) === id)) return;
@@ -72,7 +84,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
   return (
     <div>
       {/* Search */}
-      <div className="sticky top-16 z-20 -mx-5 mb-3 bg-paper/90 px-5 py-3 backdrop-blur">
+      <div className="sticky top-16 z-20 -mx-5 mb-4 bg-paper/90 px-5 py-3 backdrop-blur">
         <div className="relative">
           <span
             aria-hidden="true"
@@ -86,7 +98,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${items.length} lessons…`}
             aria-label="Search lessons"
-            className="w-full rounded-pill border border-line bg-card py-3 pl-11 pr-4 text-ink outline-none transition-colors focus:border-primary"
+            className="w-full rounded-pill border border-line bg-card py-3 pl-11 pr-4 text-ink shadow-sm outline-none transition-colors focus:border-primary"
           />
         </div>
         {searching && (
@@ -97,7 +109,6 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
         )}
       </div>
 
-      {/* Expand / collapse all (hidden while searching) */}
       {!searching && (
         <div className="mb-3 flex justify-end">
           <button
@@ -115,16 +126,20 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
       )}
 
       {/* Accordions */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {shownPillars.map((pillar) => {
           const list = filtered.filter((l) => l.pillar === pillar);
           const id = slug(pillar);
           const expanded = isOpen(pillar);
+          const meta = PILLAR_META[pillar];
           return (
             <section
               key={pillar}
               id={id}
-              className="scroll-mt-32 overflow-hidden rounded-card border border-line bg-card"
+              style={{ ["--accent" as string]: meta.color }}
+              className={`scroll-mt-32 overflow-hidden rounded-card border bg-card transition-colors ${
+                expanded ? "border-[color:var(--accent)]/40" : "border-line hover:border-[color:var(--accent)]/50"
+              }`}
             >
               <h2 className="m-0">
                 <button
@@ -132,24 +147,32 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                   aria-expanded={expanded}
                   aria-controls={`${id}-panel`}
                   onClick={() => toggle(pillar)}
-                  className="flex w-full items-center gap-3 px-5 py-4 text-left"
+                  className="flex w-full items-center gap-4 px-4 py-3.5 text-left sm:px-5"
                 >
-                  <span className="flex-1">
-                    <span className="font-display text-xl font-bold text-ink">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                    style={{ backgroundColor: `${meta.color}1a` }}
+                  >
+                    {meta.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="font-display text-lg font-bold text-ink sm:text-xl">
                       {pillar}
                     </span>
-                    {!searching && (
-                      <span className="mt-0.5 block text-sm text-muted">
-                        {pillarBlurb[pillar]}
-                      </span>
-                    )}
+                    <span className="mt-0.5 line-clamp-1 text-sm text-muted">
+                      {pillarBlurb[pillar]}
+                    </span>
                   </span>
-                  <span className="shrink-0 rounded-pill bg-paper px-2.5 py-0.5 font-mono text-xs text-muted">
-                    {list.length}
+                  <span
+                    className="hidden shrink-0 rounded-pill px-2.5 py-0.5 font-mono text-xs font-semibold sm:inline"
+                    style={{ backgroundColor: `${meta.color}14`, color: meta.color }}
+                  >
+                    {list.length} lessons
                   </span>
                   <span
                     aria-hidden="true"
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line text-muted transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease)] ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-lg text-muted transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease)] ${
                       expanded ? "rotate-45" : ""
                     }`}
                   >
@@ -163,14 +186,14 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                   id={`${id}-panel`}
                   role="region"
                   aria-label={pillar}
-                  className="border-t border-line p-4"
+                  className="px-4 pb-4 sm:px-5"
                 >
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-3">
                     {list.map((l) => (
                       <Link
                         key={l.id}
                         href={`/learn/${l.id}`}
-                        className="dp-lift group flex flex-col rounded-xl border border-line bg-card p-4 hover:border-primary/50 hover:shadow-md hover:shadow-black/5"
+                        className="dp-lift group flex flex-col rounded-xl border border-line bg-card p-4 hover:border-[color:var(--accent)] hover:shadow-md hover:shadow-black/5"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="font-display text-base font-bold leading-snug text-ink">
@@ -178,7 +201,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                           </h3>
                           <span
                             aria-hidden="true"
-                            className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                            className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-[color:var(--accent)]"
                           >
                             →
                           </span>
