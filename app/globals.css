@@ -1,26 +1,84 @@
 @import "tailwindcss";
 
+/*
+  DevPath design system — theme: "wayfinder"
+  Learning as a journey with waypoints.
+  Tokens are consumed as Tailwind utilities (bg-ink, text-muted, font-display, ...).
+*/
+
+@theme {
+  /* Core palette */
+  --color-ink: #191c33; /* primary text */
+  --color-muted: #727793; /* secondary text */
+  --color-line: #e6e8f2; /* borders / hairlines */
+  --color-paper: #f6f7fb; /* page background */
+  --color-card: #ffffff; /* surfaces */
+
+  /* Brand + feedback */
+  --color-primary: #5b4beb; /* violet — actions, links */
+  --color-primary-soft: #ece9fd; /* violet tint for chips/bg */
+  --color-output: #12b886; /* success / expected-output green */
+  --color-output-soft: #e3f8f0; /* green tint */
+  --color-here: #ff8a3d; /* "you are here" coral */
+  --color-here-soft: #ffece0; /* coral tint */
+
+  /* Career track accents */
+  --color-track-ic: #12b886; /* IC track (teal) */
+  --color-track-mgr: #ff8a3d; /* manager track (coral) */
+
+  /* Typography */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Radii */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Visible keyboard focus everywhere */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Utility: the self-drawing roadmap line animation */
+@keyframes devpath-draw {
+  from {
+    stroke-dashoffset: var(--dp-dash, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
