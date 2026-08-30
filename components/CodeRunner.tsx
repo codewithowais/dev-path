@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Prism from "prismjs";
+import "prismjs/components/prism-python";
 import type { Language } from "@/content/lessons";
+
+Prism.manual = true; // don't auto-scan the page; we highlight on demand
 
 type Props = {
   code: Partial<Record<Language, string>>;
@@ -14,8 +18,8 @@ type RunState =
   | { kind: "running" }
   | { kind: "done"; out: string; error?: string; matches: boolean };
 
-/** Runs a snippet of JS in a Web Worker so infinite loops can be killed and
- *  the page thread never freezes. Only console.log/error output is captured. */
+/** Runs a snippet of JS in a Web Worker so infinite loops can be killed and the
+ *  page thread never freezes. Only console.log/error output is captured. */
 function runJavaScript(code: string, timeoutMs = 2000): Promise<{ out: string; error?: string }> {
   return new Promise((resolve) => {
     const src = `
@@ -23,16 +27,10 @@ function runJavaScript(code: string, timeoutMs = 2000): Promise<{ out: string; e
       const fmt = (a) => typeof a === 'string' ? a
         : (a && typeof a === 'object') ? JSON.stringify(a) : String(a);
       console.log = (...a) => logs.push(a.map(fmt).join(' '));
-      console.error = console.log;
-      console.info = console.log;
-      console.warn = console.log;
+      console.error = console.log; console.info = console.log; console.warn = console.log;
       self.onmessage = (e) => {
-        try {
-          new Function(e.data)();
-          self.postMessage({ out: logs.join('\\n') });
-        } catch (err) {
-          self.postMessage({ out: logs.join('\\n'), error: String((err && err.message) || err) });
-        }
+        try { new Function(e.data)(); self.postMessage({ out: logs.join('\\n') }); }
+        catch (err) { self.postMessage({ out: logs.join('\\n'), error: String((err && err.message) || err) }); }
       };
     `;
     let url: string;
@@ -44,18 +42,18 @@ function runJavaScript(code: string, timeoutMs = 2000): Promise<{ out: string; e
       resolve({ out: "", error: "Couldn't start the runner in this browser." });
       return;
     }
-    const done = (r: { out: string; error?: string }) => {
+    const finish = (r: { out: string; error?: string }) => {
       clearTimeout(timer);
       worker.terminate();
       URL.revokeObjectURL(url);
       resolve(r);
     };
     const timer = setTimeout(
-      () => done({ out: "", error: "Timed out — check for an infinite loop." }),
+      () => finish({ out: "", error: "Timed out — check for an infinite loop." }),
       timeoutMs
     );
-    worker.onmessage = (e) => done(e.data as { out: string; error?: string });
-    worker.onerror = (e) => done({ out: "", error: e.message || "Something went wrong." });
+    worker.onmessage = (e) => finish(e.data as { out: string; error?: string });
+    worker.onerror = (e) => finish({ out: "", error: e.message || "Something went wrong." });
     worker.postMessage(code);
   });
 }
@@ -68,12 +66,31 @@ export function CodeRunner({ code, output }: Props) {
   const [drafts, setDrafts] = useState<Partial<Record<Language, string>>>({});
   const [run, setRun] = useState<RunState>({ kind: "idle" });
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const preRef = useRef<HTMLPreElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
 
   const original = code[lang] ?? "";
   const current = drafts[lang] ?? original;
   const isJS = lang === "JavaScript";
+  const edited = current !== original;
   const lineCount = current.split("\n").length;
+
+  const highlighted = useMemo(() => {
+    const grammar = lang === "Python" ? Prism.languages.python : Prism.languages.javascript;
+    const name = lang === "Python" ? "python" : "javascript";
+    // trailing newline keeps the last line's box in sync with the textarea
+    return Prism.highlight(current, grammar, name) + "\n";
+  }, [current, lang]);
+
+  function syncScroll() {
+    const ta = taRef.current;
+    if (!ta) return;
+    if (preRef.current) {
+      preRef.current.scrollTop = ta.scrollTop;
+      preRef.current.scrollLeft = ta.scrollLeft;
+    }
+    if (gutterRef.current) gutterRef.current.scrollTop = ta.scrollTop;
+  }
 
   function switchLang(next: Language) {
     setLang(next);
@@ -94,14 +111,10 @@ export function CodeRunner({ code, output }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-ink">
+    <div className="dp-editor overflow-hidden rounded-xl border border-line bg-ink">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2">
-        <div
-          role="tablist"
-          aria-label="Language"
-          className="inline-flex rounded-lg bg-white/5 p-0.5"
-        >
+        <div role="tablist" aria-label="Language" className="inline-flex rounded-lg bg-white/5 p-0.5">
           {languages.map((l) => (
             <button
               key={l}
@@ -119,7 +132,7 @@ export function CodeRunner({ code, output }: Props) {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {(drafts[lang] ?? original) !== original && (
+          {edited && (
             <button
               type="button"
               onClick={reset}
@@ -146,37 +159,45 @@ export function CodeRunner({ code, output }: Props) {
         </div>
       </div>
 
-      {/* Editor: line-number gutter + editable textarea */}
-      <div className="flex max-h-[420px] overflow-auto">
+      {/* Editor: gutter + (highlight layer under a transparent textarea) */}
+      <div className="flex">
         <div
           ref={gutterRef}
           aria-hidden="true"
-          className="select-none whitespace-pre px-3 py-3 text-right font-mono text-sm leading-relaxed text-white/25"
+          className="dp-code shrink-0 select-none overflow-hidden whitespace-pre px-3 py-3 text-right text-white/25"
         >
           {Array.from({ length: lineCount }, (_, i) => i + 1).join("\n")}
         </div>
-        <textarea
-          ref={taRef}
-          value={current}
-          onChange={(e) => edit(e.target.value)}
-          onScroll={(e) => {
-            if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop;
-          }}
-          spellCheck={false}
-          autoCapitalize="off"
-          autoCorrect="off"
-          aria-label={`${lang} code editor`}
-          className="min-h-[160px] flex-1 resize-y bg-transparent py-3 pr-4 font-mono text-sm leading-relaxed text-[color:#e6e8f2] outline-none"
-        />
+        <div className="relative flex-1 overflow-hidden">
+          <pre
+            ref={preRef}
+            aria-hidden="true"
+            className="dp-code pointer-events-none absolute inset-0 m-0 overflow-hidden whitespace-pre px-3 py-3"
+          >
+            <code
+              className="dp-code text-[color:#e6e8f2]"
+              dangerouslySetInnerHTML={{ __html: highlighted }}
+            />
+          </pre>
+          <textarea
+            ref={taRef}
+            value={current}
+            onChange={(e) => edit(e.target.value)}
+            onScroll={syncScroll}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            aria-label={`${lang} code editor`}
+            className="dp-code relative max-h-[440px] min-h-[160px] w-full resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-white outline-none"
+          />
+        </div>
       </div>
 
       {/* Output */}
       <div className="border-t border-white/10">
         <div className="flex items-center gap-2 px-3 py-2">
           <span
-            className={`h-2 w-2 rounded-full ${
-              run.kind === "done" && run.error ? "bg-here" : "bg-output"
-            }`}
+            className={`h-2 w-2 rounded-full ${run.kind === "done" && run.error ? "bg-here" : "bg-output"}`}
             aria-hidden="true"
           />
           <span className="font-mono text-xs font-semibold uppercase tracking-wider text-white/50">
@@ -192,9 +213,9 @@ export function CodeRunner({ code, output }: Props) {
             <span className="ml-auto text-xs font-bold text-output">✓ matches expected</span>
           )}
         </div>
-        <div className="overflow-x-auto px-1 pb-1">
-          <pre className="px-3 pb-3 text-sm leading-relaxed">
-            <code className="font-mono text-[color:#e6e8f2]">
+        <div className="overflow-x-auto">
+          <pre className="dp-code px-3 pb-3">
+            <code className="text-[color:#e6e8f2]">
               {run.kind === "done"
                 ? (run.out || "") + (run.error ? (run.out ? "\n" : "") + "⚠ " + run.error : "")
                 : output}

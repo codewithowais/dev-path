@@ -207,3 +207,63 @@ p {
 .dp-lift:hover {
   transform: translateY(-3px);
 }
+
+/* ─────────────────────── Code editor (CodeRunner) ───────────────────────
+   Every layer (line-number gutter, highlight <pre>, and the transparent
+   <textarea> on top) shares these exact metrics so the caret lines up with
+   the highlighted text underneath. */
+.dp-editor .dp-code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+.dp-editor textarea.dp-code::selection {
+  background: rgba(130, 170, 255, 0.28);
+}
+
+/* Prism token palette, tuned for the dark editor surface. */
+.dp-editor .token.comment,
+.dp-editor .token.prolog,
+.dp-editor .token.doctype,
+.dp-editor .token.cdata {
+  color: #6b7394;
+  font-style: italic;
+}
+.dp-editor .token.punctuation {
+  color: #8b95b8;
+}
+.dp-editor .token.keyword,
+.dp-editor .token.boolean,
+.dp-editor .token.null,
+.dp-editor .token.important {
+  color: #c792ea;
+}
+.dp-editor .token.string,
+.dp-editor .token.char,
+.dp-editor .token.template-string,
+.dp-editor .token.attr-value,
+.dp-editor .token.regex {
+  color: #c3e88d;
+}
+.dp-editor .token.number,
+.dp-editor .token.constant,
+.dp-editor .token.symbol {
+  color: #f78c6c;
+}
+.dp-editor .token.function,
+.dp-editor .token.method {
+  color: #82aaff;
+}
+.dp-editor .token.operator {
+  color: #89ddff;
+}
+.dp-editor .token.class-name,
+.dp-editor .token.builtin,
+.dp-editor .token.decorator {
+  color: #ffcb6b;
+}
+.dp-editor .token.property {
+  color: #f78c6c;
+}
