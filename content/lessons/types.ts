@@ -52,6 +52,21 @@ export const pillars: Pillar[] = [
   "Generative AI",
 ];
 
+/** Accent colour per pillar — used for icon tiles, chips, and lesson headers so
+ *  the whole Learn area reads as one colour-coded set. */
+export const pillarColor: Record<Pillar, string> = {
+  "Programming Basics": "#5B4BEB",
+  "Data Structures": "#12B886",
+  Algorithms: "#F76707",
+  Databases: "#1098AD",
+  "Web & Internet": "#4263EB",
+  "Design Patterns": "#7048E8",
+  "System Design": "#E8590C",
+  Cloud: "#0CA5E9",
+  "Data Science": "#E64980",
+  "Generative AI": "#0CA678",
+};
+
 export const pillarBlurb: Record<Pillar, string> = {
   "Programming Basics": "The very first building blocks — the words and rules every program is made of.",
   "Data Structures": "How to hold your data — the containers you put information in.",

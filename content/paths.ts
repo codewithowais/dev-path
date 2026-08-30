@@ -102,7 +102,7 @@ export const paths: Path[] = [
     id: "ai-engineer",
     name: "AI Engineer",
     tag: "Teaching machines to learn",
-    color: "#191C33",
+    color: "#0CA5E9",
     blurb:
       "You build apps powered by AI. This ranges from smart chat features to models that spot patterns in data.",
     steps: [

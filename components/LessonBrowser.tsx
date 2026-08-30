@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Pillar } from "@/content/lessons";
+import { pillarColor } from "@/content/lessons";
 import { PillarIcon } from "@/components/PillarIcon";
 
 export type LessonItem = {
@@ -19,19 +20,8 @@ type Props = {
   pillarBlurb: Record<Pillar, string>;
 };
 
-/** Accent colour per pillar so the list reads as a designed, colour-coded set. */
-const PILLAR_COLOR: Record<Pillar, string> = {
-  "Programming Basics": "#5B4BEB",
-  "Data Structures": "#12B886",
-  Algorithms: "#F76707",
-  Databases: "#1098AD",
-  "Web & Internet": "#4263EB",
-  "Design Patterns": "#7048E8",
-  "System Design": "#E8590C",
-  Cloud: "#0CA5E9",
-  "Data Science": "#E64980",
-  "Generative AI": "#0CA678",
-};
+/** Accent colour per pillar — shared with the lesson pages via content/lessons. */
+const PILLAR_COLOR = pillarColor;
 
 function slug(pillar: string) {
   return pillar

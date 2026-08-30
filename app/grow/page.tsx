@@ -14,9 +14,7 @@ export default function GrowPage() {
   return (
     <div className="mx-auto max-w-5xl px-5">
       <section className="dp-stagger py-14 sm:py-16">
-        <p className="font-mono text-sm font-semibold uppercase tracking-wider text-here">
-          Grow
-        </p>
+        <p className="dp-eyebrow text-here">Grow</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
           Where can my career go?
         </h1>
@@ -36,14 +34,16 @@ export default function GrowPage() {
 
       <section aria-labelledby="role-trees-heading" className="py-14">
         <header className="max-w-2xl">
+          <p className="dp-eyebrow text-primary">Specialize</p>
           <h2
             id="role-trees-heading"
-            className="font-display text-3xl font-bold text-ink"
+            className="mt-2 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl"
           >
             Role-specific growth trees
           </h2>
-          <p className="mt-2 text-muted">
-            Pick your specialty and see how far it goes.
+          <p className="mt-3 text-lg leading-relaxed text-muted">
+            Pick your specialty and see how far it goes — each step links to the
+            path that teaches it.
           </p>
         </header>
         <Reveal variant="scale" className="mt-8">
@@ -53,13 +53,14 @@ export default function GrowPage() {
 
       <section aria-labelledby="titles-heading" className="py-14">
         <header className="max-w-2xl">
+          <p className="dp-eyebrow text-here">Decoder</p>
           <h2
             id="titles-heading"
-            className="font-display text-3xl font-bold text-ink"
+            className="mt-2 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl"
           >
             Confusing titles, in plain words
           </h2>
-          <p className="mt-2 text-muted">
+          <p className="mt-3 text-lg leading-relaxed text-muted">
             The job-title soup, decoded. Short, honest, no fluff. Tap to expand.
           </p>
         </header>

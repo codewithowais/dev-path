@@ -52,8 +52,8 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Soft atmospheric wash so pages aren't flat grey — brand-tinted glows,
-   fixed so they feel like ambient light. */
+/* Atmosphere so pages never feel flat: a faint dot-grid texture layered under
+   soft brand-tinted glows. Fixed, so it reads like ambient light + paper. */
 body::before {
   content: "";
   position: fixed;
@@ -61,21 +61,53 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(1100px 560px at 100% -8%, rgba(91, 75, 235, 0.08), transparent 62%),
-    radial-gradient(900px 500px at -6% 4%, rgba(18, 184, 134, 0.06), transparent 55%),
-    radial-gradient(700px 500px at 60% 110%, rgba(255, 138, 61, 0.05), transparent 60%);
+    radial-gradient(circle at 1px 1px, rgba(25, 28, 51, 0.045) 1px, transparent 0) 0 0 / 26px 26px,
+    radial-gradient(1150px 580px at 100% -10%, rgba(91, 75, 235, 0.11), transparent 60%),
+    radial-gradient(920px 520px at -8% 2%, rgba(18, 184, 134, 0.07), transparent 55%),
+    radial-gradient(760px 520px at 62% 112%, rgba(255, 138, 61, 0.06), transparent 60%);
+  -webkit-mask-image: linear-gradient(to bottom, black, black);
 }
 
-/* Soft, layered card shadow for depth. */
+/* Soft, layered card shadow for depth — cool ink-tinted, close + far. */
 .dp-shadow {
   box-shadow:
     0 1px 2px rgba(25, 28, 51, 0.04),
-    0 14px 34px -18px rgba(25, 28, 51, 0.22);
+    0 2px 6px -2px rgba(25, 28, 51, 0.06),
+    0 18px 40px -20px rgba(25, 28, 51, 0.24);
 }
 .dp-shadow-sm {
   box-shadow:
     0 1px 2px rgba(25, 28, 51, 0.04),
-    0 8px 20px -14px rgba(25, 28, 51, 0.18);
+    0 10px 24px -16px rgba(25, 28, 51, 0.2);
+}
+
+/* A designed surface: paper-white with a faint inner top-highlight ring so
+   cards catch light at the edge instead of reading as flat rectangles. */
+.dp-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0)) border-box,
+    var(--color-card) padding-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(25, 28, 51, 0.04),
+    0 12px 28px -18px rgba(25, 28, 51, 0.22);
+}
+
+/* Section eyebrow — the small mono/label above a heading, one consistent look. */
+.dp-eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Brand gradient text (for accent words in headings). */
+.dp-gradient-text {
+  background: linear-gradient(100deg, #5b4beb 0%, #7048e8 45%, #4263eb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Respect users who prefer less motion */
