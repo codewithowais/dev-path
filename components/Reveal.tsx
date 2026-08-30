@@ -33,6 +33,9 @@ export function Reveal({ children, variant = "up", delay = 0, className }: Props
       return;
     }
     el.setAttribute("data-reveal", "out");
+    // Reveal as soon as any part enters the viewport. A ratio-based threshold
+    // breaks for elements taller than the screen (that fraction is never met),
+    // which would leave a big section stuck hidden — so trigger at threshold 0.
     const obs = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -43,7 +46,7 @@ export function Reveal({ children, variant = "up", delay = 0, className }: Props
           }
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0, rootMargin: "0px 0px -10% 0px" }
     );
     obs.observe(el);
     return () => obs.disconnect();
