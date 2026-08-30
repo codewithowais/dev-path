@@ -510,6 +510,497 @@ print("0! =", factorial(0))`,
     output: `5! = 120
 0! = 1`,
   },
+  {
+    id: "heap-sort",
+    pillar: "Algorithms",
+    name: "Heap Sort",
+    easy: "Heap sort is like running a tournament bracket. You arrange everyone into a 'max heap' — a shape where every parent is bigger than its children, so the biggest item always ends up at the very top. Pull the champion off the top, put it at the end of the sorted list, then let the next-biggest rise to the top and repeat.",
+    how: [
+      "Arrange the whole list into a max heap, so the largest item sits at the root (index 0).",
+      "Swap the root with the last unsorted item — that puts the current largest in its final sorted spot.",
+      "Shrink the heap by one and 'heapify' (fix the heap shape) from the root down. Repeat until nothing is left to sort.",
+    ],
+    when: "When you need guaranteed O(n log n) sorting without merge sort's extra memory — heap sort sorts in place. Heaps also power priority queues directly.",
+    big: "O(n log n) time — every item moves down roughly log n levels · O(1) space since it sorts in place.",
+    mistakes: [
+      "Getting the child index formulas wrong — a node at index i has children at 2i+1 and 2i+2.",
+      "Forgetting to re-heapify after swapping the root, which leaves the heap shape broken for the rest of the sort.",
+    ],
+    code: {
+      JavaScript: `function heapSort(arr) {
+  const a = [...arr];
+  const n = a.length;
+
+  function heapify(size, i) {
+    let largest = i;
+    const left = 2 * i + 1;
+    const right = 2 * i + 2;
+    if (left < size && a[left] > a[largest]) largest = left;
+    if (right < size && a[right] > a[largest]) largest = right;
+    if (largest !== i) {
+      [a[i], a[largest]] = [a[largest], a[i]];
+      heapify(size, largest); // fix the heap shape further down
+    }
+  }
+
+  // Build the initial max heap.
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) heapify(n, i);
+
+  // Repeatedly move the max to the end and shrink the heap.
+  for (let end = n - 1; end > 0; end--) {
+    [a[0], a[end]] = [a[end], a[0]];
+    heapify(end, 0);
+  }
+  return a;
+}
+
+const data = [5, 2, 9, 1, 5, 6];
+console.log("Before:", data.join(" "));
+console.log("Sorted:", heapSort(data).join(" "));`,
+      Python: `def heap_sort(arr):
+    a = arr[:]
+    n = len(a)
+
+    def heapify(size, i):
+        largest = i
+        left = 2 * i + 1
+        right = 2 * i + 2
+        if left < size and a[left] > a[largest]:
+            largest = left
+        if right < size and a[right] > a[largest]:
+            largest = right
+        if largest != i:
+            a[i], a[largest] = a[largest], a[i]
+            heapify(size, largest)  # fix the heap shape further down
+
+    # Build the initial max heap.
+    for i in range(n // 2 - 1, -1, -1):
+        heapify(n, i)
+
+    # Repeatedly move the max to the end and shrink the heap.
+    for end in range(n - 1, 0, -1):
+        a[0], a[end] = a[end], a[0]
+        heapify(end, 0)
+    return a
+
+data = [5, 2, 9, 1, 5, 6]
+print("Before:", " ".join(str(v) for v in data))
+print("Sorted:", " ".join(str(v) for v in heap_sort(data)))`,
+    },
+    output: `Before: 5 2 9 1 5 6
+Sorted: 1 2 5 5 6 9`,
+  },
+  {
+    id: "counting-sort",
+    pillar: "Algorithms",
+    name: "Counting Sort",
+    easy: "Counting sort is like tallying exam scores into labeled bins instead of comparing papers to each other. You count how many times each score appears, then read the bins off in order. It never compares two items directly — it just counts.",
+    how: [
+      "Find the biggest value in the list, so you know how many bins you need.",
+      "Make a bin (a count) for every possible value from 0 up to that max, and count how often each value shows up.",
+      "Walk the bins in order from smallest to largest, writing out each value as many times as it was counted.",
+    ],
+    when: "Sorting small-range non-negative integers — like ages, grades, or dice rolls — where it can beat comparison sorts by never comparing items at all.",
+    big: "O(n + k) time, where k is the range of possible values · O(k) space for the count bins. Not a comparison sort like the ones above.",
+    mistakes: [
+      "Using it on data with a huge range (like arbitrary floats or huge numbers) — the bin array becomes enormous.",
+      "Forgetting it only works on non-negative integers without extra adjustment for negatives.",
+    ],
+    code: {
+      JavaScript: `function countingSort(arr) {
+  if (arr.length === 0) return [];
+  const max = Math.max(...arr);
+  const counts = new Array(max + 1).fill(0);
+  for (const num of arr) counts[num]++; // tally each value
+
+  const result = [];
+  for (let value = 0; value <= max; value++) {
+    for (let c = 0; c < counts[value]; c++) result.push(value);
+  }
+  return result;
+}
+
+const data = [5, 2, 9, 1, 5, 6];
+console.log("Before:", data.join(" "));
+console.log("Sorted:", countingSort(data).join(" "));`,
+      Python: `def counting_sort(arr):
+    if not arr:
+        return []
+    max_val = max(arr)
+    counts = [0] * (max_val + 1)
+    for num in arr:
+        counts[num] += 1  # tally each value
+
+    result = []
+    for value in range(max_val + 1):
+        result.extend([value] * counts[value])
+    return result
+
+data = [5, 2, 9, 1, 5, 6]
+print("Before:", " ".join(str(v) for v in data))
+print("Sorted:", " ".join(str(v) for v in counting_sort(data)))`,
+    },
+    output: `Before: 5 2 9 1 5 6
+Sorted: 1 2 5 5 6 9`,
+  },
+  {
+    id: "jump-search",
+    pillar: "Algorithms",
+    name: "Jump Search",
+    easy: "Jump search is like flipping through a phone book in big chunks instead of one page at a time — jump ahead by a block of pages, and as soon as you overshoot the name you want, walk back and search that one block page by page. It only works on sorted data.",
+    how: [
+      "Pick a block size (usually the square root of the list's length).",
+      "Jump ahead by that many items at a time until you land on a block that could contain the target.",
+      "Walk through that one block item by item (a small linear search) to find the exact match.",
+    ],
+    when: "Searching a large sorted list when jumping backward is expensive (like on a tape or slow storage) — a middle ground between linear search and binary search.",
+    big: "O(sqrt n) time — far fewer checks than linear search, though more than binary search's O(log n) · O(1) space.",
+    mistakes: [
+      "Running it on unsorted data — like binary search, it requires the list to be sorted first.",
+      "Letting the block index run past the end of the array instead of capping it there.",
+    ],
+    code: {
+      JavaScript: `function jumpSearch(arr, target) {
+  const n = arr.length;
+  const step = Math.floor(Math.sqrt(n));
+  let block = 0;
+
+  // Jump ahead block by block until we overshoot the target.
+  while (block + step <= n && arr[block + step - 1] < target) {
+    block += step;
+  }
+
+  // Linear-search inside the block we landed on.
+  for (let i = block; i < Math.min(block + step, n); i++) {
+    if (arr[i] === target) return i;
+  }
+  return -1; // not found
+}
+
+const sorted = [4, 8, 15, 16, 23, 42];
+console.log("Index of 23:", jumpSearch(sorted, 23));
+console.log("Index of 10:", jumpSearch(sorted, 10));`,
+      Python: `import math
+
+def jump_search(arr, target):
+    n = len(arr)
+    step = int(math.sqrt(n))
+    block = 0
+
+    # Jump ahead block by block until we overshoot the target.
+    while block + step <= n and arr[block + step - 1] < target:
+        block += step
+
+    # Linear-search inside the block we landed on.
+    for i in range(block, min(block + step, n)):
+        if arr[i] == target:
+            return i
+    return -1  # not found
+
+sorted_nums = [4, 8, 15, 16, 23, 42]
+print("Index of 23:", jump_search(sorted_nums, 23))
+print("Index of 10:", jump_search(sorted_nums, 10))`,
+    },
+    output: `Index of 23: 4
+Index of 10: -1`,
+  },
+  {
+    id: "two-pointers",
+    pillar: "Algorithms",
+    name: "Two Pointers",
+    easy: "The two-pointer trick is like two people starting at opposite ends of a sorted line of numbered cards and walking toward each other. If their two cards don't add up to the target yet, the person holding the smaller card steps inward — that's the only move that can raise the sum.",
+    how: [
+      "Make sure the list is sorted first.",
+      "Put one pointer at the very start and one at the very end.",
+      "If the two values add up to the target, you're done. Too small? Move the left pointer right. Too big? Move the right pointer left. Repeat until the pointers meet.",
+    ],
+    when: "Finding a pair with a target sum in sorted data, or similar problems (removing duplicates, reversing in place) — it does the job in one pass with almost no extra memory.",
+    big: "O(n log n) if you need to sort first, then O(n) for the single pass · O(1) extra space (besides the sort).",
+    mistakes: [
+      "Forgetting to sort the list first — the pointer logic only works because sorted order guarantees which side to move.",
+      "Moving the wrong pointer (or both at once) and skipping over the actual answer.",
+    ],
+    code: {
+      JavaScript: `function twoSum(arr, target) {
+  const a = [...arr].sort((x, y) => x - y);
+  let left = 0;
+  let right = a.length - 1;
+
+  while (left < right) {
+    const sum = a[left] + a[right];
+    if (sum === target) return [a[left], a[right]];
+    if (sum < target) left++;  // need a bigger sum
+    else right--;              // need a smaller sum
+  }
+  return null; // no pair found
+}
+
+const nums = [8, 2, 9, 1, 5, 6];
+const pair = twoSum(nums, 10);
+console.log("Numbers:", nums.join(" "));
+if (pair) {
+  console.log("Pair summing to 10:", pair.join(" "));
+} else {
+  console.log("Pair summing to 10: none");
+}`,
+      Python: `def two_sum(arr, target):
+    a = sorted(arr)
+    left, right = 0, len(a) - 1
+
+    while left < right:
+        total = a[left] + a[right]
+        if total == target:
+            return [a[left], a[right]]
+        if total < target:
+            left += 1   # need a bigger sum
+        else:
+            right -= 1  # need a smaller sum
+    return None  # no pair found
+
+nums = [8, 2, 9, 1, 5, 6]
+pair = two_sum(nums, 10)
+print("Numbers:", " ".join(str(v) for v in nums))
+if pair:
+    print("Pair summing to 10:", " ".join(str(v) for v in pair))
+else:
+    print("Pair summing to 10: none")`,
+    },
+    output: `Numbers: 8 2 9 1 5 6
+Pair summing to 10: 1 9`,
+  },
+  {
+    id: "sliding-window",
+    pillar: "Algorithms",
+    name: "Sliding Window",
+    easy: "Sliding window is like looking through a train window that only shows a fixed number of seats at a time. As the train moves, you don't re-count everyone in view from scratch — you just drop the person who left the view and add the person who entered it.",
+    how: [
+      "Add up the first 'window' of k items — that's your starting sum.",
+      "Slide the window forward one step: subtract the item that just left, add the item that just entered.",
+      "Keep track of the best (e.g. largest) sum you've seen as the window slides across the whole list.",
+    ],
+    when: "Problems about a fixed-size (or growing) window of consecutive items — max/min sum, longest run, or average over a moving range — much faster than recomputing each window from scratch.",
+    big: "O(n) time — each item is added to the window once and removed once · O(1) space.",
+    mistakes: [
+      "Recomputing the whole window's sum from scratch every time it slides — that's O(n*k) and defeats the purpose.",
+      "Getting the window's start/end indices off by one, especially at the very end of the list.",
+    ],
+    code: {
+      JavaScript: `function maxSumSubarray(arr, k) {
+  let windowSum = 0;
+  for (let i = 0; i < k; i++) windowSum += arr[i]; // first window
+
+  let maxSum = windowSum;
+  for (let end = k; end < arr.length; end++) {
+    windowSum += arr[end] - arr[end - k]; // slide: add new, drop old
+    if (windowSum > maxSum) maxSum = windowSum;
+  }
+  return maxSum;
+}
+
+const data = [2, 1, 5, 1, 3, 2];
+console.log("Numbers:", data.join(" "));
+console.log("Max sum of 3 consecutive:", maxSumSubarray(data, 3));`,
+      Python: `def max_sum_subarray(arr, k):
+    window_sum = sum(arr[:k])  # first window
+    max_sum = window_sum
+
+    for end in range(k, len(arr)):
+        window_sum += arr[end] - arr[end - k]  # slide: add new, drop old
+        if window_sum > max_sum:
+            max_sum = window_sum
+    return max_sum
+
+data = [2, 1, 5, 1, 3, 2]
+print("Numbers:", " ".join(str(v) for v in data))
+print("Max sum of 3 consecutive:", max_sum_subarray(data, 3))`,
+    },
+    output: `Numbers: 2 1 5 1 3 2
+Max sum of 3 consecutive: 9`,
+  },
+  {
+    id: "dynamic-programming",
+    pillar: "Algorithms",
+    name: "Dynamic Programming (Memoization)",
+    easy: "Dynamic programming is like writing an answer on a sticky note the first time you work it out, so next time someone asks the same question you just read the note instead of redoing the work. That sticky-note cache is called 'memoization' — remembering answers to subproblems you've already solved.",
+    how: [
+      "Before computing an answer, check a cache (like an object or dictionary) to see if you've already solved this exact subproblem.",
+      "If it's cached, return it immediately — no recomputation needed.",
+      "If not, compute it (often by recursion into smaller subproblems), save the result in the cache, then return it.",
+    ],
+    when: "Recursive problems that ask the same question over and over — Fibonacci numbers, counting paths on a grid, coin-change problems — anywhere plain recursion would redo the same work many times.",
+    big: "O(n) time and O(n) space for Fibonacci with memoization — a huge improvement over plain recursion's O(2^n) time, at the cost of some memory for the cache.",
+    mistakes: [
+      "Forgetting to check the cache first, which silently falls back to slow, repeated recomputation.",
+      "In Python, using a mutable default argument (like memo={}) — it gets shared and reused across calls instead of starting fresh.",
+    ],
+    code: {
+      JavaScript: `function fib(n, memo = {}) {
+  if (n in memo) return memo[n];      // already solved — reuse it
+  if (n <= 1) return n;
+  memo[n] = fib(n - 1, memo) + fib(n - 2, memo); // solve once, remember it
+  return memo[n];
+}
+
+console.log("fib(10) =", fib(10));
+console.log("fib(20) =", fib(20));`,
+      Python: `def fib(n, memo=None):
+    if memo is None:
+        memo = {}
+    if n in memo:
+        return memo[n]  # already solved — reuse it
+    if n <= 1:
+        return n
+    memo[n] = fib(n - 1, memo) + fib(n - 2, memo)  # solve once, remember it
+    return memo[n]
+
+print("fib(10) =", fib(10))
+print("fib(20) =", fib(20))`,
+    },
+    output: `fib(10) = 55
+fib(20) = 6765`,
+    note: "In Python, avoid a mutable default like memo={} — it's the same trap as DFS's default list. We use None and create a fresh cache instead.",
+  },
+  {
+    id: "kadanes-algorithm",
+    pillar: "Algorithms",
+    name: "Kadane's Algorithm",
+    easy: "Kadane's algorithm is like tracking your running profit day by day. If your running total ever drops below what today alone is worth, you cut your losses and restart counting from today. The whole time, you remember the best streak you've ever had.",
+    how: [
+      "Start both the 'current streak' sum and the 'best streak' sum at the first item.",
+      "At each next item, decide: is it better to extend the current streak, or to start a fresh streak from here?",
+      "Update the best streak seen so far after every step. Keep going to the end of the list.",
+    ],
+    when: "Finding the best contiguous run in a sequence — the most profitable stretch of stock price changes, or the best streak of gains in any series of ups and downs.",
+    big: "O(n) time — a single pass through the list · O(1) space.",
+    mistakes: [
+      "Resetting the current sum to 0 instead of to the current item — that breaks the algorithm when all numbers are negative.",
+      "Forgetting to update the best sum on every step, not just when you reset.",
+    ],
+    code: {
+      JavaScript: `function maxSubArraySum(arr) {
+  let currentSum = arr[0];
+  let maxSum = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    // Either extend the streak, or start fresh at this item.
+    currentSum = Math.max(arr[i], currentSum + arr[i]);
+    maxSum = Math.max(maxSum, currentSum);
+  }
+  return maxSum;
+}
+
+const data = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+console.log("Numbers:", data.join(" "));
+console.log("Max subarray sum:", maxSubArraySum(data));`,
+      Python: `def max_subarray_sum(arr):
+    current_sum = arr[0]
+    max_sum = arr[0]
+
+    for i in range(1, len(arr)):
+        # Either extend the streak, or start fresh at this item.
+        current_sum = max(arr[i], current_sum + arr[i])
+        max_sum = max(max_sum, current_sum)
+    return max_sum
+
+data = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+print("Numbers:", " ".join(str(v) for v in data))
+print("Max subarray sum:", max_subarray_sum(data))`,
+    },
+    output: `Numbers: -2 1 -3 4 -1 2 1 -5 4
+Max subarray sum: 6`,
+  },
+  {
+    id: "dijkstras-algorithm",
+    pillar: "Algorithms",
+    name: "Dijkstra's Shortest Path",
+    easy: "Dijkstra's algorithm is a road-trip planner that always visits the closest unvisited city next. From each city it checks: 'is it cheaper to reach my neighbors through here than the best way I knew before?' It only works when all road distances (weights) are zero or positive.",
+    how: [
+      "Set the distance to the starting point as 0, and every other point as 'unknown' (infinity) for now.",
+      "Repeatedly pick the unvisited point with the smallest known distance, and mark it visited.",
+      "'Relax' its neighbors: if reaching a neighbor through this point is shorter than what you knew before, update it. Repeat until every reachable point is visited.",
+    ],
+    when: "Shortest paths in a weighted graph where weights aren't negative — GPS route planning, network routing, or any 'cheapest way from A to B' problem.",
+    big: "O(V²) time with this simple version (V = number of points, scanning all of them each round) · O(V) space for the distances. A priority queue speeds this up to O((V + E) log V) on large graphs.",
+    mistakes: [
+      "Using it on a graph with negative edge weights — Dijkstra assumes distances only ever grow, and gives wrong answers there.",
+      "Forgetting to mark points as visited once settled, which wastes time re-checking them.",
+    ],
+    code: {
+      JavaScript: `function dijkstra(graph, start) {
+  const dist = {};
+  const visited = new Set();
+  for (const node in graph) dist[node] = Infinity;
+  dist[start] = 0;
+
+  while (visited.size < Object.keys(graph).length) {
+    // Pick the unvisited node with the smallest known distance.
+    let current = null;
+    for (const node in graph) {
+      if (!visited.has(node) && (current === null || dist[node] < dist[current])) {
+        current = node;
+      }
+    }
+    if (current === null || dist[current] === Infinity) break;
+    visited.add(current);
+
+    for (const neighbor in graph[current]) {
+      const newDist = dist[current] + graph[current][neighbor];
+      if (newDist < dist[neighbor]) dist[neighbor] = newDist; // relax
+    }
+  }
+  return dist;
+}
+
+const graph = {
+  A: { B: 4, C: 1 },
+  B: { A: 4, D: 1 },
+  C: { A: 1, B: 2, D: 5 },
+  D: { B: 1, C: 5 },
+};
+
+const distances = dijkstra(graph, "A");
+const order = ["A", "B", "C", "D"]; // fixed order so the output is deterministic
+const line = order.map((node) => node + ":" + distances[node]).join(" ");
+console.log("Distances from A:", line);`,
+      Python: `import math
+
+def dijkstra(graph, start):
+    dist = {node: math.inf for node in graph}
+    dist[start] = 0
+    visited = set()
+
+    while len(visited) < len(graph):
+        # Pick the unvisited node with the smallest known distance.
+        current = None
+        for node in graph:
+            if node not in visited and (current is None or dist[node] < dist[current]):
+                current = node
+        if current is None or dist[current] == math.inf:
+            break
+        visited.add(current)
+
+        for neighbor, weight in graph[current].items():
+            new_dist = dist[current] + weight
+            if new_dist < dist[neighbor]:
+                dist[neighbor] = new_dist  # relax
+
+    return dist
+
+graph = {
+    "A": {"B": 4, "C": 1},
+    "B": {"A": 4, "D": 1},
+    "C": {"A": 1, "B": 2, "D": 5},
+    "D": {"B": 1, "C": 5},
+}
+
+distances = dijkstra(graph, "A")
+order = ["A", "B", "C", "D"]  # fixed order so the output is deterministic
+line = " ".join(node + ":" + str(distances[node]) for node in order)
+print("Distances from A:", line)`,
+    },
+    output: `Distances from A: A:0 B:3 C:1 D:4`,
+    note: "Node distances come out as plain integers here because every edge weight is a whole number — no floats to worry about matching between languages.",
+  },
 ];
 
 export default lessons;

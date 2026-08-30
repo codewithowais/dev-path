@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GrowthTree } from "@/components/GrowthTree";
+import { RoleTree } from "@/components/RoleTree";
 import { TitleGuide } from "@/components/TitleGuide";
 
 export const metadata: Metadata = {
@@ -30,6 +31,23 @@ export default function GrowPage() {
           The career ladder
         </h2>
         <GrowthTree />
+      </section>
+
+      <section aria-labelledby="role-trees-heading" className="py-14">
+        <header className="max-w-2xl">
+          <h2
+            id="role-trees-heading"
+            className="font-display text-3xl font-bold text-ink"
+          >
+            Role-specific growth trees
+          </h2>
+          <p className="mt-2 text-muted">
+            Pick your specialty and see how far it goes.
+          </p>
+        </header>
+        <div className="mt-8">
+          <RoleTree />
+        </div>
       </section>
 
       <section aria-labelledby="titles-heading" className="py-14">
