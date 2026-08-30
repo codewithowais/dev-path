@@ -4,6 +4,7 @@ import { Reveal } from "@/components/Reveal";
 import { paths } from "@/content/paths";
 import { lessons } from "@/content/lessons";
 import { roleTrees } from "@/content/career";
+import { BrandChip } from "@/components/Brand";
 
 const STATS = [
   { value: `${lessons.length}`, label: "runnable lessons" },
@@ -62,6 +63,10 @@ export default function HomePage() {
               </div>
             ))}
           </dl>
+
+          <div className="mt-8">
+            <BrandChip />
+          </div>
         </div>
 
         {/* Decorative wayfinder route — echoes the "learning as a journey" idea */}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Lesson } from "@/content/lessons";
-import { pillarColor } from "@/content/lessons";
+import { pillarColor, lessonsByPillar } from "@/content/lessons";
 import { CodeRunner } from "@/components/CodeRunner";
 import { PillarIcon } from "@/components/PillarIcon";
 
@@ -8,6 +8,10 @@ import { PillarIcon } from "@/components/PillarIcon";
  *  right (stacked on mobile). Designed so you can see it all without hunting. */
 export function LessonView({ lesson }: { lesson: Lesson }) {
   const color = pillarColor[lesson.pillar];
+  const siblings = lessonsByPillar(lesson.pillar);
+  const idx = siblings.findIndex((l) => l.id === lesson.id);
+  const prev = idx > 0 ? siblings[idx - 1] : undefined;
+  const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : undefined;
   return (
     <div className="mx-auto max-w-6xl px-5">
       <div className="py-8 sm:py-10">
@@ -108,8 +112,60 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
             )}
           </div>
         </div>
+
+        {/* Prev / next within this pillar — keep learners moving in order */}
+        <nav
+          aria-label={`More in ${lesson.pillar}`}
+          className="mt-12 border-t border-line pt-6"
+          style={{ ["--accent" as string]: color }}
+        >
+          {idx >= 0 && (
+            <p className="dp-eyebrow mb-4 text-muted">
+              Lesson {idx + 1} of {siblings.length} in {lesson.pillar}
+            </p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <LessonNavCard lesson={prev} direction="prev" />
+            <LessonNavCard lesson={next} direction="next" />
+          </div>
+        </nav>
       </div>
     </div>
+  );
+}
+
+function LessonNavCard({
+  lesson,
+  direction,
+}: {
+  lesson: Lesson | undefined;
+  direction: "prev" | "next";
+}) {
+  const isNext = direction === "next";
+  if (!lesson) {
+    // Keep the grid balanced with an inert placeholder.
+    return <span aria-hidden="true" className="hidden sm:block" />;
+  }
+  return (
+    <Link
+      href={`/learn/${lesson.id}`}
+      className={`dp-lift dp-card group flex flex-col gap-1 rounded-card border border-line p-4 transition-colors hover:border-[color:var(--accent)]/50 ${
+        isNext ? "sm:text-right" : ""
+      }`}
+    >
+      <span
+        className={`flex items-center gap-1.5 text-xs font-semibold text-muted ${
+          isNext ? "sm:justify-end" : ""
+        }`}
+      >
+        {!isNext && <span aria-hidden="true">←</span>}
+        {isNext ? "Next" : "Previous"}
+        {isNext && <span aria-hidden="true">→</span>}
+      </span>
+      <span className="font-display font-bold text-ink transition-colors group-hover:text-[color:var(--accent)]">
+        {lesson.name}
+      </span>
+    </Link>
   );
 }
 

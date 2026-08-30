@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandSignature } from "@/components/Brand";
 
 export function Footer() {
   return (
@@ -12,6 +13,9 @@ export function Footer() {
             Learn to code and grow your career, explained in plain words — with
             runnable code and the exact output you should expect.
           </p>
+          <div className="mt-5">
+            <BrandSignature />
+          </div>
         </div>
 
         <nav aria-label="Footer" className="flex gap-10 text-sm">
