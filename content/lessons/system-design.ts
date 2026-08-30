@@ -214,7 +214,7 @@ Keys that moved: 1 out of 6`,
     id: "sharding",
     pillar: "System Design",
     name: "Sharding (Hash-Based Key Routing)",
-    easy: "A shard is just one slice of your database — instead of one giant table holding every user, you split it into, say, 4 smaller tables (shards) and each user lives in exactly one of them. Sharding is deciding which slice a piece of data belongs to, usually by hashing its key (like a user ID) and taking the remainder when divided by the number of shards.",
+    easy: "Picture a huge pile of mail that needs sorting into 4 mailboxes instead of one overflowing box. Sharding does the same thing to your database: instead of one giant table holding every user, you split it into several smaller tables called shards, and each user's data lives in exactly one of them. To decide which shard a piece of data goes to, you turn its key (like a user ID) into a number and use that number to pick a shard — the same key always lands in the same shard.",
     how: [
       "Pick a number of shards, N (e.g. 4 database instances).",
       "For any key (like a user ID), compute a deterministic hash number from it.",
@@ -534,7 +534,7 @@ After alice scores 40 more points:
     id: "unique-id-generator",
     pillar: "System Design",
     name: "Unique ID Generator (Snowflake-Style)",
-    easy: "Think of a car license plate: it packs a state code, a year, and a serial number into one plate so no two cars ever collide — even ones made in different states at the same time. A Snowflake-style ID does the same trick for database rows: it squishes a timestamp, a machine ID, and a per-millisecond counter into one number, so multiple servers can each hand out IDs at the same moment without ever generating the same one.",
+    easy: "Think of a car license plate: it packs a state code, a year, and a serial number into one plate, so no two cars ever collide — even ones made in different states at the same time. A Snowflake-style ID does the same trick for database rows. It squishes three things into one number: the current time, which server made the ID, and a small counter that ticks up if that same server makes more than one ID in the very same instant. Combine all three, and every server can hand out IDs at the same moment without ever handing out the same one twice.",
     how: [
       "Reserve some bits of the final number for a timestamp, some for a machine ID (which server generated it), and some for a sequence counter.",
       "Shift the timestamp left past the machine-ID and sequence bits, shift the machine ID left past the sequence bits, then combine all three with bitwise OR into one number.",
@@ -609,6 +609,459 @@ t=101: id=3312640
 t=101: id=3312641
 t=205: id=6720512
 All IDs unique: yes`,
+  },
+  {
+    id: "caching-strategies",
+    pillar: "System Design",
+    name: "Caching Strategies (Write-Through vs Write-Back)",
+    easy: "Imagine you keep a small notebook on your desk (a fast 'cache') instead of always walking to the filing cabinet in the basement (the slower real database) every time you need something. Write-through means: every time you jot something in the notebook, you ALSO walk down and update the filing cabinet right away — slower per write, but the two always agree. Write-back (also called write-behind) means: you just jot it in the notebook and keep working — the filing cabinet gets updated later, in a batch. Writes feel instant, but if your notebook page got lost before that trip to the basement, that update is gone.",
+    how: [
+      "Keep two stores: a fast cache and a slower real database.",
+      "Write-through: on every write, update the cache AND the database immediately, before telling the caller 'done'. Reads always match between the two.",
+      "Write-back: on every write, update the cache only and mark that entry 'dirty' (changed but not yet saved). A separate step later ('flush') copies all dirty entries into the database and clears the dirty marks.",
+      "Reads always check the cache first — if the data isn't there, fall back to the database.",
+    ],
+    when: "When your app got popular enough that hitting the real database on every single write is slowing everything down. Write-through is worth the extra cost when you can never afford to lose a write (like a bank balance). Write-back is worth the risk when writes are frequent and a short window of possible data loss (if the server crashes before flushing) is acceptable, in exchange for speed (like counting 'likes' on a post).",
+    big: "O(1) time per cache read or write in both strategies. Write-through pays one extra O(1) database write on every single write. Write-back defers that cost, flushing many writes to the database in one batch later — faster now, but anything still 'dirty' is lost if the cache disappears before the flush.",
+    mistakes: [
+      "Picking write-back for data you can never afford to lose (like 'has this user paid?') without understanding that a crash before the flush means that write never reaches the real database.",
+      "Forgetting to check the cache on reads and going straight to the database anyway — that throws away the entire speed benefit of having a cache.",
+    ],
+    code: {
+      JavaScript: `function writeThrough(cache, db, key, value) {
+  cache[key] = value;
+  db[key] = value; // updated together, right away
+}
+
+function writeBack(cache, dirty, key, value) {
+  cache[key] = value;
+  dirty[key] = true; // marked "dirty" — not saved to the real database yet
+}
+
+function flush(cache, db, dirty) {
+  const keys = Object.keys(dirty).sort();
+  for (const key of keys) db[key] = cache[key];
+  for (const key of keys) delete dirty[key];
+  return keys;
+}
+
+function formatStore(store) {
+  const keys = Object.keys(store).sort();
+  return keys.map((k) => \`\${k}=\${store[k]}\`).join(", ");
+}
+
+const cache = {};
+const db = {};
+
+console.log("-- Write-through: cache and database updated together --");
+writeThrough(cache, db, "user:1", "Alice");
+writeThrough(cache, db, "user:2", "Bob");
+console.log("cache: " + formatStore(cache));
+console.log("database: " + formatStore(db));
+
+const dirty = {};
+console.log("-- Write-back: cache updated now, database updated later --");
+writeBack(cache, dirty, "user:3", "Carol");
+writeBack(cache, dirty, "user:1", "Alicia");
+console.log("cache: " + formatStore(cache));
+console.log("database (not flushed yet): " + formatStore(db));
+
+const flushedKeys = flush(cache, db, dirty);
+console.log("Flushed keys: " + flushedKeys.join(", "));
+console.log("database (after flush): " + formatStore(db));`,
+      Python: `def write_through(cache, db, key, value):
+    cache[key] = value
+    db[key] = value  # updated together, right away
+
+def write_back(cache, dirty, key, value):
+    cache[key] = value
+    dirty[key] = True  # marked "dirty" — not saved to the real database yet
+
+def flush(cache, db, dirty):
+    keys = sorted(dirty.keys())
+    for key in keys:
+        db[key] = cache[key]
+    for key in keys:
+        del dirty[key]
+    return keys
+
+def format_store(store):
+    keys = sorted(store.keys())
+    return ", ".join(f"{k}={store[k]}" for k in keys)
+
+cache = {}
+db = {}
+
+print("-- Write-through: cache and database updated together --")
+write_through(cache, db, "user:1", "Alice")
+write_through(cache, db, "user:2", "Bob")
+print("cache: " + format_store(cache))
+print("database: " + format_store(db))
+
+dirty = {}
+print("-- Write-back: cache updated now, database updated later --")
+write_back(cache, dirty, "user:3", "Carol")
+write_back(cache, dirty, "user:1", "Alicia")
+print("cache: " + format_store(cache))
+print("database (not flushed yet): " + format_store(db))
+
+flushed_keys = flush(cache, db, dirty)
+print("Flushed keys: " + ", ".join(flushed_keys))
+print("database (after flush): " + format_store(db))`,
+    },
+    output: `-- Write-through: cache and database updated together --
+cache: user:1=Alice, user:2=Bob
+database: user:1=Alice, user:2=Bob
+-- Write-back: cache updated now, database updated later --
+cache: user:1=Alicia, user:2=Bob, user:3=Carol
+database (not flushed yet): user:1=Alice, user:2=Bob
+Flushed keys: user:1, user:3
+database (after flush): user:1=Alicia, user:2=Bob, user:3=Carol`,
+  },
+  {
+    id: "idempotency-keys",
+    pillar: "System Design",
+    name: "Idempotency Keys",
+    easy: "You've probably clicked a 'Pay Now' button twice because the page seemed frozen — and worried you just got charged twice. An idempotency key fixes that: it's a unique ticket number the app attaches to that one purchase attempt. The server keeps a log of ticket numbers it has already handled. If the same ticket number shows up again (because the click — or a network retry — got sent twice), the server doesn't charge you again; it just hands back the same result as last time, as if it never even ran the action twice.",
+    how: [
+      "Before sending a request that changes something (like 'charge this card'), the client generates one unique key for that specific attempt and attaches it to the request.",
+      "The server checks a lookup table: has this exact key been seen before? If yes, skip doing the action again — just return the result that was saved from the first time.",
+      "If the key is new, perform the action for real, save the key and its result together, then return the result.",
+    ],
+    when: "When your app got popular enough that flaky networks, slow pages, or retry logic start sending the same request more than once — payments, placing an order, or sending a signup email are exactly the kind of action you never want to accidentally run twice.",
+    big: "O(1) time per request to check whether a key was already handled · O(n) space to remember n distinct keys (real systems expire old keys after a while so this doesn't grow forever).",
+    mistakes: [
+      "Generating a brand-new key every time you retry, instead of reusing the SAME key for the same logical attempt — that defeats the entire point, since the server can no longer tell it's a repeat.",
+      "Only remembering 'this key was used' without saving the actual result — then a retry can't be handed back the original answer (like the order ID) it actually needs.",
+    ],
+    code: {
+      JavaScript: `function createStore() {
+  return {}; // idempotency key -> the result we gave last time
+}
+
+function chargeCustomer(store, chargeLog, idempotencyKey, amount) {
+  if (Object.prototype.hasOwnProperty.call(store, idempotencyKey)) {
+    return { result: store[idempotencyKey], repeated: true };
+  }
+  chargeLog.push(amount);
+  const result = \`charged $\${amount}, charge #\${chargeLog.length}\`;
+  store[idempotencyKey] = result;
+  return { result, repeated: false };
+}
+
+const store = createStore();
+const chargeLog = [];
+
+const requests = [
+  ["req-abc", 50],
+  ["req-xyz", 20],
+  ["req-abc", 50], // the customer's app retried the SAME request after a timeout
+];
+
+for (const [key, amount] of requests) {
+  const { result, repeated } = chargeCustomer(store, chargeLog, key, amount);
+  const repeatedLabel = repeated ? "yes" : "no";
+  console.log(\`key=\${key} amount=\${amount} repeated=\${repeatedLabel} -> \${result}\`);
+}
+console.log(\`Total real charges made: \${chargeLog.length}\`);`,
+      Python: `def create_store():
+    return {}  # idempotency key -> the result we gave last time
+
+def charge_customer(store, charge_log, idempotency_key, amount):
+    if idempotency_key in store:
+        return store[idempotency_key], True
+    charge_log.append(amount)
+    result = f"charged \${amount}, charge #{len(charge_log)}"
+    store[idempotency_key] = result
+    return result, False
+
+store = create_store()
+charge_log = []
+
+requests = [
+    ("req-abc", 50),
+    ("req-xyz", 20),
+    ("req-abc", 50),  # the customer's app retried the SAME request after a timeout
+]
+
+for key, amount in requests:
+    result, repeated = charge_customer(store, charge_log, key, amount)
+    repeated_label = "yes" if repeated else "no"
+    print(f"key={key} amount={amount} repeated={repeated_label} -> {result}")
+print(f"Total real charges made: {len(charge_log)}")`,
+    },
+    output: `key=req-abc amount=50 repeated=no -> charged $50, charge #1
+key=req-xyz amount=20 repeated=no -> charged $20, charge #2
+key=req-abc amount=50 repeated=yes -> charged $50, charge #1
+Total real charges made: 2`,
+  },
+  {
+    id: "primary-replica-replication",
+    pillar: "System Design",
+    name: "Primary-Replica Replication (Read Replicas)",
+    easy: "Think of a teacher (the 'primary') writing notes on the whiteboard, while several students (the 'replicas') copy those notes into their own notebooks so everyone can read them without crowding around the board. Only the teacher is allowed to write new notes — students just copy. That's replication: one primary database handles all the writes, and it streams every change to one or more replica copies. Spreading reads across the replicas means way more people can read at once, but a slow-copying student's notebook might briefly lag behind what's actually on the board — that's called replication lag.",
+    how: [
+      "Every write goes to exactly one server, the primary. It applies the change and appends it, in order, to a running log of everything that's changed.",
+      "Each replica reads that log and applies the same changes, in the same order, to its own copy of the data.",
+      "Reads get spread across the replicas (instead of all hitting the primary), so read traffic doesn't overload the one server that also has to handle writes. A replica that hasn't caught up yet may return slightly stale (out-of-date) data.",
+    ],
+    when: "When your app got popular and now has way more reads than writes — like a blog, a product catalog, or a news feed — add several read replicas so all that read traffic doesn't pile onto the one server that's busy handling writes.",
+    big: "O(1) time to append one write to the primary's log · O(k) time for a replica to catch up on k unapplied log entries.",
+    mistakes: [
+      "Sending a write straight to a replica — replicas are meant to be read-only copies, and writing to one breaks the whole replication setup.",
+      "Assuming a replica is always instantly up to date — reading from a lagging replica right after a write can show you the old value (the 'read-your-own-writes' problem).",
+    ],
+    code: {
+      JavaScript: `function createPrimary() {
+  return { data: {}, log: [] };
+}
+
+function write(primary, key, value) {
+  primary.data[key] = value;
+  primary.log.push([key, value]);
+}
+
+function createReplica() {
+  return { data: {}, appliedCount: 0 };
+}
+
+function replicate(replica, primaryLog, upToCount) {
+  for (let i = replica.appliedCount; i < upToCount; i++) {
+    const [key, value] = primaryLog[i];
+    replica.data[key] = value;
+  }
+  replica.appliedCount = upToCount;
+}
+
+function formatStore(store) {
+  const keys = Object.keys(store).sort();
+  return keys.map((k) => \`\${k}=\${store[k]}\`).join(", ");
+}
+
+const primary = createPrimary();
+write(primary, "title", "Hello World");
+write(primary, "views", 10);
+write(primary, "title", "Hello World v2");
+write(primary, "views", 25);
+
+const replicaA = createReplica();
+const replicaB = createReplica();
+
+replicate(replicaA, primary.log, primary.log.length); // fully caught up
+replicate(replicaB, primary.log, 2); // only caught up to the first 2 writes — it's lagging
+
+console.log("Primary:                " + formatStore(primary.data));
+console.log("Replica A (caught up):  " + formatStore(replicaA.data));
+console.log("Replica B (lagging):    " + formatStore(replicaB.data));
+console.log(\`Replica B has applied \${replicaB.appliedCount} of \${primary.log.length} writes — reads from it may be stale.\`);`,
+      Python: `def create_primary():
+    return {"data": {}, "log": []}
+
+def write(primary, key, value):
+    primary["data"][key] = value
+    primary["log"].append((key, value))
+
+def create_replica():
+    return {"data": {}, "applied_count": 0}
+
+def replicate(replica, primary_log, up_to_count):
+    for i in range(replica["applied_count"], up_to_count):
+        key, value = primary_log[i]
+        replica["data"][key] = value
+    replica["applied_count"] = up_to_count
+
+def format_store(store):
+    keys = sorted(store.keys())
+    return ", ".join(f"{k}={store[k]}" for k in keys)
+
+primary = create_primary()
+write(primary, "title", "Hello World")
+write(primary, "views", 10)
+write(primary, "title", "Hello World v2")
+write(primary, "views", 25)
+
+replica_a = create_replica()
+replica_b = create_replica()
+
+replicate(replica_a, primary["log"], len(primary["log"]))  # fully caught up
+replicate(replica_b, primary["log"], 2)  # only caught up to the first 2 writes — it's lagging
+
+print("Primary:                " + format_store(primary["data"]))
+print("Replica A (caught up):  " + format_store(replica_a["data"]))
+print("Replica B (lagging):    " + format_store(replica_b["data"]))
+print(f"Replica B has applied {replica_b['applied_count']} of {len(primary['log'])} writes — reads from it may be stale.")`,
+    },
+    output: `Primary:                title=Hello World v2, views=25
+Replica A (caught up):  title=Hello World v2, views=25
+Replica B (lagging):    title=Hello World, views=10
+Replica B has applied 2 of 4 writes — reads from it may be stale.`,
+  },
+  {
+    id: "heartbeat-failure-detection",
+    pillar: "System Design",
+    name: "Heartbeat Failure Detection",
+    easy: "Imagine calling a friend to check in every few minutes while they're doing something risky alone. As long as they keep answering, you assume they're fine. But if a few calls in a row go unanswered, you start to worry something's wrong. That's exactly how servers watch each other: every server sends a tiny 'I'm alive' ping (a 'heartbeat') on a regular schedule. A monitor keeps track of the last time it heard from each one. If too much time passes with no ping, the monitor marks that server 'down' — assumed to have failed.",
+    how: [
+      "Every server sends a heartbeat (just its ID and the current time) to a monitor at a steady interval.",
+      "The monitor remembers, for each server, the time of the last heartbeat it received.",
+      "Whenever you check a server's status, compare now to its last heartbeat time. If more time has passed than the allowed timeout, mark it 'down'; otherwise it's 'up'.",
+    ],
+    when: "When your app got popular enough that you're running many servers, and you need to automatically notice when one crashes — so a load balancer can stop sending it traffic, or an alert can fire. This is how real clusters (like Kubernetes watching nodes) know something has failed without a human checking by hand.",
+    big: "O(1) time to record one heartbeat · O(n) time to check the status of n servers.",
+    mistakes: [
+      "Setting the timeout so short that a server that's just briefly slow (a network hiccup) gets wrongly marked 'down' — a good timeout allows a little slack.",
+      "Trusting each server's own clock for timestamps in a real system — clocks can drift between machines, so production systems have to account for that (in these examples we always pass in a fixed, agreed-upon time so this stays predictable).",
+    ],
+    code: {
+      JavaScript: `function createMonitor(timeout) {
+  return { timeout, lastHeartbeat: {} };
+}
+
+function heartbeat(monitor, node, time) {
+  monitor.lastHeartbeat[node] = time;
+}
+
+function statusAt(monitor, node, now) {
+  const last = monitor.lastHeartbeat[node];
+  if (last === undefined) return "unknown";
+  const elapsed = now - last;
+  return elapsed > monitor.timeout ? "down" : "up";
+}
+
+function checkAndPrint(monitor, nodes, now) {
+  const parts = nodes.map((n) => \`\${n}=\${statusAt(monitor, n, now)}\`);
+  console.log(\`t=\${now}: \${parts.join(", ")}\`);
+}
+
+const monitor = createMonitor(10); // no heartbeat for more than 10 ticks = "down"
+const nodes = ["node-1", "node-2"];
+
+heartbeat(monitor, "node-1", 0);
+heartbeat(monitor, "node-2", 0);
+checkAndPrint(monitor, nodes, 5);
+heartbeat(monitor, "node-1", 8); // node-1 checks in again; node-2 has gone quiet
+checkAndPrint(monitor, nodes, 9);
+checkAndPrint(monitor, nodes, 12);
+checkAndPrint(monitor, nodes, 20);`,
+      Python: `def create_monitor(timeout):
+    return {"timeout": timeout, "last_heartbeat": {}}
+
+def heartbeat(monitor, node, time):
+    monitor["last_heartbeat"][node] = time
+
+def status_at(monitor, node, now):
+    last = monitor["last_heartbeat"].get(node)
+    if last is None:
+        return "unknown"
+    elapsed = now - last
+    return "down" if elapsed > monitor["timeout"] else "up"
+
+def check_and_print(monitor, nodes, now):
+    parts = [f"{n}={status_at(monitor, n, now)}" for n in nodes]
+    print(f"t={now}: " + ", ".join(parts))
+
+monitor = create_monitor(10)  # no heartbeat for more than 10 ticks = "down"
+nodes = ["node-1", "node-2"]
+
+heartbeat(monitor, "node-1", 0)
+heartbeat(monitor, "node-2", 0)
+check_and_print(monitor, nodes, 5)
+heartbeat(monitor, "node-1", 8)  # node-1 checks in again; node-2 has gone quiet
+check_and_print(monitor, nodes, 9)
+check_and_print(monitor, nodes, 12)
+check_and_print(monitor, nodes, 20)`,
+    },
+    output: `t=5: node-1=up, node-2=up
+t=9: node-1=up, node-2=up
+t=12: node-1=up, node-2=down
+t=20: node-1=down, node-2=down`,
+  },
+  {
+    id: "leaky-bucket-rate-limiter",
+    pillar: "System Design",
+    name: "Leaky Bucket (Rate Limiter)",
+    easy: "Picture a bucket with a small hole in the bottom that drips water out at a constant, steady rate, no matter how fast you pour water in. Requests are like water being poured in. If they arrive faster than the hole can drain them, the bucket fills up — and once it's full, any extra water you pour just spills over the top and is lost (the request gets blocked). This is different from the token bucket rate limiter: a token bucket lets you save up tokens while idle and then blow through a big burst all at once, but a leaky bucket always lets requests out at the same steady drip — no bursts allowed, ever.",
+    how: [
+      "Keep a queue (the bucket) with a maximum size, and a fixed 'leak rate' — how often one waiting request drains out and gets processed.",
+      "When a new request arrives, first drain out any requests that should have leaked already, based on how much time has passed.",
+      "If there's room left in the bucket after draining, add the new request to the back of the queue (it'll be processed in its turn). If the bucket is still full, reject the request — it spills over.",
+    ],
+    when: "When your app got popular and needs to call a downstream service (like a payment gateway or a partner API) that can only handle a strictly steady stream of requests and would choke on even a short burst — a leaky bucket smooths out bursty incoming traffic into one constant, predictable rate, unlike a token bucket which would let a burst straight through.",
+    big: "O(1) time per request, amortized · O(capacity) space to hold the queued requests.",
+    mistakes: [
+      "Mixing it up with the token bucket — the token bucket is built to allow bursts, while the leaky bucket is built to flatten them out into one steady rate.",
+      "Forgetting to drain old requests before checking whether there's room — that makes the bucket look fuller than it actually is and rejects requests that should have been allowed.",
+    ],
+    code: {
+      JavaScript: `function createBucket(capacity, leakIntervalTicks) {
+  return { capacity, leakIntervalTicks, queue: [], lastLeakTime: 0 };
+}
+
+function leak(bucket, now) {
+  const elapsed = now - bucket.lastLeakTime;
+  const leaks = Math.floor(elapsed / bucket.leakIntervalTicks);
+  for (let i = 0; i < leaks && bucket.queue.length > 0; i++) {
+    bucket.queue.shift(); // one request leaks out and gets processed
+  }
+  if (leaks > 0) bucket.lastLeakTime += leaks * bucket.leakIntervalTicks;
+}
+
+function allow(bucket, now, requestId) {
+  leak(bucket, now);
+  if (bucket.queue.length < bucket.capacity) {
+    bucket.queue.push(requestId);
+    return true;
+  }
+  return false; // bucket's full — this request spills over and is dropped
+}
+
+const bucket = createBucket(3, 10); // holds 3 requests, leaks 1 out every 10 ticks
+console.log("Bucket: capacity 3, leaks 1 request every 10 ticks");
+const requestTimes = [0, 1, 2, 3, 15, 16];
+for (const t of requestTimes) {
+  const wasAllowed = allow(bucket, t, \`req@\${t}\`);
+  const status = wasAllowed ? "allowed" : "blocked";
+  console.log(\`t=\${t}: \${status} (queue size: \${bucket.queue.length})\`);
+}`,
+      Python: `def create_bucket(capacity, leak_interval_ticks):
+    return {
+        "capacity": capacity,
+        "leak_interval_ticks": leak_interval_ticks,
+        "queue": [],
+        "last_leak_time": 0,
+    }
+
+def leak(bucket, now):
+    elapsed = now - bucket["last_leak_time"]
+    leaks = elapsed // bucket["leak_interval_ticks"]
+    for _ in range(leaks):
+        if bucket["queue"]:
+            bucket["queue"].pop(0)  # one request leaks out and gets processed
+    if leaks > 0:
+        bucket["last_leak_time"] += leaks * bucket["leak_interval_ticks"]
+
+def allow(bucket, now, request_id):
+    leak(bucket, now)
+    if len(bucket["queue"]) < bucket["capacity"]:
+        bucket["queue"].append(request_id)
+        return True
+    return False  # bucket's full — this request spills over and is dropped
+
+bucket = create_bucket(3, 10)  # holds 3 requests, leaks 1 out every 10 ticks
+print("Bucket: capacity 3, leaks 1 request every 10 ticks")
+request_times = [0, 1, 2, 3, 15, 16]
+for t in request_times:
+    was_allowed = allow(bucket, t, f"req@{t}")
+    status = "allowed" if was_allowed else "blocked"
+    print(f"t={t}: {status} (queue size: {len(bucket['queue'])})")`,
+    },
+    output: `Bucket: capacity 3, leaks 1 request every 10 ticks
+t=0: allowed (queue size: 1)
+t=1: allowed (queue size: 2)
+t=2: allowed (queue size: 3)
+t=3: blocked (queue size: 3)
+t=15: allowed (queue size: 3)
+t=16: blocked (queue size: 3)`,
   },
 ];
 

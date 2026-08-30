@@ -5,8 +5,11 @@
 
 export type Language = "JavaScript" | "Python" | "Java" | "Cpp";
 export type Pillar =
+  | "Programming Basics"
   | "Data Structures"
   | "Algorithms"
+  | "Databases"
+  | "Web & Internet"
   | "Design Patterns"
   | "System Design"
   | "Cloud"
@@ -35,9 +38,13 @@ export type Lesson = {
   note?: string;
 };
 
+// Order here = order shown on the Learn page. Arranged as a beginner journey.
 export const pillars: Pillar[] = [
+  "Programming Basics",
   "Data Structures",
   "Algorithms",
+  "Databases",
+  "Web & Internet",
   "Design Patterns",
   "System Design",
   "Cloud",
@@ -46,8 +53,11 @@ export const pillars: Pillar[] = [
 ];
 
 export const pillarBlurb: Record<Pillar, string> = {
+  "Programming Basics": "The very first building blocks — the words and rules every program is made of.",
   "Data Structures": "How to hold your data — the containers you put information in.",
   Algorithms: "How to work with your data — step-by-step recipes to get things done.",
+  Databases: "How apps remember things — storing, finding, and organizing data that lasts.",
+  "Web & Internet": "How the web actually works — what happens between your click and the page.",
   "Design Patterns": "How to organize big code — proven blueprints for common problems.",
   "System Design": "How to build big systems that stay fast and reliable as they grow.",
   Cloud: "How real apps run on rented computers — scaling, staying up, and shipping safely.",

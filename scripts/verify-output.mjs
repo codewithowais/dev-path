@@ -27,8 +27,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // each pillar file only imports its types (erased at runtime), so it loads
 // cleanly on its own.
 const PILLAR_FILES = [
+  "../content/lessons/programming-basics.ts",
   "../content/lessons/data-structures.ts",
   "../content/lessons/algorithms.ts",
+  "../content/lessons/databases.ts",
+  "../content/lessons/web-internet.ts",
   "../content/lessons/design-patterns.ts",
   "../content/lessons/system-design.ts",
   "../content/lessons/cloud.ts",

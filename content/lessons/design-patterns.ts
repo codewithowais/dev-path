@@ -145,7 +145,7 @@ Bob got: New article!`,
     id: "strategy",
     pillar: "Design Patterns",
     name: "Strategy",
-    easy: "The strategy pattern lets you swap out an interchangeable 'how' at runtime. Like a navigation app choosing between driving, walking, or cycling directions: same goal (get there), different method you can pick on the fly.",
+    easy: "The strategy pattern lets you swap out how something gets done, on the fly. Like a map app choosing between driving, walking, or biking directions: the goal (get there) stays the same, but you can pick a different method any time.",
     how: [
       "Define several interchangeable methods that all do the same kind of job.",
       "Store or pass in which one to use.",
@@ -187,7 +187,7 @@ multiply: 12`,
     id: "adapter",
     pillar: "Design Patterns",
     name: "Adapter",
-    easy: "An adapter is like a travel power-plug adapter. Your laptop charger has a US plug, but the wall socket in another country is a different shape. You don't rebuild the charger or the wall — you plug a small adapter in between, and suddenly they fit. In code, an adapter sits between two things that don't match and translates one's shape into the other's.",
+    easy: "An adapter is a travel plug adapter. Your charger has one shape of plug and the wall socket has another — you don't rebuild either one, you just plug a small adapter in between so they fit. In code, an adapter sits between two mismatched pieces and translates one into the other.",
     how: [
       "You have an existing object whose methods don't match what your code expects.",
       "Wrap it in an adapter object that exposes the method name your code wants.",
@@ -238,7 +238,7 @@ print(adapter.print("Hello"))`,
     id: "decorator",
     pillar: "Design Patterns",
     name: "Decorator",
-    easy: "A decorator is like wrapping a gift. You start with a plain box (the base), then add wrapping paper, then a bow — each layer adds something on top without changing what's inside the box. In code, a decorator wraps a simple object or function and adds extra behavior in layers, one on top of the next.",
+    easy: "A decorator is wrapping a gift. You start with a plain box, then add wrapping paper, then a bow — each layer adds something extra without changing what's inside. In code, a decorator wraps a simple object and adds extra behavior, one layer at a time.",
     how: [
       "Start with a simple base thing that does the core job.",
       "Wrap it in a decorator that calls the base and adds a bit extra.",
@@ -289,7 +289,7 @@ print(order())`,
     id: "facade",
     pillar: "Design Patterns",
     name: "Facade",
-    easy: "A facade is like a hotel front desk. Behind the scenes there's housekeeping, room service, billing, and maintenance — lots of separate departments. You don't call each one yourself; you just tell the front desk what you need, and it coordinates everything for you. In code, a facade is one simple object that hides a bunch of complicated parts behind an easy interface.",
+    easy: "A facade is a hotel front desk. Behind it are housekeeping, room service, and billing — lots of separate departments — but you just tell the front desk what you need, and it handles the rest. In code, a facade is one simple object that hides a bunch of complicated parts behind an easy front door.",
     how: [
       "You have several smaller classes or steps that need to happen together in the right order.",
       "Build one 'facade' object that knows how to call all of them correctly.",
@@ -354,7 +354,7 @@ print(theater.watch_movie())`,
     id: "builder",
     pillar: "Design Patterns",
     name: "Builder",
-    easy: "A builder is like ordering a custom burger at a counter: add a bun, add a patty, add cheese, then say 'that's it, build it.' You add the pieces one step at a time, and only at the end do you get the finished burger. In code, a builder lets you construct a complicated object piece by piece instead of trying to create it all in one giant step.",
+    easy: "A builder is ordering a custom burger at a counter: add a bun, add a patty, add cheese, then say 'build it.' You add pieces one step at a time, and only at the end do you get the finished thing. In code, a builder puts together a complicated object piece by piece instead of in one giant step.",
     how: [
       "Create a builder object that starts empty.",
       "Call methods on it one at a time to add each part — each one can hand back the builder so you can chain the next step.",
@@ -414,7 +414,7 @@ print("Burger:", burger)`,
     id: "command",
     pillar: "Design Patterns",
     name: "Command",
-    easy: "A command is like a restaurant order slip. The waiter writes 'make a burger' on a slip instead of cooking it themselves. That slip can be handed to the kitchen, put in a queue, or even used later to say what to undo. In code, a command is an object that packages up 'do this action' so it can be passed around, stored, and even reversed.",
+    easy: "A command is a restaurant order slip. The waiter writes down 'make a burger' instead of cooking it themselves — that slip can be handed to the kitchen, held in a queue, or used later to undo the order. In code, a command packages up 'do this action' as an object, so it can be stored, passed around, and even reversed.",
     how: [
       "Wrap an action in a command object with an `execute` method that performs it.",
       "Optionally give it an `undo` method that reverses the action.",
@@ -475,7 +475,7 @@ Light off`,
     id: "iterator",
     pillar: "Design Patterns",
     name: "Iterator",
-    easy: "An iterator is like a TV remote flipping through channels one at a time. You press 'next' and you get the next channel — you never need to know how the channels are wired up behind the screen. In code, an iterator lets you walk through a collection one item at a time through a simple 'is there more?' and 'give me the next one' interface, without exposing how the collection is actually stored.",
+    easy: "An iterator is a TV remote flipping through channels. You press 'next' and get the next channel — you never see how the channels are wired up behind the screen. In code, an iterator lets you step through a collection one item at a time without knowing how it's stored inside.",
     how: [
       "The collection hands out an iterator instead of its raw internal data.",
       "The iterator tracks its own position and offers a 'hasNext' check plus a 'next' step.",
@@ -604,7 +604,7 @@ Prototype unchanged: Warrior`,
     id: "chain-of-responsibility",
     pillar: "Design Patterns",
     name: "Chain of Responsibility",
-    easy: "Chain of responsibility passes a request along a line of handlers until one of them can deal with it. Like an expense request going to your manager first; if it's too big for them to approve, it moves up to the director, then the VP — each person either handles it or passes it up the chain.",
+    easy: "Chain of responsibility passes a request down a line of people until someone can handle it. Like an expense request going to your manager first — if it's too big, it moves up to the director, then the VP — each person either deals with it or bumps it up the chain.",
     how: [
       "Line up a series of handler objects, each one knowing which handler comes next.",
       "Hand the request to the first handler in line.",
@@ -676,7 +676,7 @@ VP approved $5000`,
     id: "state",
     pillar: "Design Patterns",
     name: "State",
-    easy: "The state pattern is a traffic light. A traffic light doesn't run one giant pile of if-statements checking what color comes next — each color simply knows what comes after it. The light just asks its current state 'what's next?' and switches to whatever that state says. In code, an object's behavior changes automatically based on which 'state' it's currently in.",
+    easy: "The state pattern is a traffic light. Each color simply knows what comes next — red knows green comes after it, and so on. The light just asks 'what's next?' and switches automatically. In code, an object's behavior changes on its own based on what 'state' it's currently in.",
     how: [
       "Give each state (Red, Green, Yellow) its own small object that knows only what state comes after it.",
       "The main object just holds 'whichever state I'm currently in' and asks that state to move things along.",
@@ -755,7 +755,7 @@ Change: Red`,
     id: "template-method",
     pillar: "Design Patterns",
     name: "Template Method",
-    easy: "A template method is a recipe card with some steps fixed and others left blank for you to fill in. 'Boil water' and 'pour into cup' are always the same, but 'brew' and 'add condiments' change depending on whether you're making tea or coffee. In code, a base class locks in the overall order of steps, while subclasses fill in just the steps that differ.",
+    easy: "A template method is a recipe card with some steps fixed and some left blank for you to fill in. 'Boil water' and 'pour into cup' never change, but 'brew' and 'add condiments' depend on whether you're making tea or coffee. In code, a base class locks in the overall order of steps, and each subclass fills in just the steps that differ.",
     how: [
       "Write one method in a base class that calls a fixed sequence of steps in order.",
       "Implement the steps that never change directly in the base class.",
@@ -823,7 +823,7 @@ Coffee: Boil water -> Brew coffee grounds -> Pour in cup -> Add sugar and milk`,
     id: "composite",
     pillar: "Design Patterns",
     name: "Composite",
-    easy: "Composite is how folders work: a folder can contain files, but it can also contain more folders — which themselves contain files and folders. Composite lets you treat a single file and a whole folder full of files the exact same way, calling the same method on both and letting each one figure out what that means for itself.",
+    easy: "Composite is how folders work: a folder can hold files, but it can also hold more folders, which hold more files and folders. Composite lets you treat one single file and a whole folder full of files the exact same way — ask either one 'how big are you?' and each figures out its own answer.",
     how: [
       "Give both the simple items (files) and the containers (folders) the same method name, like getSize().",
       "A simple item just returns its own answer directly.",
@@ -909,7 +909,7 @@ Documents folder size: 700`,
     id: "proxy",
     pillar: "Design Patterns",
     name: "Proxy",
-    easy: "A proxy is a security guard standing in front of an office. Anyone who wants to go in has to go through the guard first — the guard checks your badge, and only if you pass does the guard let you through to the real office. In code, a proxy object stands in front of the real object and controls access to it: checking permissions, caching results, or logging calls before letting the real thing run.",
+    easy: "A proxy is a security guard standing in front of an office. Anyone who wants in has to go through the guard first, who checks your badge before letting you through to the real office. In code, a proxy object stands in front of the real object and controls access to it — checking permissions, caching results, or logging calls first.",
     how: [
       "Create a proxy object with the exact same method names as the real object.",
       "Have callers talk to the proxy instead of the real object directly.",
@@ -965,6 +965,344 @@ print(employee_proxy.enter())`,
     },
     output: `Access denied: no badge
 Entered the office`,
+  },
+  {
+    id: "abstract-factory",
+    pillar: "Design Patterns",
+    name: "Abstract Factory",
+    easy: "An abstract factory is a factory that makes matching SETS of things, not just one thing. Think of a furniture showroom: pick the 'modern' style and you get a matching modern chair AND a matching modern sofa. Pick 'classic' and you get a classic chair and classic sofa instead. You never mix a modern chair with a classic sofa by accident, because one factory hands you the whole matching set.",
+    how: [
+      "Define one factory 'family' per matching set (like a Light theme factory and a Dark theme factory).",
+      "Each factory knows how to build every piece in its set (button, checkbox, and so on) so they all match.",
+      "Your code just asks the chosen factory for each piece — it never has to check styles or mix pieces from different families by hand.",
+    ],
+    when: "When you need groups of related objects that must match each other — UI themes (light/dark), furniture styles, or cross-platform widgets (Windows-style vs Mac-style buttons and menus).",
+    big: "Building one full set is O(k) for k pieces in the family — the win is consistency, not speed.",
+    mistakes: [
+      "Mixing pieces from two different factories, which defeats the whole point of keeping a set matching.",
+      "Adding a new piece to the family but forgetting to implement it in every factory, leaving one theme incomplete.",
+    ],
+    code: {
+      JavaScript: `class LightButton {
+  render() { return "Light Button"; }
+}
+class LightCheckbox {
+  render() { return "Light Checkbox"; }
+}
+class DarkButton {
+  render() { return "Dark Button"; }
+}
+class DarkCheckbox {
+  render() { return "Dark Checkbox"; }
+}
+
+class LightFactory {
+  createButton() { return new LightButton(); }
+  createCheckbox() { return new LightCheckbox(); } // matches the button's style
+}
+class DarkFactory {
+  createButton() { return new DarkButton(); }
+  createCheckbox() { return new DarkCheckbox(); } // matches the button's style
+}
+
+function renderUI(factory) {
+  const button = factory.createButton();
+  const checkbox = factory.createCheckbox();
+  return button.render() + ", " + checkbox.render();
+}
+
+console.log("Light theme:", renderUI(new LightFactory()));
+console.log("Dark theme:", renderUI(new DarkFactory()));`,
+      Python: `class LightButton:
+    def render(self):
+        return "Light Button"
+
+class LightCheckbox:
+    def render(self):
+        return "Light Checkbox"
+
+class DarkButton:
+    def render(self):
+        return "Dark Button"
+
+class DarkCheckbox:
+    def render(self):
+        return "Dark Checkbox"
+
+class LightFactory:
+    def create_button(self):
+        return LightButton()
+    def create_checkbox(self):
+        return LightCheckbox()  # matches the button's style
+
+class DarkFactory:
+    def create_button(self):
+        return DarkButton()
+    def create_checkbox(self):
+        return DarkCheckbox()  # matches the button's style
+
+def render_ui(factory):
+    button = factory.create_button()
+    checkbox = factory.create_checkbox()
+    return button.render() + ", " + checkbox.render()
+
+print("Light theme:", render_ui(LightFactory()))
+print("Dark theme:", render_ui(DarkFactory()))`,
+    },
+    output: `Light theme: Light Button, Light Checkbox
+Dark theme: Dark Button, Dark Checkbox`,
+  },
+  {
+    id: "mediator",
+    pillar: "Design Patterns",
+    name: "Mediator",
+    easy: "A mediator is an air-traffic controller. Planes don't radio each other directly to sort out who lands first — that would be chaos with dozens of planes. Instead, every plane talks only to the control tower, and the tower coordinates everyone. In code, a mediator object sits in the middle so objects talk through it instead of directly to each other.",
+    how: [
+      "Give every object a reference to one shared mediator instead of references to each other.",
+      "When an object wants to 'talk', it sends its message to the mediator, not directly to another object.",
+      "The mediator decides what to do with the message — like passing it along to everyone else who needs it.",
+    ],
+    when: "When many objects need to coordinate but wiring them all directly to each other would turn into a tangled mess — chat rooms, UI widgets that react to each other, or air traffic control.",
+    big: "Sending one message through the mediator is O(1) extra step before it does its own work.",
+    mistakes: [
+      "Letting objects quietly keep direct references to each other 'just in case', which brings back the same tangled mess the mediator was meant to avoid.",
+      "Letting the mediator itself grow so many responsibilities that it becomes an unmanageable giant class.",
+    ],
+    code: {
+      JavaScript: `class ChatRoom {
+  showMessage(user, message) {
+    return user + ": " + message;
+  }
+}
+
+class User {
+  constructor(name, chatRoom) {
+    this.name = name;
+    this.chatRoom = chatRoom; // talks through the mediator, not directly
+  }
+  send(message) {
+    return this.chatRoom.showMessage(this.name, message);
+  }
+}
+
+const room = new ChatRoom();
+const alice = new User("Alice", room);
+const bob = new User("Bob", room);
+
+console.log(alice.send("Hi Bob!"));
+console.log(bob.send("Hey Alice!"));`,
+      Python: `class ChatRoom:
+    def show_message(self, user, message):
+        return user + ": " + message
+
+class User:
+    def __init__(self, name, chat_room):
+        self.name = name
+        self.chat_room = chat_room  # talks through the mediator, not directly
+    def send(self, message):
+        return self.chat_room.show_message(self.name, message)
+
+room = ChatRoom()
+alice = User("Alice", room)
+bob = User("Bob", room)
+
+print(alice.send("Hi Bob!"))
+print(bob.send("Hey Alice!"))`,
+    },
+    output: `Alice: Hi Bob!
+Bob: Hey Alice!`,
+  },
+  {
+    id: "memento",
+    pillar: "Design Patterns",
+    name: "Memento",
+    easy: "A memento is a save point in a video game. Before a tough boss fight, you save your progress. If things go wrong, you don't restart the whole game — you just load that save point and you're back where you were. In code, a memento is a stored snapshot of an object's data that you can restore later, which is how undo works.",
+    how: [
+      "The object you want to protect can make a 'memento' — a snapshot copy of its current data.",
+      "You keep that memento somewhere safe (a variable, a stack of past snapshots for multi-step undo).",
+      "To undo, hand the memento back to the object and let it copy that old data back over its current data.",
+    ],
+    when: "When you want undo/redo, checkpoints, or the ability to roll back to an earlier state — text editors, games, or form drafts.",
+    big: "Saving or restoring one snapshot is O(n) in the size of the data being copied.",
+    mistakes: [
+      "Saving a reference to the live object instead of a real separate copy, so 'the snapshot' keeps changing along with the original.",
+      "Saving a snapshot after every tiny change instead of at meaningful checkpoints, wasting memory on saves nobody will ever restore.",
+    ],
+    code: {
+      JavaScript: `class EditorMemento {
+  constructor(text) {
+    this.text = text; // a saved snapshot
+  }
+}
+
+class Editor {
+  constructor() {
+    this.text = "";
+  }
+  type(words) {
+    this.text += words;
+  }
+  save() {
+    return new EditorMemento(this.text); // save point
+  }
+  restore(memento) {
+    this.text = memento.text; // load point
+  }
+}
+
+const editor = new Editor();
+editor.type("Hello");
+const checkpoint = editor.save();
+editor.type(", world!");
+console.log("Before undo:", editor.text);
+editor.restore(checkpoint);
+console.log("After undo:", editor.text);`,
+      Python: `class EditorMemento:
+    def __init__(self, text):
+        self.text = text  # a saved snapshot
+
+class Editor:
+    def __init__(self):
+        self.text = ""
+    def type(self, words):
+        self.text += words
+    def save(self):
+        return EditorMemento(self.text)  # save point
+    def restore(self, memento):
+        self.text = memento.text  # load point
+
+editor = Editor()
+editor.type("Hello")
+checkpoint = editor.save()
+editor.type(", world!")
+print("Before undo:", editor.text)
+editor.restore(checkpoint)
+print("After undo:", editor.text)`,
+    },
+    output: `Before undo: Hello, world!
+After undo: Hello`,
+  },
+  {
+    id: "bridge",
+    pillar: "Design Patterns",
+    name: "Bridge",
+    easy: "A bridge is a universal remote control. The remote has the same buttons (power, volume, channel) no matter which TV brand you point it at — Sony, Samsung, whatever. The remote (what you use) and the TV (how it actually works inside) are built separately and connected by a bridge, so either side can change without breaking the other.",
+    how: [
+      "Split a feature into two separate pieces: the 'front' that people use, and the 'engine' that actually does the work.",
+      "Have the front hold a reference to whichever engine it's connected to.",
+      "When the front is asked to do something, it just calls the engine's version — swap the engine, and the same front now works differently underneath.",
+    ],
+    when: "When you have a feature that needs to work with several different underlying implementations — a remote working with different TV brands, or an app supporting different payment providers behind the same checkout button.",
+    big: "Calling through the bridge is O(1) extra work — one call forwarded to whichever engine is plugged in.",
+    mistakes: [
+      "Letting the front peek at engine-specific details, which quietly glues them back together and defeats the point of separating them.",
+      "Building a new front for every engine instead of letting one front work with any engine that fits the same shape.",
+    ],
+    code: {
+      JavaScript: `class TVRemote {
+  constructor(device) {
+    this.device = device; // the front holds whichever engine it's connected to
+  }
+  turnOn() {
+    return "Remote: " + this.device.powerOn();
+  }
+}
+
+class SonyTV {
+  powerOn() { return "Sony TV is on"; }
+}
+class SamsungTV {
+  powerOn() { return "Samsung TV is on"; }
+}
+
+const remote1 = new TVRemote(new SonyTV());
+const remote2 = new TVRemote(new SamsungTV());
+
+console.log(remote1.turnOn());
+console.log(remote2.turnOn());`,
+      Python: `class TVRemote:
+    def __init__(self, device):
+        self.device = device  # the front holds whichever engine it's connected to
+    def turn_on(self):
+        return "Remote: " + self.device.power_on()
+
+class SonyTV:
+    def power_on(self):
+        return "Sony TV is on"
+
+class SamsungTV:
+    def power_on(self):
+        return "Samsung TV is on"
+
+remote1 = TVRemote(SonyTV())
+remote2 = TVRemote(SamsungTV())
+
+print(remote1.turn_on())
+print(remote2.turn_on())`,
+    },
+    output: `Remote: Sony TV is on
+Remote: Samsung TV is on`,
+  },
+  {
+    id: "dependency-injection",
+    pillar: "Design Patterns",
+    name: "Dependency Injection",
+    easy: "Dependency injection means being HANDED your tools instead of making them yourself. Imagine a chef who is given today's ingredients by the kitchen instead of growing their own vegetables — the chef can cook with whatever they're handed, so tomorrow's ingredients can be totally different without the chef needing to change at all. In code, an object receives the other objects it needs from the outside instead of creating them itself.",
+    how: [
+      "Instead of a class building the things it depends on inside itself, it accepts them as parameters (usually in its constructor).",
+      "Whoever creates the object decides which exact version to hand it — a real one, a fake one for testing, a different brand entirely.",
+      "The class just uses whatever it was handed, without caring which specific version it got.",
+    ],
+    when: "When you want to swap parts easily (a real database vs. a fake one for tests, different payment providers, different engines) without rewriting the class that uses them.",
+    big: "Injecting a dependency is O(1) — it's just passing a reference in; the real cost is whatever that dependency does.",
+    mistakes: [
+      "Having the class create its own dependency internally 'for convenience', which locks you back into one fixed version.",
+      "Injecting so many small pieces that the constructor becomes a long, confusing list — sometimes a few really do belong bundled together.",
+    ],
+    code: {
+      JavaScript: `class GasEngine {
+  start() { return "Gas engine vroom"; }
+}
+class ElectricEngine {
+  start() { return "Electric engine hum"; }
+}
+
+class Car {
+  constructor(engine) {
+    this.engine = engine; // handed the tool instead of making it itself
+  }
+  drive() {
+    return this.engine.start() + " -> car moving";
+  }
+}
+
+const gasCar = new Car(new GasEngine());
+const electricCar = new Car(new ElectricEngine());
+
+console.log("Gas car:", gasCar.drive());
+console.log("Electric car:", electricCar.drive());`,
+      Python: `class GasEngine:
+    def start(self):
+        return "Gas engine vroom"
+
+class ElectricEngine:
+    def start(self):
+        return "Electric engine hum"
+
+class Car:
+    def __init__(self, engine):
+        self.engine = engine  # handed the tool instead of making it itself
+    def drive(self):
+        return self.engine.start() + " -> car moving"
+
+gas_car = Car(GasEngine())
+electric_car = Car(ElectricEngine())
+
+print("Gas car:", gas_car.drive())
+print("Electric car:", electric_car.drive())`,
+    },
+    output: `Gas car: Gas engine vroom -> car moving
+Electric car: Electric engine hum -> car moving`,
   },
 ];
 

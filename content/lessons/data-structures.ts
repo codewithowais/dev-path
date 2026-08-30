@@ -165,7 +165,7 @@ Waiting: 1`,
     id: "linked-list",
     pillar: "Data Structures",
     name: "Linked List",
-    easy: "A linked list is a treasure hunt. Each clue (node) holds a value AND a pointer to where the next clue is. To find item #5, you follow the chain from the start — there are no shortcuts by number.",
+    easy: "A linked list is a treasure hunt. Each clue, called a node, holds one value plus a note pointing to where the next clue is. There's no jumping straight to clue #5 — you follow the notes from the very first clue, one at a time.",
     how: [
       "Each node stores a value and a link to the next node.",
       "The list remembers only the first node (the head).",
@@ -282,7 +282,7 @@ bird: 1`,
     id: "binary-search-tree",
     pillar: "Data Structures",
     name: "Binary Search Tree",
-    easy: "A binary search tree is like the game '20 questions'. Every value has up to two children: smaller values go left, bigger values go right. Because it's sorted this way, you can find things by repeatedly asking 'higher or lower?'.",
+    easy: "A binary search tree is the game '20 questions' turned into a shape. Each value sits above at most two smaller values below it, called its children: the smaller child goes left, the bigger child goes right. To find a value, start at the top and keep asking 'is it smaller or bigger?', stepping left or right each time.",
     how: [
       "Start at the top (the root).",
       "Smaller than the current node? Go left. Bigger? Go right.",
@@ -681,7 +681,7 @@ Starts with 'dog': no`,
     id: "graph",
     pillar: "Data Structures",
     name: "Graph (Adjacency List)",
-    easy: "A graph is a map of a social network: people are dots (called nodes) and friendships are lines connecting them (called edges). An 'adjacency list' is just a phone book — for each person, you keep a list of their direct friends.",
+    easy: "A graph is a map of friendships. Each person is a dot, called a node. Each friendship is a line connecting two dots, called an edge. An 'adjacency list' is just a phone book: for every person, it lists their direct friends.",
     how: [
       "Store the graph as a lookup: each node maps to a list of its directly connected neighbors.",
       "Adding a connection means adding each node to the other's neighbor list.",
@@ -846,7 +846,7 @@ Left: 2`,
     id: "union-find",
     pillar: "Data Structures",
     name: "Union-Find (Disjoint Set)",
-    easy: "Union-Find is like tracking friend groups at a huge party. Every guest starts in their own tiny group. Whenever two people become friends, their whole groups merge into one. At any point you can ask 'are these two in the same group?' without listing everyone — you just check who each person's group leader is.",
+    easy: "Union-Find is like tracking friend groups at a party. Everyone starts alone, in their own tiny group. When two people become friends, their two whole groups merge into one. To check 'are these two in the same group?', you don't list every member — you just look up each person's group leader and see if the leaders match.",
     how: [
       "find(x): follow x's 'leader' pointer up the chain until you reach someone who is their own leader — that's the group's representative.",
       "While following that chain, point every node straight at the final leader (path compression), so the next find is instant.",
@@ -1104,7 +1104,7 @@ Count: 3`,
     id: "bloom-filter",
     pillar: "Data Structures",
     name: "Bloom Filter",
-    easy: "A Bloom filter is a bouncer with a bad memory but a good trick. Instead of remembering every name on the guest list, it flips a few switches on a big panel for each guest. To check someone later, it looks at those same switches: if ANY are off, they definitely weren't on the list. If ALL are on, they PROBABLY were — but it could be a coincidence (a false positive). It will never wrongly say 'no' to someone who really was added.",
+    easy: "A Bloom filter is a bouncer with a bad memory but a clever trick. It doesn't remember names — instead, whenever someone is added, it flips a few switches on a shared panel. To check a name later, it looks at those same switches: any switch still off means that person definitely was never added. All switches on means probably added — but that could just be a coincidence, called a false positive. One thing it never does: wrongly say 'no' to someone who really was added.",
     how: [
       "Start with a fixed-size row of switches (bits), all off (0).",
       "add(item): run the item through a couple of different hash functions, each pointing at one switch, and flip those switches on.",
@@ -1188,7 +1188,7 @@ Bits set: 00100000011001100000`,
     id: "fenwick-tree",
     pillar: "Data Structures",
     name: "Fenwick Tree (Binary Indexed Tree)",
-    easy: "A Fenwick tree is a set of cleverly overlapping donation jars. Instead of one jar holding the total for every single day (slow to update) or a running list you re-add every time (slow to query), each jar covers a different-sized range of days chosen by a neat bit trick. Asking 'what's the total so far?' means peeking into just a handful of jars, not every single day.",
+    easy: "A Fenwick tree is a row of donation jars, but a clever kind. One single running-total jar is slow to update. A full day-by-day list is slow to add up. Instead, each jar here covers a different-sized range of days, so getting 'the total so far' means peeking into just a handful of jars — not adding up every single day.",
     how: [
       "Store values in a 1-indexed array (position 0 is unused, real data starts at position 1).",
       "update(i, delta): add delta to position i, then hop to i + (i's lowest set bit) and repeat until you walk off the end — updating every jar that covers position i.",
@@ -1358,6 +1358,429 @@ print("Transposed:", t.to_string())`,
 Cell (1,2): 6
 Row 0 sum: 6
 Transposed: 1 4 | 2 5 | 3 6`,
+  },
+  {
+    id: "priority-queue",
+    pillar: "Data Structures",
+    name: "Priority Queue",
+    easy: "A priority queue is airport boarding, not a coffee line. It doesn't matter who arrived at the gate first — whoever has the best priority (first class, then priority members, then everyone else) boards next. Every item carries a priority number, and the item that leaves next is always the one with the best priority, not the oldest one.",
+    how: [
+      "enqueue(item, priority): add the item along with its priority number.",
+      "dequeue(): find and remove whichever item currently has the best priority (here, the lowest number).",
+      "peek(): look at what would leave next, without removing it.",
+    ],
+    when: "Task schedulers, hospital triage, or turn-based games where 'most important next' matters more than 'arrived first' — anywhere arrival order isn't what should decide who goes next.",
+    big: "With a simple sorted list (as below): enqueue O(n), dequeue O(1). With a heap (see Min-Heap) both become O(log n) — the standard real-world choice for a priority queue.",
+    mistakes: [
+      "Confusing it with a regular queue — a priority queue can let a brand-new item cut straight to the front if its priority is high enough.",
+      "Not deciding up front whether 'lower number' or 'higher number' means more urgent, and then mixing the two up while adding items.",
+    ],
+    code: {
+      JavaScript: `class PriorityQueue {
+  constructor() { this.items = []; } // each item: { value, priority }
+  enqueue(value, priority) {
+    const node = { value, priority };
+    let i = 0;
+    while (i < this.items.length && this.items[i].priority <= priority) i++;
+    this.items.splice(i, 0, node);
+  }
+  dequeue() {
+    const node = this.items.shift();
+    return node ? node.value : undefined;
+  }
+  peek() {
+    return this.items.length ? this.items[0].value : undefined;
+  }
+  size() { return this.items.length; }
+}
+
+const pq = new PriorityQueue();
+pq.enqueue("economy", 3);
+pq.enqueue("first-class", 1);
+pq.enqueue("priority", 2);
+
+console.log("Boards next:", pq.peek());
+console.log("Board:", pq.dequeue());
+console.log("Board:", pq.dequeue());
+console.log("Remaining:", pq.size());`,
+      Python: `class PriorityQueue:
+    def __init__(self):
+        self.items = []  # each item: (value, priority)
+
+    def enqueue(self, value, priority):
+        i = 0
+        while i < len(self.items) and self.items[i][1] <= priority:
+            i += 1
+        self.items.insert(i, (value, priority))
+
+    def dequeue(self):
+        if not self.items:
+            return None
+        value, _ = self.items.pop(0)
+        return value
+
+    def peek(self):
+        return self.items[0][0] if self.items else None
+
+    def size(self):
+        return len(self.items)
+
+pq = PriorityQueue()
+pq.enqueue("economy", 3)
+pq.enqueue("first-class", 1)
+pq.enqueue("priority", 2)
+
+print("Boards next:", pq.peek())
+print("Board:", pq.dequeue())
+print("Board:", pq.dequeue())
+print("Remaining:", pq.size())`,
+    },
+    output: `Boards next: first-class
+Board: first-class
+Board: priority
+Remaining: 1`,
+  },
+  {
+    id: "frequency-map",
+    pillar: "Data Structures",
+    name: "Counter / Frequency Map",
+    easy: "A frequency map is a tally chart at a school election. Instead of writing every vote down one by one, you keep a single running count next to each candidate's name and bump it up each time their name comes up. It's a hash map whose values are always 'how many times have I seen this?' — sometimes called a multiset, because it tracks duplicates without storing every single copy.",
+    how: [
+      "Start with an empty map from item to count.",
+      "Every time an item appears, look up its current count (or 0 if it's brand new) and add 1.",
+      "To read: check any single item's count directly, or scan the whole map to find the item with the highest count.",
+    ],
+    when: "Counting word frequency in text, finding the most common item in a list, checking if two words are anagrams (same letter counts), or tracking how many times each event happened.",
+    big: "Add or update one count: O(1) · Build the full frequency map for n items: O(n) · Find the most common item: O(k), where k is the number of distinct items.",
+    mistakes: [
+      "Forgetting the default of 0 for an item you haven't seen yet, which crashes the very first count.",
+      "Confusing 'the highest count' with 'the item that has it' — you want the key whose count is highest, not the count number itself.",
+    ],
+    code: {
+      JavaScript: `const text = "mississippi";
+const counts = {};
+for (const ch of text) {
+  counts[ch] = (counts[ch] || 0) + 1;
+}
+
+let mostCommon = null;
+let best = 0;
+for (const ch of Object.keys(counts)) {
+  if (counts[ch] > best) {
+    best = counts[ch];
+    mostCommon = ch;
+  }
+}
+
+console.log("i count:", counts["i"]);
+console.log("s count:", counts["s"]);
+console.log("p count:", counts["p"]);
+console.log("Most common:", mostCommon + " (" + best + ")");`,
+      Python: `text = "mississippi"
+counts = {}
+for ch in text:
+    counts[ch] = counts.get(ch, 0) + 1
+
+most_common = None
+best = 0
+for ch in counts:
+    if counts[ch] > best:
+        best = counts[ch]
+        most_common = ch
+
+print("i count:", counts["i"])
+print("s count:", counts["s"])
+print("p count:", counts["p"])
+print("Most common:", most_common + " (" + str(best) + ")")`,
+    },
+    output: `i count: 4
+s count: 4
+p count: 2
+Most common: i (4)`,
+  },
+  {
+    id: "adjacency-matrix",
+    pillar: "Data Structures",
+    name: "Adjacency Matrix",
+    easy: "An adjacency matrix is a friendship spreadsheet. Write everyone's name across the top AND down the side. To check if two people are friends, find the cell where their row and column meet: a 1 means friends, a 0 means not. It's the same map of connections as an adjacency list — just stored as a grid instead of a phone book.",
+    how: [
+      "Make an N x N grid of zeros, one row and one column per node (N = number of nodes).",
+      "To connect node A and node B, set grid[A][B] = 1 (and grid[B][A] = 1 too, if the connection goes both ways).",
+      "To check if two nodes are connected, just read one cell, grid[A][B] — no searching needed.",
+      "To find all of a node's neighbors, scan its whole row and collect every column that's a 1.",
+    ],
+    when: "Dense graphs where most pairs of nodes ARE connected, or whenever 'are A and B connected?' needs to be instant and extra memory is no problem.",
+    big: "Check if two specific nodes are connected: O(1), one cell lookup · Find all neighbors of a node: O(n), scanning its row · Space: O(n^2), even if there are very few actual connections.",
+    mistakes: [
+      "Using an adjacency matrix for a huge, sparse graph (few actual connections) — you'd allocate n^2 cells to store only a handful of 1s; an adjacency list is far lighter there.",
+      "Forgetting to mirror the update for an undirected graph — setting grid[A][B] = 1 without also setting grid[B][A] = 1 leaves the connection 'visible' from only one side.",
+    ],
+    code: {
+      JavaScript: `class AdjacencyMatrix {
+  constructor(names) {
+    this.names = names; // index -> name
+    const n = names.length;
+    this.grid = Array.from({ length: n }, () => new Array(n).fill(0));
+  }
+  _index(name) { return this.names.indexOf(name); }
+  addEdge(a, b) {
+    const i = this._index(a);
+    const j = this._index(b);
+    this.grid[i][j] = 1;
+    this.grid[j][i] = 1;
+  }
+  connected(a, b) {
+    const i = this._index(a);
+    const j = this._index(b);
+    return this.grid[i][j] === 1;
+  }
+  neighbors(a) {
+    const i = this._index(a);
+    const out = [];
+    for (let j = 0; j < this.names.length; j++) {
+      if (this.grid[i][j] === 1) out.push(this.names[j]);
+    }
+    return out;
+  }
+}
+
+const names = ["Amy", "Bo", "Cy", "Dee"];
+const g = new AdjacencyMatrix(names);
+g.addEdge("Amy", "Bo");
+g.addEdge("Amy", "Cy");
+g.addEdge("Bo", "Dee");
+
+console.log("Amy-Bo connected:", g.connected("Amy", "Bo") ? "yes" : "no");
+console.log("Amy-Dee connected:", g.connected("Amy", "Dee") ? "yes" : "no");
+console.log("Amy's friends:", g.neighbors("Amy").join(", "));
+console.log("Dee's friends:", g.neighbors("Dee").join(", "));`,
+      Python: `class AdjacencyMatrix:
+    def __init__(self, names):
+        self.names = names  # index -> name
+        n = len(names)
+        self.grid = [[0] * n for _ in range(n)]
+
+    def _index(self, name):
+        return self.names.index(name)
+
+    def add_edge(self, a, b):
+        i = self._index(a)
+        j = self._index(b)
+        self.grid[i][j] = 1
+        self.grid[j][i] = 1
+
+    def connected(self, a, b):
+        i = self._index(a)
+        j = self._index(b)
+        return self.grid[i][j] == 1
+
+    def neighbors(self, a):
+        i = self._index(a)
+        out = []
+        for j in range(len(self.names)):
+            if self.grid[i][j] == 1:
+                out.append(self.names[j])
+        return out
+
+names = ["Amy", "Bo", "Cy", "Dee"]
+g = AdjacencyMatrix(names)
+g.add_edge("Amy", "Bo")
+g.add_edge("Amy", "Cy")
+g.add_edge("Bo", "Dee")
+
+print("Amy-Bo connected:", "yes" if g.connected("Amy", "Bo") else "no")
+print("Amy-Dee connected:", "yes" if g.connected("Amy", "Dee") else "no")
+print("Amy's friends:", ", ".join(g.neighbors("Amy")))
+print("Dee's friends:", ", ".join(g.neighbors("Dee")))`,
+    },
+    output: `Amy-Bo connected: yes
+Amy-Dee connected: no
+Amy's friends: Bo, Cy
+Dee's friends: Bo`,
+  },
+  {
+    id: "min-stack",
+    pillar: "Data Structures",
+    name: "Min-Stack",
+    easy: "A min-stack is a pile of plates where each plate secretly remembers the smallest number in the whole pile at the moment it was placed. Even though you can only see the top plate, that top plate's secret note always tells you the smallest number anywhere in the pile — instantly, with no digging.",
+    how: [
+      "Keep two stacks side by side: a main stack for the actual values, and a mini stack that tracks the running minimum.",
+      "push(x): push x onto the main stack. Also push onto the mini stack whichever is smaller — x, or the mini stack's current top (or just x, if the mini stack is empty).",
+      "pop(): pop from both stacks together, so they always stay the same size and in sync.",
+      "getMin(): just peek at the top of the mini stack — the smallest value is always sitting right there.",
+    ],
+    when: "Anywhere you need normal stack behavior (push/pop/peek) PLUS 'what's the smallest value in here right now?' answered instantly, instead of scanning the whole stack every time.",
+    big: "push, pop, peek, getMin: all O(1) — the mini stack means you never have to scan the whole stack to find the minimum.",
+    mistakes: [
+      "Popping from only the main stack and forgetting the mini stack — then the two stacks fall out of sync and getMin() starts lying.",
+      "Assuming you need to search for the new minimum on every push — you don't; just compare the new value to the mini stack's current top.",
+    ],
+    code: {
+      JavaScript: `class MinStack {
+  constructor() {
+    this.stack = [];
+    this.minStack = [];
+  }
+  push(x) {
+    this.stack.push(x);
+    if (this.minStack.length === 0 || x < this.minStack[this.minStack.length - 1]) {
+      this.minStack.push(x);
+    } else {
+      this.minStack.push(this.minStack[this.minStack.length - 1]);
+    }
+  }
+  pop() {
+    this.minStack.pop();
+    return this.stack.pop();
+  }
+  peek() { return this.stack[this.stack.length - 1]; }
+  getMin() { return this.minStack[this.minStack.length - 1]; }
+}
+
+const ms = new MinStack();
+ms.push(5); ms.push(2); ms.push(7); ms.push(1);
+
+console.log("Min:", ms.getMin());
+console.log("Pop:", ms.pop());
+console.log("Min:", ms.getMin());
+console.log("Pop:", ms.pop());
+console.log("Min:", ms.getMin());`,
+      Python: `class MinStack:
+    def __init__(self):
+        self.stack = []
+        self.min_stack = []
+
+    def push(self, x):
+        self.stack.append(x)
+        if not self.min_stack or x < self.min_stack[-1]:
+            self.min_stack.append(x)
+        else:
+            self.min_stack.append(self.min_stack[-1])
+
+    def pop(self):
+        self.min_stack.pop()
+        return self.stack.pop()
+
+    def peek(self):
+        return self.stack[-1]
+
+    def get_min(self):
+        return self.min_stack[-1]
+
+ms = MinStack()
+ms.push(5); ms.push(2); ms.push(7); ms.push(1)
+
+print("Min:", ms.get_min())
+print("Pop:", ms.pop())
+print("Min:", ms.get_min())
+print("Pop:", ms.pop())
+print("Min:", ms.get_min())`,
+    },
+    output: `Min: 1
+Pop: 1
+Min: 2
+Pop: 7
+Min: 2`,
+  },
+  {
+    id: "segment-tree",
+    pillar: "Data Structures",
+    name: "Segment Tree",
+    easy: "A segment tree is a company's reporting chain, built to answer 'what's our total?' instantly. Every employee, a leaf, reports one number. Each manager's number is just their two direct reports added together. This keeps going up, level by level, until the person at the top holds the grand total of everyone below. Change one employee's number, and only the managers directly above them need to redo their math — not the whole company.",
+    how: [
+      "Build a tree where each leaf holds one array value, and each parent holds the combined result (here, the sum) of its two children.",
+      "The node at the top ends up holding the combined result for the whole array — for a sum tree, the grand total.",
+      "update(i, value): change one leaf's value, then walk back up to the top, recomputing each ancestor along the way.",
+      "query(l, r): combine only the handful of nodes that exactly cover the range [l, r), skipping everything outside it.",
+    ],
+    when: "Frequent range queries (sum, min, or max over a range) mixed with frequent updates to individual elements — like a leaderboard that must answer 'what's the total score between rank 10 and 50?' right after every new score comes in.",
+    big: "build: O(n) once · update: O(log n) · range query: O(log n) — both far faster than recomputing a range from scratch (O(n)) after every change.",
+    mistakes: [
+      "Reaching for a segment tree when the array never changes — a precomputed prefix-sum array answers range-sum queries just as fast, with much simpler code.",
+      "Forgetting that after update(i, value), every ancestor of that leaf must be recomputed on the way back up, or the tree quietly keeps stale totals.",
+    ],
+    code: {
+      JavaScript: `class SegmentTree {
+  constructor(values) {
+    this.n = values.length;
+    this.tree = new Array(2 * this.n).fill(0);
+    for (let i = 0; i < this.n; i++) this.tree[this.n + i] = values[i];
+    for (let i = this.n - 1; i >= 1; i--) this.tree[i] = this.tree[2 * i] + this.tree[2 * i + 1];
+  }
+  update(i, value) {
+    let pos = i + this.n;
+    this.tree[pos] = value;
+    while (pos > 1) {
+      pos = Math.floor(pos / 2);
+      this.tree[pos] = this.tree[2 * pos] + this.tree[2 * pos + 1];
+    }
+  }
+  query(l, r) { // sum of [l, r)
+    let res = 0;
+    l += this.n;
+    r += this.n;
+    while (l < r) {
+      if (l % 2 === 1) { res += this.tree[l]; l++; }
+      if (r % 2 === 1) { r--; res += this.tree[r]; }
+      l = Math.floor(l / 2);
+      r = Math.floor(r / 2);
+    }
+    return res;
+  }
+}
+
+const values = [1, 3, 5, 7, 9, 11];
+const seg = new SegmentTree(values);
+
+console.log("Total sum:", seg.query(0, 6));
+console.log("Sum of indices 1..3:", seg.query(1, 4));
+seg.update(2, 100);
+console.log("After update, total:", seg.query(0, 6));
+console.log("After update, indices 1..3:", seg.query(1, 4));`,
+      Python: `class SegmentTree:
+    def __init__(self, values):
+        self.n = len(values)
+        self.tree = [0] * (2 * self.n)
+        for i in range(self.n):
+            self.tree[self.n + i] = values[i]
+        for i in range(self.n - 1, 0, -1):
+            self.tree[i] = self.tree[2 * i] + self.tree[2 * i + 1]
+
+    def update(self, i, value):
+        pos = i + self.n
+        self.tree[pos] = value
+        while pos > 1:
+            pos //= 2
+            self.tree[pos] = self.tree[2 * pos] + self.tree[2 * pos + 1]
+
+    def query(self, l, r):  # sum of [l, r)
+        res = 0
+        l += self.n
+        r += self.n
+        while l < r:
+            if l % 2 == 1:
+                res += self.tree[l]
+                l += 1
+            if r % 2 == 1:
+                r -= 1
+                res += self.tree[r]
+            l //= 2
+            r //= 2
+        return res
+
+values = [1, 3, 5, 7, 9, 11]
+seg = SegmentTree(values)
+
+print("Total sum:", seg.query(0, 6))
+print("Sum of indices 1..3:", seg.query(1, 4))
+seg.update(2, 100)
+print("After update, total:", seg.query(0, 6))
+print("After update, indices 1..3:", seg.query(1, 4))`,
+    },
+    output: `Total sum: 36
+Sum of indices 1..3: 15
+After update, total: 131
+After update, indices 1..3: 110`,
   },
 ];
 

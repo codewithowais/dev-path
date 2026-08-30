@@ -3,8 +3,11 @@
 // types/helpers. Components import from "@/content/lessons" and get everything.
 
 import type { Lesson, Language, Pillar } from "./types";
+import programmingBasics from "./programming-basics";
 import dataStructures from "./data-structures";
 import algorithms from "./algorithms";
+import databases from "./databases";
+import webInternet from "./web-internet";
 import designPatterns from "./design-patterns";
 import systemDesign from "./system-design";
 import cloud from "./cloud";
@@ -14,8 +17,11 @@ import genai from "./genai";
 export * from "./types";
 
 export const lessons: Lesson[] = [
+  ...programmingBasics,
   ...dataStructures,
   ...algorithms,
+  ...databases,
+  ...webInternet,
   ...designPatterns,
   ...systemDesign,
   ...cloud,

@@ -514,7 +514,7 @@ print("0! =", factorial(0))`,
     id: "heap-sort",
     pillar: "Algorithms",
     name: "Heap Sort",
-    easy: "Heap sort is like running a tournament bracket. You arrange everyone into a 'max heap' — a shape where every parent is bigger than its children, so the biggest item always ends up at the very top. Pull the champion off the top, put it at the end of the sorted list, then let the next-biggest rise to the top and repeat.",
+    easy: "Heap sort is like a tournament bracket. Arrange everyone so every 'parent' is bigger than their 'children' — that shape is called a heap, and it always pushes the biggest player to the very top. Take the champion off the top and place it at the end of your sorted list. Let the next-biggest rise to the top, and repeat.",
     how: [
       "Arrange the whole list into a max heap, so the largest item sits at the root (index 0).",
       "Swap the root with the last unsorted item — that puts the current largest in its final sorted spot.",
@@ -647,7 +647,7 @@ Sorted: 1 2 5 5 6 9`,
     id: "jump-search",
     pillar: "Algorithms",
     name: "Jump Search",
-    easy: "Jump search is like flipping through a phone book in big chunks instead of one page at a time — jump ahead by a block of pages, and as soon as you overshoot the name you want, walk back and search that one block page by page. It only works on sorted data.",
+    easy: "Jump search is like flipping through a phone book in big chunks instead of one page at a time. Jump ahead by a whole block of pages. As soon as you overshoot the name you want, stop and search that one block page by page. It only works if the data is sorted first.",
     how: [
       "Pick a block size (usually the square root of the list's length).",
       "Jump ahead by that many items at a time until you land on a block that could contain the target.",
@@ -708,7 +708,7 @@ Index of 10: -1`,
     id: "two-pointers",
     pillar: "Algorithms",
     name: "Two Pointers",
-    easy: "The two-pointer trick is like two people starting at opposite ends of a sorted line of numbered cards and walking toward each other. If their two cards don't add up to the target yet, the person holding the smaller card steps inward — that's the only move that can raise the sum.",
+    easy: "Picture two people standing at opposite ends of a sorted line of numbered cards. They walk toward each other. If their two cards don't add up to the target yet, whoever holds the smaller card steps inward — that's the only move that can raise the sum.",
     how: [
       "Make sure the list is sorted first.",
       "Put one pointer at the very start and one at the very end.",
@@ -913,7 +913,7 @@ Max subarray sum: 6`,
     id: "dijkstras-algorithm",
     pillar: "Algorithms",
     name: "Dijkstra's Shortest Path",
-    easy: "Dijkstra's algorithm is a road-trip planner that always visits the closest unvisited city next. From each city it checks: 'is it cheaper to reach my neighbors through here than the best way I knew before?' It only works when all road distances (weights) are zero or positive.",
+    easy: "Dijkstra's algorithm is a road-trip planner that always drives to the closest unvisited city next. From each city, it asks: is it cheaper to reach my neighbors through here than the best way I already knew? It only works when every road's distance is zero or positive — no roads that pay you to drive them.",
     how: [
       "Set the distance to the starting point as 0, and every other point as 'unknown' (infinity) for now.",
       "Repeatedly pick the unvisited point with the smallest known distance, and mark it visited.",
@@ -1005,7 +1005,7 @@ print("Distances from A:", line)`,
     id: "topological-sort",
     pillar: "Algorithms",
     name: "Topological Sort",
-    easy: "Topological sort is figuring out what order to take your classes in when some classes require others first — you can't take Physics before Math. The algorithm lines up every task so each prerequisite comes before whatever depends on it. It only works on a DAG — jargon for 'directed acyclic graph', meaning every arrow points one way and nothing loops back on itself.",
+    easy: "Topological sort figures out what order to do tasks in when some tasks need others done first — you can't take Physics before Math. It lines up every task so each requirement comes before whatever depends on it. This only works when tasks don't depend on each other in a circle, like A needing B while B also needs A — that's called a cycle, and it has no valid order.",
     how: [
       "Pick a task you haven't fully explored yet, and dive into everything it depends on first (that's a DFS — depth-first search).",
       "Once you've explored ALL of a task's dependents, mark it 'finished' and push it onto a stack — it's now safe to schedule.",
@@ -1077,7 +1077,7 @@ print("Topological order:", " ".join(topological_sort(graph)))`,
     id: "backtracking-permutations",
     pillar: "Algorithms",
     name: "Backtracking (Permutations)",
-    easy: "Backtracking is trying on outfits: put on an item, see if the rest of the outfit can be completed, and if you hit a dead end, take that item off (backtrack) and try a different one. Generating every permutation (every possible ordering) of a list works the same way — choose one item for the next slot, recurse to fill the rest, then undo the choice and try the next item.",
+    easy: "Backtracking is like trying on outfits. Put on one item, then see if the rest of the outfit can be completed. Hit a dead end? Take that item off — that's the 'backtrack' — and try something else. Generating every permutation (every possible ordering of a list) works the same way: place one item in the next open slot, try to fill the rest, then undo it and try the next item instead.",
     how: [
       "Keep a 'path' (the ordering built so far) and a list of 'remaining' items not yet placed.",
       "For each remaining item: place it in the path, then recursively try to fill the rest of the path with what's left.",
@@ -1198,7 +1198,7 @@ Total coins: 6`,
     id: "prefix-sums",
     pillar: "Algorithms",
     name: "Prefix Sums",
-    easy: "A prefix sum array is like a car's odometer readings at every mile marker. To find the distance between mile 20 and mile 50, you don't re-measure the whole road — you just subtract the two odometer readings. Precompute the running totals once, and every 'sum of this range' question becomes a single subtraction.",
+    easy: "Think of a car's odometer readings at every mile marker. To find the distance between mile 20 and mile 50, you don't re-measure the road — you just subtract two odometer readings. A prefix sum array does the same trick for a list of numbers: precompute the running totals once, and any 'sum of this range' question becomes a single subtraction.",
     how: [
       "Build a prefix array where prefix[i] holds the sum of all original items before index i (prefix[0] is 0 — nothing summed yet).",
       "To get the sum of a range from index left to right (inclusive), take prefix[right + 1] minus prefix[left].",
@@ -1251,7 +1251,7 @@ Sum of indices 0..4: 30`,
     id: "bit-manipulation",
     pillar: "Algorithms",
     name: "Bit Manipulation",
-    easy: "Every number is secretly a row of on/off light switches (called 'bits') written in binary. Bit tricks flip those switches directly instead of doing normal math. One classic trick, n & (n - 1) (the '&' means 'AND', comparing switches pairwise), always switches off the rightmost switch that's on — do that in a loop and you're counting how many switches were on. And if a number has exactly ONE switch on, it's a power of two.",
+    easy: "Every number is stored as a row of on/off switches called bits — this is binary. Some tricks flip those switches directly instead of doing normal math. One handy trick, n & (n - 1), always turns off the rightmost switch that's on. Do that over and over and you're counting how many switches were on. And if a number has exactly one switch on, it's a power of two.",
     how: [
       "To count 'set bits' (switches that are on): repeatedly do n = n & (n - 1), which clears the lowest set bit each time, and count how many times you did it before n hit 0.",
       "To check if a number is a power of two: a power of two has exactly one set bit, so n & (n - 1) comes out to exactly 0 for it (and only it, among positive numbers).",
@@ -1363,7 +1363,7 @@ Found at indices: 0 5`,
     id: "floyds-cycle-detection",
     pillar: "Algorithms",
     name: "Floyd's Cycle Detection",
-    easy: "Picture two runners on a track: the tortoise takes one step at a time, the hare takes two. If the track is a straight line with an end, the hare just finishes first. But if the track secretly loops back on itself, the faster hare will eventually LAP the tortoise and they'll land on the exact same spot again — proof the track is a loop. This is how you detect a cycle in a linked list using almost no extra memory.",
+    easy: "Picture two runners on a track. The tortoise takes one step at a time; the hare takes two. If the track is a straight line with an end, the hare just finishes first. But if the track secretly loops back on itself, the faster hare eventually laps the tortoise — they land on the exact same spot again. That's proof the track is a loop. This trick finds a loop in a linked list using almost no extra memory.",
     how: [
       "Start two pointers, 'slow' and 'fast', at the head of the linked list.",
       "Move slow one step at a time, and fast two steps at a time, over and over.",
@@ -1434,7 +1434,7 @@ List without a cycle has a cycle? no`,
     id: "quickselect",
     pillar: "Algorithms",
     name: "Quickselect",
-    easy: "Quickselect is quicksort's lazier cousin. Quicksort fully sorts both sides of a pivot; quickselect only cares about ONE answer — the kth smallest item — so after splitting into a 'smaller' pile and a 'bigger' pile, it throws away whichever pile can't possibly contain the answer and only digs into the one that can.",
+    easy: "Quickselect is quicksort's lazier cousin. Quicksort fully sorts both sides of a pivot. Quickselect only wants one answer — the kth smallest item. So after splitting into a 'smaller' pile and a 'bigger' pile, it throws away whichever pile can't hold the answer, and only digs into the one that can.",
     how: [
       "Pick a pivot item and split the rest into two piles: smaller-than-pivot and bigger-than-or-equal-to-pivot.",
       "Figure out where the pivot itself would land: right after all the 'smaller' items. If that's the kth position you want, the pivot IS the answer.",
@@ -1485,6 +1485,256 @@ print("1st smallest:", quick_select(data, 1))`,
     output: `Numbers: 7 2 9 4 1 6
 3rd smallest: 4
 1st smallest: 1`,
+  },
+  {
+    id: "euclids-gcd",
+    pillar: "Algorithms",
+    name: "Euclid's GCD",
+    easy: "Imagine two ropes, one 48 inches and one 18 inches, and you want the longest ruler that measures both exactly with nothing left over. Euclid's trick: measure off the shorter rope against the longer one, look at what's left over, and repeat using that leftover as your new short rope. Keep going until nothing's left over — the last rope length you used is the greatest common divisor (GCD), the biggest number that divides both originals evenly.",
+    how: [
+      "Take two numbers, a and b.",
+      "Divide a by b and find the remainder r (that's a % b).",
+      "Replace a with b, and b with r. Repeat until b becomes 0 — then a is the GCD.",
+    ],
+    when: "Whenever you need the largest shared factor of two numbers — simplifying a fraction to lowest terms, finding a common ratio, or as a building block inside more advanced math and cryptography algorithms.",
+    big: "O(log(min(a, b))) time — surprisingly fast, since each step shrinks the numbers quickly · O(1) space.",
+    mistakes: [
+      "Assuming it needs sorted or special input — it works on any two non-negative integers, in either order.",
+      "Forgetting that gcd(0, n) should just return n — the loop already handles this correctly, but it's easy to special-case it wrongly by hand.",
+    ],
+    code: {
+      JavaScript: `function gcd(a, b) {
+  while (b !== 0) {
+    const r = a % b;
+    a = b;
+    b = r;
+  }
+  return a;
+}
+
+console.log("GCD of 48 and 18:", gcd(48, 18));
+console.log("GCD of 17 and 5:", gcd(17, 5));`,
+      Python: `def gcd(a, b):
+    while b != 0:
+        r = a % b
+        a = b
+        b = r
+    return a
+
+print("GCD of 48 and 18:", gcd(48, 18))
+print("GCD of 17 and 5:", gcd(17, 5))`,
+    },
+    output: `GCD of 48 and 18: 6
+GCD of 17 and 5: 1`,
+  },
+  {
+    id: "sieve-of-eratosthenes",
+    pillar: "Algorithms",
+    name: "Sieve of Eratosthenes",
+    easy: "Picture writing every number from 2 to 30 on a whiteboard. Circle the first number left standing (2), then cross out every multiple of it (4, 6, 8, ...) — those can't be prime, since 2 divides them. Move to the next number that's still standing (3), circle it, cross out its multiples, and keep going. Whatever is still standing at the end, never crossed out, is prime.",
+    how: [
+      "Make a list of 'is it prime?' flags for every number from 0 up to n, starting them all as true, except 0 and 1 which aren't prime.",
+      "Starting at 2, if a number is still flagged prime, cross out every multiple of it above itself.",
+      "Move to the next still-flagged number and repeat, up through the square root of n — anything left flagged at the end is prime.",
+    ],
+    when: "Finding all primes up to some limit — much faster than testing each number one at a time for primality. Useful in cryptography, number theory problems, and building prime lookup tables.",
+    big: "O(n log log n) time — nearly linear · O(n) space for the flags array.",
+    mistakes: [
+      "Starting the crossing-out at i + i instead of i * i — smaller multiples of i were already crossed out by smaller primes, so starting at i * i (skipping straight to the square) is a common speedup, though starting earlier still gives a correct (just slightly slower) result.",
+      "Forgetting to mark 0 and 1 as not prime — the loop logic alone won't exclude them.",
+    ],
+    code: {
+      JavaScript: `function sieveOfEratosthenes(limit) {
+  const isPrime = new Array(limit + 1).fill(true);
+  isPrime[0] = false;
+  if (limit >= 1) isPrime[1] = false;
+
+  for (let i = 2; i * i <= limit; i++) {
+    if (isPrime[i]) {
+      for (let multiple = i * i; multiple <= limit; multiple += i) {
+        isPrime[multiple] = false;
+      }
+    }
+  }
+
+  const primes = [];
+  for (let i = 2; i <= limit; i++) {
+    if (isPrime[i]) primes.push(i);
+  }
+  return primes;
+}
+
+const primes = sieveOfEratosthenes(30);
+console.log("Primes up to 30:", primes.join(" "));`,
+      Python: `def sieve_of_eratosthenes(limit):
+    is_prime = [True] * (limit + 1)
+    is_prime[0] = False
+    if limit >= 1:
+        is_prime[1] = False
+
+    i = 2
+    while i * i <= limit:
+        if is_prime[i]:
+            for multiple in range(i * i, limit + 1, i):
+                is_prime[multiple] = False
+        i += 1
+
+    primes = [i for i in range(2, limit + 1) if is_prime[i]]
+    return primes
+
+primes = sieve_of_eratosthenes(30)
+print("Primes up to 30:", " ".join(str(p) for p in primes))`,
+    },
+    output: `Primes up to 30: 2 3 5 7 11 13 17 19 23 29`,
+  },
+  {
+    id: "fast-exponentiation",
+    pillar: "Algorithms",
+    name: "Fast Exponentiation",
+    easy: "Imagine folding a piece of paper in half again and again — each fold doubles the number of layers, so you reach a huge number of layers in just a few folds instead of adding one layer at a time. Fast exponentiation computes powers the same way: instead of multiplying the base by itself n times in a row, it repeatedly squares a smaller result, cutting the exponent in half at each step.",
+    how: [
+      "If the exponent is 0, the answer is 1 — that's the base case.",
+      "If the exponent is even, compute base raised to half the exponent, then square that result.",
+      "If the exponent is odd, compute base raised to one less than the exponent (now even) the same way, then multiply by one more base.",
+    ],
+    when: "Computing large powers quickly — modular exponentiation in cryptography (like RSA), fast matrix powers, or any place you'd otherwise multiply the same number hundreds of times.",
+    big: "O(log n) time — each step cuts the exponent in half, so even huge exponents finish in a handful of multiplications · O(log n) space for the recursion (O(1) if written as a loop).",
+    mistakes: [
+      "Forgetting the odd-exponent case and only handling even ones — that silently gives wrong answers for odd powers.",
+      "Recomputing base raised to half the exponent twice instead of computing it once and squaring it — that throws away the entire speed advantage.",
+    ],
+    code: {
+      JavaScript: `function fastPower(base, exponent) {
+  if (exponent === 0) return 1;
+  if (exponent % 2 === 0) {
+    const half = fastPower(base, exponent / 2);
+    return half * half;
+  }
+  return base * fastPower(base, exponent - 1);
+}
+
+console.log("2^10 =", fastPower(2, 10));
+console.log("3^13 =", fastPower(3, 13));`,
+      Python: `def fast_power(base, exponent):
+    if exponent == 0:
+        return 1
+    if exponent % 2 == 0:
+        half = fast_power(base, exponent // 2)
+        return half * half
+    return base * fast_power(base, exponent - 1)
+
+print("2^10 =", fast_power(2, 10))
+print("3^13 =", fast_power(3, 13))`,
+    },
+    output: `2^10 = 1024
+3^13 = 1594323`,
+  },
+  {
+    id: "merge-intervals",
+    pillar: "Algorithms",
+    name: "Merge Intervals",
+    easy: "Imagine a list of meeting times on your calendar, some of which overlap — like 9-10am and 9:30-11am. Merging intervals means combining any that overlap into one longer block, so your calendar shows the fewest possible non-overlapping chunks of busy time.",
+    how: [
+      "Sort the intervals by their start time.",
+      "Walk through them one by one, keeping a 'current merged' interval.",
+      "If the next interval starts before (or exactly when) the current one ends, stretch the current one to cover both. Otherwise, close out the current merged interval and start a new one.",
+    ],
+    when: "Combining overlapping ranges — merging busy calendar slots, combining overlapping time windows in logs, or simplifying a list of numeric ranges before processing them.",
+    big: "O(n log n) time to sort, then O(n) to merge in one pass · O(n) space for the result.",
+    mistakes: [
+      "Forgetting to sort by start time first — the one-pass merge only works because the intervals arrive in order.",
+      "Using strict less-than instead of less-than-or-equal when checking overlap, which misses back-to-back intervals that touch exactly at the boundary, like [1, 3] and [3, 5].",
+    ],
+    code: {
+      JavaScript: `function mergeIntervals(intervals) {
+  if (intervals.length === 0) return [];
+  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
+  const merged = [sorted[0].slice()];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const [start, end] = sorted[i];
+    const last = merged[merged.length - 1];
+    if (start <= last[1]) {
+      last[1] = Math.max(last[1], end); // overlaps — stretch the current one
+    } else {
+      merged.push([start, end]); // no overlap — start a new block
+    }
+  }
+  return merged;
+}
+
+const meetings = [[1, 3], [2, 6], [8, 10], [15, 18], [9, 12]];
+const merged = mergeIntervals(meetings);
+const line = merged.map(([s, e]) => \`\${s}-\${e}\`).join(" ");
+console.log("Merged:", line);`,
+      Python: `def merge_intervals(intervals):
+    if not intervals:
+        return []
+    sorted_intervals = sorted(intervals, key=lambda pair: pair[0])
+    merged = [list(sorted_intervals[0])]
+
+    for start, end in sorted_intervals[1:]:
+        last = merged[-1]
+        if start <= last[1]:
+            last[1] = max(last[1], end)  # overlaps — stretch the current one
+        else:
+            merged.append([start, end])  # no overlap — start a new block
+    return merged
+
+meetings = [[1, 3], [2, 6], [8, 10], [15, 18], [9, 12]]
+merged = merge_intervals(meetings)
+line = " ".join(f"{s}-{e}" for s, e in merged)
+print("Merged:", line)`,
+    },
+    output: `Merged: 1-6 8-12 15-18`,
+  },
+  {
+    id: "boyer-moore-majority-vote",
+    pillar: "Algorithms",
+    name: "Boyer-Moore Majority Vote",
+    easy: "Imagine a room where more than half the people are wearing red, and everyone else is wearing some other color. If you keep pairing up one red person with one non-red person and sending both out of the room, red still wins in the end — there were simply more of them to begin with. The Boyer-Moore trick works the same way: cancel one 'vote' for the current leading candidate against one vote for anything else, and whoever's left standing at the end is the majority.",
+    how: [
+      "Keep a 'candidate' and a 'count', starting count at 0.",
+      "For each item: if count is 0, make this item the new candidate. Then add 1 to count if the item matches the candidate, or subtract 1 if it doesn't.",
+      "After one full pass, the candidate is the majority element — the value appearing more than half the time (this only works when such a majority actually exists in the list).",
+    ],
+    when: "Finding an element that appears more than half the time in a list — like the winning candidate in an election tally — in a single pass using almost no extra memory, instead of counting every distinct value with a hash map.",
+    big: "O(n) time — one pass through the list · O(1) space.",
+    mistakes: [
+      "Trusting the result without checking the list actually has a majority element — if no value appears more than half the time, this algorithm still returns some candidate, just not a valid majority.",
+      "Resetting the candidate on every mismatch instead of only when count hits exactly 0 — that breaks the cancellation logic.",
+    ],
+    code: {
+      JavaScript: `function majorityElement(arr) {
+  let candidate = null;
+  let count = 0;
+
+  for (const item of arr) {
+    if (count === 0) candidate = item;
+    count += item === candidate ? 1 : -1;
+  }
+  return candidate;
+}
+
+const votes = [2, 2, 1, 1, 1, 2, 2];
+console.log("Votes:", votes.join(" "));
+console.log("Majority element:", majorityElement(votes));`,
+      Python: `def majority_element(arr):
+    candidate = None
+    count = 0
+
+    for item in arr:
+        if count == 0:
+            candidate = item
+        count += 1 if item == candidate else -1
+    return candidate
+
+votes = [2, 2, 1, 1, 1, 2, 2]
+print("Votes:", " ".join(str(v) for v in votes))
+print("Majority element:", majority_element(votes))`,
+    },
+    output: `Votes: 2 2 1 1 1 2 2
+Majority element: 2`,
   },
 ];
 
