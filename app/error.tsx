@@ -16,7 +16,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-24 text-center">
+    <div className="mx-auto max-w-3xl px-5 py-24 text-center">
       <p className="dp-eyebrow text-primary">Something went wrong</p>
       <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
         This page hit a snag

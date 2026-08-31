@@ -22,7 +22,7 @@ const STATS = [
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
+    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl">
       {/* Hero */}
       <section className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.15fr_1fr]">
         <div className="dp-stagger">

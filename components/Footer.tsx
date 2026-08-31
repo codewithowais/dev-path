@@ -4,7 +4,7 @@ import { BrandSignature } from "@/components/Brand";
 export function Footer() {
   return (
     <footer className="mt-20 border-t border-line bg-card">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-start sm:justify-between xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-start sm:justify-between xl:max-w-7xl">
         <div className="max-w-sm">
           <p className="font-display text-lg font-bold">
             Dev<span className="text-primary">Path</span>
@@ -72,7 +72,7 @@ export function Footer() {
         </nav>
       </div>
       <div className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between xl:max-w-7xl">
           <p>Built for beginners. No jargon without a plain-English translation.</p>
           <p>
             Made by{" "}
