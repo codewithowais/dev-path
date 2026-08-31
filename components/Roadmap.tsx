@@ -5,21 +5,14 @@ type Props = {
   path: Path;
 };
 
-/** The warm "goal" colour the journey resolves to (matches the site's coral). */
+/** The warm "goal" colour the finish stop resolves to (matches the site's coral). */
 const GOAL_COLOR = "#ff8a3d";
-
-/** Linear-interpolate two #rrggbb hexes. t=0 → a, t=1 → b. */
-function lerpHex(a: string, b: string, t: number): string {
-  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
-  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
-  const mix = pa.map((v, i) => Math.round(v + (pb[i] - v) * t));
-  return `#${mix.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-}
 
 /**
  * The signature "wayfinder" roadmap: a clean vertical timeline. Ringed station
- * markers sit on a straight line whose colour flows from the path accent at the
- * start to a warm goal-coral at the flagged finish.
+ * markers sit on a straight line in the path's own colour; only the final stop
+ * warms into the goal-coral, so the whole route keeps the path's identity with
+ * no muddy cross-hue midpoints.
  *
  * Responsiveness: every station and the line segment below it share one flex
  * column, and the connector is `flex-1`, so it stretches to fill whatever height
@@ -27,8 +20,8 @@ function lerpHex(a: string, b: string, t: number): string {
  */
 export function Roadmap({ path }: Props) {
   const total = path.steps.length;
-  const colorAt = (i: number) =>
-    lerpHex(path.color, GOAL_COLOR, total > 1 ? i / (total - 1) : 0);
+  // Every stop is the path's accent, except the last, which is the goal-coral.
+  const colorAt = (i: number) => (i === total - 1 ? GOAL_COLOR : path.color);
 
   return (
     <div className="dp-rm">
