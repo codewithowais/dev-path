@@ -42,7 +42,7 @@ export default function LearnPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-6xl px-5">
+    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
       <ItemListJsonLd
         url={absoluteUrl("/learn")}
         name="Learn — beginner coding lessons"

@@ -15,7 +15,7 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
   const prev = idx > 0 ? siblings[idx - 1] : undefined;
   const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : undefined;
   return (
-    <div className="mx-auto max-w-6xl px-5">
+    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
       <div className="py-10 sm:py-14">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted">
           <Link
