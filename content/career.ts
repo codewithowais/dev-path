@@ -506,6 +506,78 @@ export const roleTrees: RoleTree[] = [
   },
 ];
 
+export type RoleCategory = {
+  /** Stable id used for the active-tab state. */
+  id: string;
+  /** Short, plain-English group name shown on the filter tab. */
+  label: string;
+  /** Ordered role ids (must match roleTrees[].id) that belong to this group. */
+  roleIds: string[];
+};
+
+/** Groups the many role trees into a handful of families so the Grow page reads
+ *  as a browsable menu (one family at a time) instead of one long scroll. Every
+ *  role in `roleTrees` appears in exactly one category — see the runtime check
+ *  in components/RoleTree.tsx that surfaces any role missed here. */
+export const roleCategories: RoleCategory[] = [
+  {
+    id: "build",
+    label: "Build the product",
+    roleIds: [
+      "frontend-developer",
+      "backend-developer",
+      "fullstack-developer",
+      "mobile-developer",
+      "game-developer",
+      "ar-vr",
+      "blockchain-developer",
+      "ux-engineer",
+    ],
+  },
+  {
+    id: "data-ai",
+    label: "Data & AI",
+    roleIds: [
+      "data-analyst-scientist",
+      "ai-ml-engineer",
+      "data-engineer",
+      "mlops-engineer",
+    ],
+  },
+  {
+    id: "infrastructure",
+    label: "Cloud & infrastructure",
+    roleIds: [
+      "devops-sre",
+      "cloud-engineer",
+      "platform-engineer",
+      "embedded-firmware",
+      "database-administrator",
+    ],
+  },
+  {
+    id: "quality-security",
+    label: "Quality & security",
+    roleIds: ["qa-sdet", "product-qa", "cybersecurity"],
+  },
+  {
+    id: "lead",
+    label: "Lead & manage",
+    roleIds: [
+      "engineering-manager",
+      "scrum-master",
+      "product-manager",
+      "business-analyst",
+      "founding-engineer",
+    ],
+  },
+  {
+    id: "advise",
+    label: "Advise & communicate",
+    roleIds: ["developer-advocate", "technical-writer", "solutions-engineer"],
+  },
+];
+
 export type TitleQA = {
   /** The confusing pair or term. */
   term: string;

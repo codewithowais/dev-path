@@ -3,7 +3,7 @@ import { GrowthTree } from "@/components/GrowthTree";
 import { RoleTree } from "@/components/RoleTree";
 import { TitleGuide } from "@/components/TitleGuide";
 import { Reveal } from "@/components/Reveal";
-import { titleGuide } from "@/content/career";
+import { titleGuide, roleTrees, roleCategories } from "@/content/career";
 import { FaqJsonLd, absoluteUrl } from "@/components/StructuredData";
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function GrowPage() {
   return (
-    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
+    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl">
       <FaqJsonLd
         items={titleGuide.map((t) => ({ question: t.term, answer: t.answer }))}
       />
@@ -63,7 +63,9 @@ export default function GrowPage() {
             Role-specific growth trees
           </h2>
           <p className="mt-3 text-lg leading-relaxed text-muted">
-            Pick a specialty to open the path that teaches it.
+            {roleTrees.length} specialties, grouped into {roleCategories.length}{" "}
+            families. Pick a family to browse its roles and see each one’s
+            step-by-step growth ladder.
           </p>
         </header>
         <Reveal variant="scale" className="mt-8">
