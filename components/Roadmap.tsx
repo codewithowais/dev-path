@@ -194,7 +194,7 @@ export function Roadmap({ path }: Props) {
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-muted">
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
                   {description}
                 </p>
               </div>

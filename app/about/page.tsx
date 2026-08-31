@@ -65,7 +65,7 @@ const PRINCIPLES = [
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-4xl px-5">
+    <div className="mx-auto max-w-6xl px-5 xl:max-w-7xl 2xl:max-w-[96rem] 2xl:px-8">
       {/* Hero */}
       <section className="dp-stagger py-14 sm:py-20">
         <p className="dp-eyebrow text-primary">About</p>
