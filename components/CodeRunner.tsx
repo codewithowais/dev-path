@@ -1,11 +1,28 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Prism from "prismjs";
-import "prismjs/components/prism-python";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CodeMirror, {
+  EditorView,
+  EditorState,
+  Prec,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  drawSelection,
+} from "@uiw/react-codemirror";
+import {
+  HighlightStyle,
+  syntaxHighlighting,
+  bracketMatching,
+  indentOnInput,
+  indentUnit,
+} from "@codemirror/language";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { tags as t } from "@lezer/highlight";
 import type { Language } from "@/content/lessons";
-
-Prism.manual = true; // don't auto-scan the page; we highlight on demand
 
 type Props = {
   code: Partial<Record<Language, string>>;
@@ -18,13 +35,7 @@ type RunState =
   | { kind: "running" }
   | { kind: "done"; out: string; error?: string; matches: boolean };
 
-/** Layout metrics shared with the CSS (`.dp-editor` custom props). Kept here as
- *  plain numbers so we can compute the active-line band + caret line in JS.
- *  These MUST match `--dp-code-lh` / `--dp-code-pad` in globals.css. */
-const LINE_H = 21; // integer px line-height — the key to layer alignment
-const PAD = 12; // px padding on every layer (px-3 / py-3)
 const MAX_H = 440; // editor viewport height before it scrolls
-const TAB = "  "; // two spaces, matching tab-size: 2
 
 /** Runs a snippet of JS in a Web Worker so infinite loops can be killed and the
  *  page thread never freezes. Only console.log/error output is captured. */
@@ -90,9 +101,66 @@ const norm = (s: string) =>
     .replace(/^\n+/, "")
     .replace(/\n+$/, "");
 
-/** Index of the line the caret sits on, given a caret offset into `value`. */
-const lineOf = (value: string, offset: number) =>
-  value.slice(0, offset).split("\n").length - 1;
+/** On-brand syntax palette, matched to the old Prism token colours so the
+ *  editor looks like the same product after the CodeMirror migration. */
+const brandHighlight = HighlightStyle.define([
+  { tag: [t.keyword, t.modifier, t.controlKeyword, t.operatorKeyword, t.definitionKeyword, t.moduleKeyword, t.self, t.null, t.bool], color: "#c792ea" },
+  { tag: [t.string, t.special(t.string), t.regexp, t.character], color: "#c3e88d" },
+  { tag: [t.number, t.integer, t.float, t.constant(t.name), t.standard(t.name)], color: "#f78c6c" },
+  { tag: [t.function(t.variableName), t.function(t.propertyName), t.macroName], color: "#82aaff" },
+  { tag: [t.operator, t.derefOperator, t.arithmeticOperator, t.logicOperator, t.compareOperator, t.bitwiseOperator], color: "#89ddff" },
+  { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: "#6b7394", fontStyle: "italic" },
+  { tag: [t.className, t.typeName, t.namespace, t.definition(t.typeName)], color: "#ffcb6b" },
+  { tag: [t.propertyName, t.attributeName], color: "#f78c6c" },
+  { tag: [t.punctuation, t.separator, t.bracket, t.paren, t.brace, t.squareBracket, t.angleBracket], color: "#8b95b8" },
+  { tag: [t.variableName, t.definition(t.variableName), t.labelName], color: "#e6e8f2" },
+]);
+
+/** Compact dark theme: background = --color-ink, muted gutter, subtle violet
+ *  active-line wash, readable selection, white caret. Metrics use an integer
+ *  line-height so long snippets stay on a clean grid. */
+const brandTheme = EditorView.theme(
+  {
+    "&": {
+      color: "#e6e8f2",
+      backgroundColor: "var(--color-ink)",
+      fontSize: "13px",
+    },
+    "&.cm-focused": { outline: "none" },
+    ".cm-scroller": {
+      fontFamily: "var(--font-mono), ui-monospace, monospace",
+      lineHeight: "21px",
+      maxHeight: `${MAX_H}px`,
+    },
+    ".cm-content": {
+      padding: "12px 0",
+      caretColor: "#fff",
+    },
+    ".cm-line": { padding: "0 12px" },
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "#fff", borderLeftWidth: "2px" },
+    // drawSelection() renders selection as .cm-selectionBackground layers.
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
+      backgroundColor: "rgba(130, 170, 255, 0.28)",
+    },
+    ".cm-activeLine": { backgroundColor: "rgba(130, 120, 235, 0.10)" },
+    ".cm-gutters": {
+      backgroundColor: "transparent",
+      color: "#6b7394",
+      border: "none",
+    },
+    ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px 0 14px", minWidth: "2.2ch" },
+    ".cm-activeLineGutter": {
+      backgroundColor: "transparent",
+      color: "rgba(255, 255, 255, 0.8)",
+    },
+    ".cm-matchingBracket, &.cm-focused .cm-matchingBracket": {
+      backgroundColor: "rgba(130, 170, 255, 0.22)",
+      outline: "1px solid rgba(130, 170, 255, 0.45)",
+      color: "inherit",
+    },
+  },
+  { dark: true }
+);
 
 export function CodeRunner({ code, output }: Props) {
   const languages = useMemo(() => Object.keys(code) as Language[], [code]);
@@ -100,78 +168,19 @@ export function CodeRunner({ code, output }: Props) {
   const [drafts, setDrafts] = useState<Partial<Record<Language, string>>>({});
   const [run, setRun] = useState<RunState>({ kind: "idle" });
   const [copied, setCopied] = useState(false);
-  const [caretLine, setCaretLine] = useState(0);
-  const [focused, setFocused] = useState(false);
-
-  const taRef = useRef<HTMLTextAreaElement>(null);
-  const preRef = useRef<HTMLPreElement>(null);
-  const gutterRef = useRef<HTMLDivElement>(null);
-  const bandRef = useRef<HTMLDivElement>(null);
 
   // Guards for late/aborted runs (see doRun + the unmount cleanup effect).
   const mountedRef = useRef(true);
   const runTokenRef = useRef(0);
   const langRef = useRef<Language>(lang);
   const runHandleRef = useRef<RunHandle | null>(null);
-  const caretLineRef = useRef(0);
-  // Selection to restore after a controlled edit (Tab/Shift+Tab/auto-indent),
-  // since re-rendering with a new value would otherwise jump the caret to end.
-  const pendingSelRef = useRef<{ s: number; e: number } | null>(null);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [view, setView] = useState<EditorView | null>(null);
 
   const original = code[lang] ?? "";
   const current = drafts[lang] ?? original;
   const isJS = lang === "JavaScript";
   const edited = current !== original;
-  const lineCount = current.split("\n").length;
-
-  const highlighted = useMemo(() => {
-    const grammar = lang === "Python" ? Prism.languages.python : Prism.languages.javascript;
-    const name = lang === "Python" ? "python" : "javascript";
-    return Prism.highlight(current, grammar, name);
-  }, [current, lang]);
-
-  // Keep the active-line band pinned to the caret's line, offset by scroll.
-  function positionBand() {
-    const ta = taRef.current;
-    const band = bandRef.current;
-    if (!ta || !band) return;
-    band.style.top = PAD + caretLineRef.current * LINE_H - ta.scrollTop + "px";
-  }
-
-  function updateCaret() {
-    const ta = taRef.current;
-    if (!ta) return;
-    const line = lineOf(ta.value, ta.selectionStart);
-    caretLineRef.current = line;
-    setCaretLine(line);
-    positionBand();
-  }
-
-  // Grow the textarea to fit its content (capped) so the transparent input
-  // layer always covers every highlighted line — no dead zone at the bottom.
-  useEffect(() => {
-    const ta = taRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, MAX_H) + "px";
-    syncScroll();
-    positionBand();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, lang]);
-
-  // After a programmatic edit, restore the intended caret/selection.
-  useLayoutEffect(() => {
-    const p = pendingSelRef.current;
-    const ta = taRef.current;
-    if (p && ta) {
-      ta.selectionStart = p.s;
-      ta.selectionEnd = p.e;
-      pendingSelRef.current = null;
-      updateCaret();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current]);
 
   // Keep the current language readable from async callbacks that captured an
   // older render, so a late run can tell whether the language changed.
@@ -193,17 +202,6 @@ export function CodeRunner({ code, output }: Props) {
     };
   }, []);
 
-  function syncScroll() {
-    const ta = taRef.current;
-    if (!ta) return;
-    if (preRef.current) {
-      preRef.current.scrollTop = ta.scrollTop;
-      preRef.current.scrollLeft = ta.scrollLeft;
-    }
-    if (gutterRef.current) gutterRef.current.scrollTop = ta.scrollTop;
-    positionBand();
-  }
-
   function switchLang(next: Language) {
     runTokenRef.current++; // invalidate any in-flight run
     setLang(next);
@@ -214,16 +212,11 @@ export function CodeRunner({ code, output }: Props) {
     setDrafts((d) => ({ ...d, [lang]: value }));
     setRun({ kind: "idle" });
   }
-  /** Controlled edit that also restores an explicit selection after render. */
-  function applyEdit(value: string, selStart: number, selEnd: number) {
-    pendingSelRef.current = { s: selStart, e: selEnd };
-    edit(value);
-  }
   function reset() {
     runTokenRef.current++; // invalidate any in-flight run
     setDrafts((d) => ({ ...d, [lang]: original }));
     setRun({ kind: "idle" });
-    taRef.current?.focus();
+    view?.focus();
   }
   async function copy() {
     let ok = false;
@@ -269,84 +262,68 @@ export function CodeRunner({ code, output }: Props) {
     setRun({ kind: "done", out, error, matches: norm(out) === norm(output) });
   }
 
-  /** Editor keybindings: Tab/Shift+Tab indent, Enter keeps indentation, Esc is
-   *  the keyboard escape hatch (blur, so the next Tab leaves the editor), and
-   *  Cmd/Ctrl+Enter runs JS. */
-  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    const ta = e.currentTarget;
-    const { value, selectionStart: ss, selectionEnd: se } = ta;
+  // Cmd/Ctrl+Enter in the editor fires a DOM event; this listener runs the
+  // latest code. Going through the DOM keeps the (lang-keyed) keymap free of any
+  // stale `current`/`run` closure and free of React refs.
+  const runFromKeyboard = useCallback(() => {
+    if (isJS && run.kind !== "running") doRun();
+    // doRun/isJS/run are read fresh on every keypress via this re-bound listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isJS, run.kind, current, output]);
+  useEffect(() => {
+    if (!view) return;
+    const el = view.dom;
+    const handler = () => runFromKeyboard();
+    el.addEventListener("dp-run", handler);
+    return () => el.removeEventListener("dp-run", handler);
+  }, [view, runFromKeyboard]);
 
-    // Cmd/Ctrl+Enter → run (JS only).
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      e.preventDefault();
-      if (isJS && run.kind !== "running") doRun();
-      return;
-    }
-
-    // Escape hatch: leave the editor so Tab isn't a keyboard trap.
-    if (e.key === "Escape") {
-      ta.blur();
-      return;
-    }
-
-    if (e.key === "Tab") {
-      e.preventDefault(); // never let Tab move focus while editing
-      const lineStart = value.lastIndexOf("\n", ss - 1) + 1;
-
-      if (!e.shiftKey && ss === se) {
-        // Collapsed: insert one indent at the caret.
-        applyEdit(value.slice(0, ss) + TAB + value.slice(se), ss + TAB.length, ss + TAB.length);
-        return;
-      }
-
-      const block = value.slice(lineStart, se);
-      if (e.shiftKey) {
-        // Outdent every line in the selection by up to one indent.
-        let removedFirst = 0;
-        let removedTotal = 0;
-        const out = block
-          .split("\n")
-          .map((ln, i) => {
-            const m = ln.match(/^( {1,2}|\t)/);
-            if (!m) return ln;
-            if (i === 0) removedFirst = m[0].length;
-            removedTotal += m[0].length;
-            return ln.slice(m[0].length);
-          })
-          .join("\n");
-        if (removedTotal === 0) return;
-        applyEdit(
-          value.slice(0, lineStart) + out + value.slice(se),
-          Math.max(lineStart, ss - removedFirst),
-          se - removedTotal
-        );
-      } else {
-        // Indent every line in the selection.
-        const lines = block.split("\n");
-        const out = lines.map((ln) => TAB + ln).join("\n");
-        const added = out.length - block.length;
-        applyEdit(
-          value.slice(0, lineStart) + out + value.slice(se),
-          ss + TAB.length,
-          se + added
-        );
-      }
-      return;
-    }
-
-    // Enter: carry the current line's leading whitespace onto the new line.
-    if (e.key === "Enter" && !e.shiftKey && ss === se) {
-      const lineStart = value.lastIndexOf("\n", ss - 1) + 1;
-      const indent = (value.slice(lineStart, ss).match(/^[ \t]*/) || [""])[0];
-      if (indent) {
-        e.preventDefault();
-        const ins = "\n" + indent;
-        applyEdit(value.slice(0, ss) + ins + value.slice(se), ss + ins.length, ss + ins.length);
-      }
-    }
-  }
-
-  const showBand = focused && caretLine < lineCount;
+  // Extensions are keyed to the language only; the Cmd/Ctrl+Enter handler just
+  // dispatches a DOM event that the listener above turns into a run.
+  const extensions = useMemo(
+    () => [
+      lineNumbers(),
+      highlightActiveLineGutter(),
+      highlightActiveLine(),
+      history(),
+      drawSelection(),
+      indentOnInput(),
+      bracketMatching(),
+      indentUnit.of("  "),
+      EditorState.tabSize.of(2),
+      EditorView.contentAttributes.of({
+        "aria-label": `${lang} code editor`,
+        "aria-describedby": "dp-editor-help",
+      }),
+      lang === "Python" ? python() : javascript(),
+      syntaxHighlighting(brandHighlight),
+      brandTheme,
+      // Highest precedence so Run + the Escape tab-trap escape win; Tab still
+      // indents (indentWithTab), and Escape blurs so Tab isn't a hard trap.
+      Prec.highest(
+        keymap.of([
+          {
+            key: "Mod-Enter",
+            preventDefault: true,
+            run: (v) => {
+              v.dom.dispatchEvent(new CustomEvent("dp-run"));
+              return true;
+            },
+          },
+          {
+            key: "Escape",
+            run: (view) => {
+              view.contentDOM.blur();
+              return true;
+            },
+          },
+          indentWithTab,
+        ])
+      ),
+      keymap.of([...defaultKeymap, ...historyKeymap]),
+    ],
+    [lang]
+  );
 
   return (
     <div className="dp-editor overflow-hidden rounded-xl border border-line bg-ink">
@@ -394,7 +371,7 @@ export function CodeRunner({ code, output }: Props) {
               type="button"
               onClick={doRun}
               disabled={run.kind === "running"}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-output px-3 text-xs font-bold text-white transition-transform hover:scale-[1.03] disabled:opacity-60"
+              className="dp-press inline-flex min-h-11 items-center gap-1.5 rounded-md bg-output px-3 text-xs font-bold text-white transition-transform hover:scale-[1.03] disabled:opacity-60"
             >
               <span aria-hidden="true">{run.kind === "running" ? "◌" : "▶"}</span>
               {run.kind === "running" ? "Running…" : "Run"}
@@ -430,75 +407,19 @@ export function CodeRunner({ code, output }: Props) {
         </div>
       )}
 
-      {/* Editor: gutter + (active-line band under a highlight layer under a
-          transparent textarea). Every layer shares the .dp-code metrics AND the
-          same MAX_H cap so the three stay one viewport that scrolls together —
-          the textarea is the scroll owner; the gutter + <pre> mirror its
-          scrollTop. `items-start` stops a flex item from stretching the row. */}
-      <div className="flex items-start">
-        <div
-          ref={gutterRef}
-          aria-hidden="true"
-          style={{ maxHeight: MAX_H }}
-          className="dp-code shrink-0 select-none overflow-hidden whitespace-pre px-3 py-3 text-right text-white/25"
-        >
-          {Array.from({ length: lineCount }, (_, i) => (
-            <div
-              key={i}
-              className="dp-gutter-num"
-              style={{ height: LINE_H }}
-              data-active={focused && i === caretLine}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
-        <div className="relative flex-1 overflow-hidden">
-          <div
-            ref={bandRef}
-            aria-hidden="true"
-            className="dp-activeline pointer-events-none absolute inset-x-0"
-            data-show={showBand}
-            style={{ height: LINE_H, top: PAD }}
-          />
-          <pre
-            ref={preRef}
-            aria-hidden="true"
-            className="dp-code pointer-events-none absolute inset-0 m-0 overflow-hidden whitespace-pre px-3 py-3"
-          >
-            <code
-              className="dp-code text-[color:#e6e8f2]"
-              dangerouslySetInnerHTML={{ __html: highlighted }}
-            />
-          </pre>
-          <textarea
-            ref={taRef}
-            value={current}
-            onChange={(e) => edit(e.target.value)}
-            onScroll={syncScroll}
-            onKeyDown={onKeyDown}
-            onKeyUp={updateCaret}
-            onClick={updateCaret}
-            onSelect={updateCaret}
-            onFocus={() => {
-              setFocused(true);
-              updateCaret();
-            }}
-            onBlur={() => setFocused(false)}
-            spellCheck={false}
-            autoCapitalize="off"
-            autoCorrect="off"
-            autoComplete="off"
-            aria-label={`${lang} code editor`}
-            aria-describedby="dp-editor-help"
-            // `rows` gives a stable pre-paint height (~line count); the height
-            // effect above is the single source of truth once mounted.
-            rows={lineCount}
-            style={{ maxHeight: MAX_H }}
-            className="dp-code relative block w-full resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-white outline-none"
-          />
-        </div>
-      </div>
+      {/* Editor — CodeMirror renders its own text, cursor, and selection, so the
+          old transparent-textarea alignment class of bug is gone entirely. */}
+      <CodeMirror
+        value={current}
+        onChange={edit}
+        extensions={extensions}
+        theme="none"
+        basicSetup={false}
+        indentWithTab={false}
+        maxHeight={`${MAX_H}px`}
+        className="dp-cm"
+        onCreateEditor={(v) => setView(v)}
+      />
       <p id="dp-editor-help" className="sr-only">
         Editable code. Tab and Shift+Tab indent. Press Escape, then Tab, to move
         focus out of the editor.
