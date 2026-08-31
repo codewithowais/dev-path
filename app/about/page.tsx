@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandBadge } from "@/components/Brand";
+import { Reveal } from "@/components/Reveal";
 import { lessons } from "@/content/lessons";
 import { paths } from "@/content/paths";
 import { roleTrees, titleGuide } from "@/content/career";
@@ -87,20 +88,25 @@ export default function AboutPage() {
           </p>
         </header>
 
+        {/* Feature cards "rise" into place, staggered left-to-right. */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {WHAT.map((item) => (
-            <div
+          {WHAT.map((item, i) => (
+            <Reveal
               key={item.eyebrow}
-              className="dp-card rounded-card border border-line p-6"
+              variant="rise"
+              delay={i * 70}
+              className="h-full"
             >
-              <p className={`dp-eyebrow ${item.tone}`}>{item.eyebrow}</p>
-              <h3 className="mt-2 font-display text-xl font-bold tracking-tight text-ink">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
-                {item.body}
-              </p>
-            </div>
+              <div className="dp-card group h-full rounded-card border border-line p-6 transition-colors">
+                <p className={`dp-eyebrow ${item.tone}`}>{item.eyebrow}</p>
+                <h3 className="mt-2 font-display text-xl font-bold tracking-tight text-ink">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {item.body}
+                </p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -117,23 +123,25 @@ export default function AboutPage() {
           </h2>
         </header>
 
+        {/* Principle statements — text blocks that rise up in sequence (a
+            different feel from the feature cards above). */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {PRINCIPLES.map((p) => (
-            <div
-              key={p.title}
-              className="dp-card rounded-card border border-line p-6"
-            >
-              <h3 className="font-display text-lg font-bold tracking-tight text-ink">
-                {p.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
-            </div>
+          {PRINCIPLES.map((p, i) => (
+            <Reveal key={p.title} variant="up" delay={i * 70} className="h-full">
+              <div className="dp-card h-full rounded-card border border-line p-6">
+                <h3 className="font-display text-lg font-bold tracking-tight text-ink">
+                  {p.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* Made by codewithowais */}
       <section aria-labelledby="maker-heading" className="pb-20">
+        <Reveal variant="fade">
         <div className="dp-card rounded-card border border-line p-8 sm:p-10">
           <p className="dp-eyebrow text-primary">The maker</p>
           <h2
@@ -158,20 +166,27 @@ export default function AboutPage() {
               href={GH_PROFILE}
               target="_blank"
               rel="noopener noreferrer"
-              className="dp-lift rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(91,75,235,0.8)] transition-colors hover:bg-primary/90"
+              className="group dp-lift dp-press rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(91,75,235,0.8)] hover:bg-primary/90"
             >
-              GitHub profile <span aria-hidden="true">→</span>
+              GitHub profile{" "}
+              <span
+                aria-hidden="true"
+                className="inline-block transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:translate-x-1"
+              >
+                →
+              </span>
             </a>
             <a
               href={GH_REPO}
               target="_blank"
               rel="noopener noreferrer"
-              className="dp-lift rounded-pill border border-line bg-card px-6 py-3 text-sm font-semibold text-ink transition-colors hover:border-ink/30"
+              className="dp-lift dp-press rounded-pill border border-line bg-card px-6 py-3 text-sm font-semibold text-ink hover:border-ink/30"
             >
               View the source
             </a>
           </div>
         </div>
+        </Reveal>
 
         <p className="mt-6 text-center text-sm text-muted">
           Prefer to start doing?{" "}

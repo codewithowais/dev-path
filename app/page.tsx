@@ -37,13 +37,19 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="#paths"
-              className="dp-lift rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(91,75,235,0.8)] transition-colors hover:bg-primary/90"
+              className="group dp-lift dp-press rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(91,75,235,0.8)] hover:bg-primary/90"
             >
-              Find your path <span aria-hidden="true">↓</span>
+              Find your path{" "}
+              <span
+                aria-hidden="true"
+                className="inline-block transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:translate-y-0.5"
+              >
+                ↓
+              </span>
             </Link>
             <Link
               href="/learn"
-              className="dp-lift rounded-pill border border-line bg-card px-6 py-3 text-sm font-semibold text-ink transition-colors hover:border-ink/30"
+              className="dp-lift dp-press rounded-pill border border-line bg-card px-6 py-3 text-sm font-semibold text-ink hover:border-ink/30"
             >
               Start learning
             </Link>
@@ -90,16 +96,18 @@ export default function HomePage() {
             Tap any track to open its full journey.
           </p>
         </header>
-        <Reveal className="mt-8">
+        {/* Per-card staggered "rise" lives inside PathsExplorer. */}
+        <div className="mt-8">
           <PathsExplorer />
-        </Reveal>
+        </div>
       </section>
 
-      {/* Cross-links to Grow & Learn */}
-      <Reveal variant="up" className="grid grid-cols-1 gap-4 py-12 sm:grid-cols-2">
+      {/* Cross-links to Grow & Learn — the two panels converge from opposite sides. */}
+      <div className="grid grid-cols-1 gap-4 py-12 sm:grid-cols-2">
+        <Reveal variant="left" className="h-full">
         <Link
           href="/grow"
-          className="dp-lift dp-card group relative overflow-hidden rounded-card border border-line p-6 transition-colors hover:border-here/50"
+          className="dp-lift dp-card group relative flex h-full flex-col overflow-hidden rounded-card border border-line p-6 transition-colors hover:border-here/50"
         >
           <span
             aria-hidden="true"
@@ -115,12 +123,14 @@ export default function HomePage() {
           </p>
           <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-here">
             See the growth tree
-            <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
+            <span aria-hidden="true" className="transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:translate-x-1">→</span>
           </span>
         </Link>
+        </Reveal>
+        <Reveal variant="right" className="h-full">
         <Link
           href="/learn"
-          className="dp-lift dp-card group relative overflow-hidden rounded-card border border-line p-6 transition-colors hover:border-primary/50"
+          className="dp-lift dp-card group relative flex h-full flex-col overflow-hidden rounded-card border border-line p-6 transition-colors hover:border-primary/50"
         >
           <span
             aria-hidden="true"
@@ -136,10 +146,11 @@ export default function HomePage() {
           </p>
           <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
             Open the lessons
-            <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
+            <span aria-hidden="true" className="transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:translate-x-1">→</span>
           </span>
         </Link>
-      </Reveal>
+        </Reveal>
+      </div>
     </div>
   );
 }
@@ -164,6 +175,7 @@ function RouteMap() {
       />
       <svg viewBox="0 0 360 270" className="relative h-full w-full" role="img" aria-label="A path from Start to Learn to Grow">
         <path
+          className="dp-trail"
           d="M60 200 C 110 200, 120 120, 175 120 S 260 90, 300 60"
           fill="none"
           stroke="url(#routeGrad)"
@@ -179,7 +191,26 @@ function RouteMap() {
           </linearGradient>
         </defs>
         {stops.map((s, i) => (
-          <g key={s.label}>
+          <g
+            key={s.label}
+            style={{
+              transformBox: "fill-box",
+              transformOrigin: "center",
+              animation: "dp-pop var(--dp-dur) var(--dp-ease-spring) both",
+              animationDelay: `${480 + i * 150}ms`,
+            }}
+          >
+            {i === 0 && (
+              <circle
+                className="dp-halo"
+                cx={s.x}
+                cy={s.y}
+                r="16"
+                fill="none"
+                stroke={s.color}
+                strokeWidth="2"
+              />
+            )}
             <circle cx={s.x} cy={s.y} r="16" fill="white" stroke={s.color} strokeWidth="3" />
             <circle cx={s.x} cy={s.y} r="6" fill={s.color} />
             <text

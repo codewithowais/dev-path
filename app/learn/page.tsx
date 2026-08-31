@@ -2,11 +2,20 @@ import type { Metadata } from "next";
 import { lessons, pillars, pillarBlurb } from "@/content/lessons";
 import { LessonBrowser, type LessonItem } from "@/components/LessonBrowser";
 import { OverallProgress } from "@/components/LessonProgress";
+import { ItemListJsonLd, absoluteUrl } from "@/components/StructuredData";
 
 export const metadata: Metadata = {
   title: "Learn — data structures, algorithms, design & more",
   description:
     "194 beginner-friendly lessons across 10 topics — each with an everyday analogy, a live code editor you can run, and verified expected output in JavaScript & Python.",
+  alternates: { canonical: "/learn" },
+  openGraph: {
+    type: "website",
+    url: absoluteUrl("/learn"),
+    title: "Learn — data structures, algorithms, design & more",
+    description:
+      "194 beginner-friendly lessons across 10 topics — each with an everyday analogy, a live code editor you can run, and verified expected output in JavaScript & Python.",
+  },
 };
 
 /** First sentence of the analogy, trimmed to a card-sized blurb. */
@@ -26,8 +35,20 @@ export default function LearnPage() {
 
   const activePillars = pillars.filter((p) => items.some((l) => l.pillar === p));
 
+  const listItems = lessons.map((l) => ({
+    name: `${l.name} — ${l.pillar}`,
+    url: absoluteUrl(`/learn/${l.id}`),
+    description: blurbOf(l.easy),
+  }));
+
   return (
     <div className="mx-auto max-w-6xl px-5">
+      <ItemListJsonLd
+        url={absoluteUrl("/learn")}
+        name="Learn — beginner coding lessons"
+        description={`${lessons.length} beginner-friendly lessons across ${activePillars.length} topics, each with an everyday analogy, a runnable code editor, and verified output in JavaScript & Python.`}
+        items={listItems}
+      />
       <section className="dp-stagger py-14 sm:py-20">
         <p className="dp-eyebrow text-primary">Learn</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">

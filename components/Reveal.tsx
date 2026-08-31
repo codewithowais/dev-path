@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 
-type Variant = "up" | "scale" | "left" | "right" | "fade";
+type Variant = "up" | "scale" | "left" | "right" | "fade" | "rise";
 
 type Props = {
   children: ReactNode;

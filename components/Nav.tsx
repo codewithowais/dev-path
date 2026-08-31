@@ -59,7 +59,7 @@ export function Nav() {
                   className={`rounded-pill px-4 py-2 text-sm font-semibold transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] ${
                     active
                       ? "bg-primary-soft text-primary"
-                      : "text-muted hover:bg-line/60 hover:text-ink"
+                      : "dp-navlink text-muted hover:text-ink"
                   }`}
                 >
                   {link.label}

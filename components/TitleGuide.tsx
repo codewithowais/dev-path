@@ -67,7 +67,7 @@ export function TitleGuide() {
           <button
             type="button"
             onClick={() => setQuery("")}
-            className="mt-5 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-white"
+            className="dp-press dp-lift mt-5 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(91,75,235,0.9)] hover:bg-primary/90"
           >
             Clear search
           </button>
@@ -92,7 +92,7 @@ export function TitleGuide() {
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
+              <p className="dp-answer mt-3 text-sm leading-relaxed text-muted">
                 {qa.answer}
               </p>
             </details>

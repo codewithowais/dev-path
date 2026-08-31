@@ -5,6 +5,11 @@ import { paths, getPath } from "@/content/paths";
 import { Roadmap } from "@/components/Roadmap";
 import { PathIcon } from "@/components/PathIcon";
 import { accentText } from "@/lib/accent";
+import {
+  CourseJsonLd,
+  BreadcrumbJsonLd,
+  absoluteUrl,
+} from "@/components/StructuredData";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -16,9 +21,23 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const path = getPath(slug);
   if (!path) return { title: "Path not found" };
+  const url = absoluteUrl(`/paths/${path.id}`);
+  const title = `${path.name} roadmap`;
   return {
-    title: `${path.name} roadmap`,
+    title,
     description: path.blurb,
+    alternates: { canonical: `/paths/${path.id}` },
+    openGraph: {
+      type: "article",
+      url,
+      title,
+      description: path.blurb,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: path.blurb,
+    },
   };
 }
 
@@ -27,8 +46,18 @@ export default async function PathDetailPage({ params }: Params) {
   const path = getPath(slug);
   if (!path) notFound();
 
+  const url = absoluteUrl(`/paths/${path.id}`);
+
   return (
     <div className="mx-auto max-w-3xl px-5">
+      <CourseJsonLd path={path} url={url} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", url: absoluteUrl("/") },
+          { name: "Paths", url: absoluteUrl("/#paths") },
+          { name: path.name, url },
+        ]}
+      />
       <div className="py-10 sm:py-14">
         <Link
           href="/#paths"

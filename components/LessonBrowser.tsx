@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Pillar } from "@/content/lessons";
 import { pillarColor } from "@/content/lessons";
@@ -38,6 +38,21 @@ function tile(color: string) {
   } as React.CSSProperties;
 }
 
+// Remember, within a session, which pillars are open and which lesson you last
+// opened — so pressing Back from a lesson returns you to the exact card/box you
+// were in, instead of a collapsed list scrolled to the top.
+const OPEN_KEY = "devpath:learn:open";
+const RETURN_KEY = "devpath:learn:return";
+
+/** Called when a lesson link is clicked, so Back can restore this spot. */
+function rememberReturn(lesson: string, pillar: string) {
+  try {
+    sessionStorage.setItem(RETURN_KEY, JSON.stringify({ lesson, pillar }));
+  } catch {
+    // sessionStorage blocked (private mode) — Back just won't restore position.
+  }
+}
+
 export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -56,15 +71,87 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
     return map;
   }, [items, pillars]);
 
+  // Runs once per real mount (the ref guard makes it idempotent under React
+  // Strict Mode's dev double-invoke, and we intentionally DON'T cancel the rAF
+  // in a cleanup — that cancel is what would otherwise wipe the restore). All
+  // reads happen synchronously up front and are captured in the rAF closure, so
+  // the persist effect below can't clobber the stored value before we use it.
+  const didRestore = useRef(false);
+  const pendingScroll = useRef<{ lesson?: string; pillar?: string } | null>(null);
   useEffect(() => {
-    const id = decodeURIComponent(window.location.hash.slice(1));
-    if (!id || !pillars.some((p) => slug(p) === id)) return;
-    const raf = requestAnimationFrame(() => {
-      setOpen((o) => (o.has(id) ? o : new Set(o).add(id)));
-      document.getElementById(id)?.scrollIntoView({ block: "start" });
-    });
-    return () => cancelAnimationFrame(raf);
+    if (didRestore.current) return;
+    didRestore.current = true;
+
+    const validPillar = (s: string) => pillars.some((p) => slug(p) === s);
+
+    let stored: string[] = [];
+    try {
+      const raw = sessionStorage.getItem(OPEN_KEY);
+      if (raw) stored = (JSON.parse(raw) as string[]).filter(validPillar);
+    } catch {
+      /* ignore */
+    }
+
+    let ret: { lesson?: string; pillar?: string } = {};
+    try {
+      const raw = sessionStorage.getItem(RETURN_KEY);
+      if (raw) ret = JSON.parse(raw);
+      sessionStorage.removeItem(RETURN_KEY); // one-shot
+    } catch {
+      /* ignore */
+    }
+
+    const hashId = decodeURIComponent(window.location.hash.slice(1));
+    const hashPillar = hashId && validPillar(hashId) ? hashId : null;
+
+    const toOpen = new Set(stored);
+    if (hashPillar) toOpen.add(hashPillar);
+    if (ret.pillar && validPillar(ret.pillar)) toOpen.add(ret.pillar);
+
+    // Record where to scroll; the effect below performs it once the pillar is
+    // actually open (and thus its cards are in the DOM).
+    const targetPillar = ret.pillar ?? hashPillar ?? undefined;
+    if (ret.lesson || targetPillar) {
+      pendingScroll.current = { lesson: ret.lesson, pillar: targetPillar };
+    }
+
+    // Reopen via a microtask (fires even in a background tab, unlike rAF).
+    if (toOpen.size) queueMicrotask(() => setOpen(toOpen));
   }, [pillars]);
+
+  // Once the target pillar is open, scroll the exact card (or the pillar) into
+  // view — so pressing Back lands you on the box you were in. Runs only while a
+  // pending target exists, so ordinary toggling never triggers a scroll.
+  useEffect(() => {
+    const t = pendingScroll.current;
+    if (!t) return;
+    if (t.pillar && !open.has(t.pillar)) return; // wait until it's open
+    const id = window.setTimeout(() => {
+      const card = t.lesson ? document.getElementById(`lesson-${t.lesson}`) : null;
+      const anchor =
+        card ?? (t.pillar ? document.getElementById(t.pillar) : null);
+      if (anchor) {
+        // window.scrollTo (not scrollIntoView) so we can clear the sticky nav,
+        // and it behaves reliably across browsers. ~96px = nav + a little air.
+        const y = window.scrollY + anchor.getBoundingClientRect().top - 96;
+        window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+        pendingScroll.current = null;
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
+  // Persist which pillars are open, so they survive Back/forward within a
+  // session. Guarded so it never writes before the restore above has captured
+  // the stored value (otherwise the first empty render would wipe it).
+  useEffect(() => {
+    if (!didRestore.current) return;
+    try {
+      sessionStorage.setItem(OPEN_KEY, JSON.stringify([...open]));
+    } catch {
+      /* ignore */
+    }
+  }, [open]);
 
   const filtered = useMemo(
     () =>
@@ -243,8 +330,10 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                     {list.map((l, i) => (
                       <Link
                         key={l.id}
+                        id={`lesson-${l.id}`}
                         href={`/learn/${l.id}`}
-                        className="dp-lift dp-card group relative flex flex-col overflow-hidden rounded-card border border-line p-4 hover:border-[color:var(--accent)]/50"
+                        onClick={() => rememberReturn(l.id, id)}
+                        className="dp-lift dp-card group relative flex flex-col overflow-hidden rounded-card border border-line p-4 hover:border-[color:var(--accent)]/50 scroll-mt-28"
                       >
                         <span
                           aria-hidden="true"

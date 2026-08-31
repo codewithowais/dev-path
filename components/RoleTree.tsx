@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { roleTrees, type RoleTree } from "@/content/career";
 import { accentText, accentFill } from "@/lib/accent";
+import { Reveal } from "@/components/Reveal";
 
 // Clicking a role card takes you to the roadmap that teaches that role. The
 // mapping is data-driven: each role declares its own `pathId` (or none, in
@@ -12,10 +13,15 @@ function hrefFor(role: RoleTree): string {
 export function RoleTree() {
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-      {roleTrees.map((role) => (
-        <section
+      {roleTrees.map((role, ri) => (
+        <Reveal
           key={role.id}
-          className="dp-card dp-lift relative rounded-card border border-line bg-card p-5 transition-colors hover:border-[color:var(--accent)]/50 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]"
+          variant="rise"
+          delay={Math.min(ri, 5) * 60}
+          className="h-full"
+        >
+        <section
+          className="group dp-card dp-lift relative h-full rounded-card border border-line bg-card p-5 transition-colors hover:border-[color:var(--accent)]/50 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]"
           style={{ ["--accent" as string]: role.color }}
         >
           <header>
@@ -42,7 +48,7 @@ export function RoleTree() {
               <li key={`${i}-${title}`} className="relative flex gap-3">
                 <span
                   aria-hidden="true"
-                  className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                  className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:scale-110"
                   style={{ backgroundColor: accentFill(role.color) }}
                 >
                   {i + 1}
@@ -65,9 +71,15 @@ export function RoleTree() {
             {role.pathId
               ? "Explore this path"
               : "No dedicated path yet — start with Foundations"}
-            <span aria-hidden="true">→</span>
+            <span
+              aria-hidden="true"
+              className="transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:translate-x-1"
+            >
+              →
+            </span>
           </span>
         </section>
+        </Reveal>
       ))}
     </div>
   );

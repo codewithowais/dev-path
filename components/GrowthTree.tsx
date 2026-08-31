@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ladder, branches } from "@/content/career";
 import { accentFill } from "@/lib/accent";
+import { Reveal } from "@/components/Reveal";
 
 export function GrowthTree() {
   // Which rung the user has marked as "where I am now". Null = none selected.
@@ -19,19 +20,19 @@ export function GrowthTree() {
       <ol className="relative mt-8 space-y-4">
         <span
           aria-hidden="true"
-          className="absolute left-[19px] top-3 bottom-3 w-1 rounded-full bg-line"
+          className="dp-draw-y absolute left-[19px] top-3 bottom-3 w-1 rounded-full bg-line"
         />
         {/* Rendered top rung first (senior) down to student, so "climbing up" reads bottom→top */}
         {[...ladder].reverse().map((rung) => {
           const isHere = hereId === rung.id;
           return (
-            <li key={rung.id} className="relative flex gap-4">
+            <li key={rung.id} className="group relative flex gap-4">
               <span
                 aria-hidden="true"
-                className="relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-paper"
+                className="relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-paper transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:scale-110"
                 style={{ backgroundColor: accentFill(rung.color) }}
               >
-                <span className="h-3 w-3 rounded-full bg-white/90" />
+                <span className="h-3 w-3 rounded-full bg-white/90 transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:scale-125" />
               </span>
               <button
                 type="button"
@@ -89,10 +90,14 @@ export function GrowthTree() {
 
       {/* The two branches */}
       <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {branches.map((branch) => (
-          <section
+        {branches.map((branch, bi) => (
+          <Reveal
             key={branch.title}
-            className="dp-card dp-lift rounded-card border border-line bg-card p-5 transition-colors hover:border-[color:var(--accent)]/50"
+            variant={bi === 0 ? "left" : "right"}
+            className="h-full"
+          >
+          <section
+            className="group dp-card dp-lift h-full rounded-card border border-line bg-card p-5 transition-colors hover:border-[color:var(--accent)]/50"
             style={{ ["--accent" as string]: branch.color }}
           >
             <header>
@@ -116,7 +121,7 @@ export function GrowthTree() {
                 <li key={`${i}-${title}`} className="relative flex gap-3">
                   <span
                     aria-hidden="true"
-                    className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                    className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:scale-110"
                     style={{ backgroundColor: accentFill(branch.color) }}
                   >
                     {i + 1}
@@ -133,6 +138,7 @@ export function GrowthTree() {
               ))}
             </ol>
           </section>
+          </Reveal>
         ))}
       </div>
     </div>

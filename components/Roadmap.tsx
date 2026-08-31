@@ -45,10 +45,18 @@ export function Roadmap({ path }: Props) {
         {path.steps.map(([title, description], i) => {
           const isStart = i === 0;
           return (
-            <li key={`${i}-${title}`} className="relative flex gap-4 pl-0">
+            <li
+              key={`${i}-${title}`}
+              className="group relative flex gap-4 pl-0"
+              style={{
+                animation: "dp-fade-up var(--dp-dur) var(--dp-ease) both",
+                // Waypoints cascade in just behind the connector line as it draws.
+                animationDelay: `${120 + i * 70}ms`,
+              }}
+            >
               <span
                 aria-hidden="true"
-                className={`relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                className={`relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold transition-transform duration-[var(--dp-dur)] ease-[var(--dp-ease-spring)] group-hover:scale-110 ${
                   isStart
                     ? "border-transparent text-white"
                     : "border-[color:var(--accent)] bg-card text-[color:var(--accent-text)]"

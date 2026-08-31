@@ -338,6 +338,12 @@ p {
 [data-reveal="out"][data-variant="scale"] {
   transform: scale(0.95);
 }
+/* NEW variant "rise": a translate with a hair of scale, so a grid of cards
+   reads as "assembling into place" — distinct from plain `up` (pure slide)
+   and `scale` (pure zoom). Used for card grids (home paths, About features). */
+[data-reveal="out"][data-variant="rise"] {
+  transform: translateY(26px) scale(0.975);
+}
 [data-reveal="in"] {
   opacity: 1;
   transform: none;
@@ -356,4 +362,145 @@ p {
 }
 .dp-panel {
   animation: dp-panel var(--dp-dur) var(--dp-ease) both;
+}
+
+/* ══════════════════════ Motion system v2 — varied & purposeful ══════════════════════
+   The brief: DIFFERENT motion in DIFFERENT places, so nothing reads as "the same
+   animation everywhere". Everything below ends at the natural, visible state and is
+   zeroed by the prefers-reduced-motion block near the top of this file. We only ever
+   animate transform / opacity (plus color/box-shadow on hovers) — no layout props.
+
+   WHERE EACH EFFECT LIVES
+   • Scroll reveals (Reveal.tsx), chosen per context:
+       up      → stacked text blocks / section intros
+       fade    → large calm panels (About "maker" card)
+       left/right → side-by-side content that converges
+                    (home Grow/Learn cross-links; Grow career branches)
+       scale   → single focal figures (home RouteMap)
+       rise    → card grids settling into place (home paths, About feature cards)
+   • Nav links     → underline grows from the CENTER (.dp-navlink)
+   • Footer links  → underline wipes in from the LEFT (.dp-footlink) — a deliberately
+                     different underline, so the two link zones feel distinct.
+   • Buttons/CTAs  → press-in on :active (.dp-press) for a tactile tap.
+   • Accordion     → chevron rotates (in component) + answer slides open (.dp-answer).
+   • Timelines     → number badges scale on card hover (group-hover, in components);
+                     the Grow ladder LINE draws itself down on view (.dp-draw-y).
+   • Home RouteMap → the dotted journey "lays itself down" (dp-trail), waypoints pop
+                     in after it (dp-pop, staggered), and the Start pin keeps a halo. */
+
+/* Nav link — a focus/hover underline that grows out from the middle. */
+.dp-navlink {
+  position: relative;
+}
+.dp-navlink::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--dp-dur-fast) var(--dp-ease);
+}
+.dp-navlink:hover::after,
+.dp-navlink:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Footer link — a different underline: it wipes in from the left edge. */
+.dp-footlink {
+  position: relative;
+}
+.dp-footlink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 1.5px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dp-dur) var(--dp-ease);
+}
+.dp-footlink:hover::after,
+.dp-footlink:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Tactile press — a small scale-down on tap for buttons/CTAs. Pairs with .dp-lift:
+   hover lifts, active presses in. */
+.dp-press {
+  transition: transform var(--dp-dur-fast) var(--dp-ease),
+    box-shadow var(--dp-dur-fast) var(--dp-ease),
+    background-color var(--dp-dur-fast) var(--dp-ease),
+    border-color var(--dp-dur-fast) var(--dp-ease);
+}
+.dp-press:active {
+  transform: scale(0.965);
+}
+
+/* Accordion answer — a gentle slide-open reused from dp-panel, but scoped so it
+   replays each time a <details> is opened. */
+@keyframes dp-answer {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+details[open] > .dp-answer {
+  animation: dp-answer var(--dp-dur) var(--dp-ease) both;
+}
+
+/* Vertical line that draws itself downward (timelines/ladders). Ends fully drawn. */
+@keyframes dp-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.dp-draw-y {
+  transform-origin: top;
+  animation: dp-grow-y var(--dp-dur-slow) var(--dp-ease) both;
+}
+
+/* Home RouteMap: "lays down" the dotted trail by sliding the dash pattern into
+   place once (ends at offset 0 = the natural dotted route). */
+@keyframes dp-trail {
+  from {
+    stroke-dashoffset: 44;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.dp-trail {
+  animation: dp-trail var(--dp-dur-slow) var(--dp-ease) both;
+}
+
+/* Soft attention halo for the "Start" waypoint — pure transform/opacity, decorative. */
+@keyframes dp-halo {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.dp-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dp-halo 2.6s var(--dp-ease) infinite;
 }

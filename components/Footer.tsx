@@ -25,25 +25,25 @@ export function Footer() {
             </span>
             <Link
               href="/"
-              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+              className="dp-footlink w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
             >
               Paths
             </Link>
             <Link
               href="/grow"
-              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+              className="dp-footlink w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
             >
               Grow
             </Link>
             <Link
               href="/learn"
-              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+              className="dp-footlink w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
             >
               Learn
             </Link>
             <Link
               href="/about"
-              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+              className="dp-footlink w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
             >
               About
             </Link>
@@ -56,7 +56,7 @@ export function Footer() {
               href="https://github.com/codewithowais/dev-path"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+              className="dp-footlink w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
             >
               Source on GitHub
             </a>
@@ -64,7 +64,7 @@ export function Footer() {
               href="https://github.com/codewithowais"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+              className="dp-footlink w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
             >
               @codewithowais
             </a>
@@ -80,7 +80,7 @@ export function Footer() {
               href="https://github.com/codewithowais"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-ink transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-primary"
+              className="dp-footlink font-semibold text-ink transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-primary"
             >
               codewithowais
             </a>

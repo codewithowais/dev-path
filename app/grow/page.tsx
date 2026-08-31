@@ -4,16 +4,28 @@ import { RoleTree } from "@/components/RoleTree";
 import { TitleGuide } from "@/components/TitleGuide";
 import { Reveal } from "@/components/Reveal";
 import { titleGuide } from "@/content/career";
+import { FaqJsonLd, absoluteUrl } from "@/components/StructuredData";
 
 export const metadata: Metadata = {
   title: "Grow — where your career can go",
   description:
     "Climb the software career ladder from Student to Senior, then see it branch into building (IC) or leading people (Manager). Plus confusing job titles explained in plain words.",
+  alternates: { canonical: "/grow" },
+  openGraph: {
+    type: "website",
+    url: absoluteUrl("/grow"),
+    title: "Grow — where your career can go",
+    description:
+      "Climb the software career ladder from Student to Senior, then see it branch into building (IC) or leading people (Manager). Plus confusing job titles explained in plain words.",
+  },
 };
 
 export default function GrowPage() {
   return (
     <div className="mx-auto max-w-6xl px-5">
+      <FaqJsonLd
+        items={titleGuide.map((t) => ({ question: t.term, answer: t.answer }))}
+      />
       <section className="dp-stagger py-14 sm:py-20">
         <p className="dp-eyebrow text-here">Grow</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
