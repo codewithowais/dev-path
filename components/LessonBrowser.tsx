@@ -181,8 +181,9 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
 
   return (
     <div>
-      {/* Search */}
-      <div className="sticky top-16 z-20 -mx-5 mb-4 bg-paper/85 px-5 py-3 backdrop-blur">
+      {/* Search — sticks flush under the 73px nav with a SOLID background, so
+          lesson cards scrolling underneath never ghost through it. */}
+      <div className="sticky top-[73px] z-30 -mx-5 mb-4 border-b border-line bg-paper px-5 py-3 shadow-[0_10px_22px_-18px_rgba(25,28,51,0.5)]">
         <div className="relative">
           <svg
             aria-hidden="true"
