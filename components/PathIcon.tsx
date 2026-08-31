@@ -115,6 +115,54 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M20 4v4h-4" />
     </>
   ),
+  // Funnel — move & clean data through a pipeline
+  "data-engineer": <path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" />,
+  // Linked blocks — a chain of blocks
+  "blockchain": (
+    <>
+      <rect x="3" y="9" width="6" height="6" rx="1" />
+      <rect x="15" y="9" width="6" height="6" rx="1" />
+      <rect x="9" y="4" width="6" height="6" rx="1" />
+      <rect x="9" y="14" width="6" height="6" rx="1" />
+    </>
+  ),
+  // Microchip — code that runs on a device
+  "embedded-iot": (
+    <>
+      <rect x="7" y="7" width="10" height="10" rx="1.5" />
+      <rect x="10.5" y="10.5" width="3" height="3" />
+      <path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4" />
+    </>
+  ),
+  // VR headset — immersive 3D
+  "ar-vr": (
+    <>
+      <path d="M3 8h18a1 1 0 0 1 1 1v5a2 2 0 0 1-2 2h-3l-2-2.5h-4L9 16H5a2 2 0 0 1-2-2V9a1 1 0 0 1 1-1Z" />
+    </>
+  ),
+  // Document with text lines — write the docs
+  "technical-writer": (
+    <>
+      <path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v5h5" />
+      <path d="M8 12h7M8 16h7M8 8h2" />
+    </>
+  ),
+  // Megaphone — talks, demos, community
+  "developer-advocate": (
+    <>
+      <path d="M3 11v2a1 1 0 0 0 1 1h2l9 5V5L6 10H4a1 1 0 0 0-1 1Z" />
+      <path d="M18 9.5a3 3 0 0 1 0 5" />
+    </>
+  ),
+  // Board with a trend line — analyze the need
+  "business-analyst": (
+    <>
+      <rect x="3" y="4" width="18" height="13" rx="1.5" />
+      <path d="M12 17v4M8 21h8" />
+      <path d="m6.5 13 3-3 3 2 4-5" />
+    </>
+  ),
 };
 
 const FALLBACK = (

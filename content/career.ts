@@ -278,7 +278,7 @@ export const roleTrees: RoleTree[] = [
       ["Data Engineering Lead", "You set the standards and tools the whole data team uses, and guide how data flows across the company."],
       ["Principal Data Engineer / Data Architect", "You design the big-picture data platform the entire organization depends on."],
     ],
-    pathId: "data-scientist-ml",
+    pathId: "data-engineer",
   },
   {
     id: "mlops-engineer",
@@ -320,6 +320,7 @@ export const roleTrees: RoleTree[] = [
       ["Lead / Principal Developer Advocate", "You set the DevRel (developer relations) strategy, and mentor other advocates."],
       ["Head of Developer Relations", "You lead the whole DevRel team and its goals across the company."],
     ],
+    pathId: "developer-advocate",
   },
   {
     id: "technical-writer",
@@ -333,6 +334,7 @@ export const roleTrees: RoleTree[] = [
       ["Lead / Staff Technical Writer", "You set documentation standards and tools, and guide other writers."],
       ["Documentation Manager / Content Architect", "You own the strategy for all of a company's technical content."],
     ],
+    pathId: "technical-writer",
   },
   {
     id: "founding-engineer",
@@ -401,7 +403,7 @@ export const roleTrees: RoleTree[] = [
       ["Embedded Tech Lead", "You decide how the firmware is structured, and how it talks to both the hardware and the outside world."],
       ["Principal Embedded / Firmware Architect", "You set the technical direction for firmware across a whole product line."],
     ],
-    pathId: "foundations",
+    pathId: "embedded-iot",
   },
   {
     id: "database-administrator",
@@ -459,6 +461,48 @@ export const roleTrees: RoleTree[] = [
       ["Head of Agile Delivery / Agile Practice Lead", "You own how the whole organisation approaches delivery and ways of working. You set the standards, hire and grow coaches, and connect the teams' work to business goals. Titles here vary a lot and blur into delivery and programme leadership — the honest truth is this top rung looks different at almost every company, and not every company has it at all."],
     ],
     pathId: "scrum-master",
+  },
+  {
+    id: "blockchain-developer",
+    name: "Blockchain / Web3 Developer",
+    sub: "You build apps and smart contracts that run on blockchains, where code often controls real money. Be honest with yourself: it's a smaller, more volatile field than mainstream web work, the hype comes and goes, and a single bug can be very expensive — so security matters more here than almost anywhere else.",
+    color: "#E8590C",
+    levels: [
+      ["Junior Blockchain Developer", "You write and test small pieces of smart-contract code and connect apps to a blockchain, with close guidance."],
+      ["Smart Contract Developer", "You build and deploy full smart contracts, and learn the security patterns that stop them from losing funds."],
+      ["Senior Blockchain Engineer", "You own the security and correctness of contracts that handle real value, and design how the on-chain and off-chain parts fit together."],
+      ["Blockchain Lead / Protocol Engineer", "You set the technical direction for a product, or design the rules of the protocol itself — the shared system many apps build on."],
+      ["Blockchain Architect", "You shape the whole system's design: how it scales, stays secure, and connects to other chains and the outside world."],
+    ],
+    pathId: "blockchain",
+  },
+  {
+    id: "ar-vr",
+    name: "AR / VR (XR) Developer",
+    sub: "You build immersive 3D experiences for headsets, phones, and glasses. XR is the umbrella term for AR (adding digital things to the real world) and VR (a fully virtual world). Much of the work happens inside game engines like Unity or Unreal.",
+    color: "#6741D9",
+    levels: [
+      ["Junior XR Developer", "You build simple 3D scenes and interactions inside an engine like Unity, and learn how headsets and tracking work, with support."],
+      ["XR / Unity Developer", "You build full immersive features — 3D interactions, hand tracking, and comfortable movement — on your own."],
+      ["Senior XR Developer", "You own the hard problems unique to XR: smooth frame rates, motion comfort, and making 3D interactions feel natural."],
+      ["XR Tech Lead", "You decide how an immersive app is structured, and set the patterns the team follows across devices."],
+      ["Principal XR Engineer", "You set the technical direction for immersive work across the company, including new devices and platforms."],
+    ],
+    pathId: "ar-vr",
+  },
+  {
+    id: "business-analyst",
+    name: "Business Analyst",
+    sub: "You're the bridge between the business side and the tech team: you dig into what people actually need, then turn it into clear requirements engineers can build. It's light on code and heavy on questions, and it overlaps a lot with product roles — at some companies the line between BA and Product Manager is blurry.",
+    color: "#1098AD",
+    levels: [
+      ["Junior Business Analyst", "You gather requirements, write them up clearly, and help document how things work today, with guidance."],
+      ["Business Analyst", "You own the requirements for whole projects: you talk to stakeholders, map out processes, and make sure the team builds the right thing."],
+      ["Senior Business Analyst", "You handle the fuzzy, high-stakes problems, weigh trade-offs, and connect the details back to what the business is trying to achieve."],
+      ["Lead BA / Product Analyst", "You guide other analysts and shape how requirements and analysis are done across a product area."],
+      ["BA Manager / Business Architect", "You set the standards for analysis across the company, or design how whole business processes and systems fit together."],
+    ],
+    pathId: "business-analyst",
   },
 ];
 
@@ -705,5 +749,55 @@ export const titleGuide: TitleQA[] = [
     term: "\"Agile\" — the overloaded word",
     answer:
       "'Agile' started as a mindset — build a bit, get feedback, adjust — but it's often reduced to a set of rituals and tools. Be honest about 'fake agile' (also called cargo-cult agile): a team holds all the standups and sprints, yet nothing actually improves, and 'Agile' becomes a way to micromanage or track output. Real agility is about how a team learns and adapts, not how many ceremonies it performs. The word gets used to mean almost anything, so always look at how a team actually works.",
+  },
+  {
+    term: "Data Engineer vs Data Scientist vs Data Analyst",
+    answer:
+      "These three work with data but do very different jobs. A Data Engineer builds the pipes: the systems that move, clean, and store data so it's reliable. A Data Scientist uses that data to build models that predict what might happen next. A Data Analyst explains what already happened, using charts and reports. Roughly: the engineer plumbs it, the scientist predicts with it, the analyst explains it.",
+  },
+  {
+    term: "Generalist vs Specialist (and \"T-shaped\")",
+    answer:
+      "A generalist knows a bit of many areas and can move between them; a specialist goes deep in one and becomes the expert. Neither is better — they fit different teams and stages. 'T-shaped' is the middle most people aim for: broad enough to work across areas (the top of the T) with real depth in one (the stem). You don't have to pick forever — many people widen or deepen over time.",
+  },
+  {
+    term: "The \"10x engineer\" myth",
+    answer:
+      "This is the idea that some engineers are ten times more productive than everyone else. It's mostly a myth, and a harmful one. Real, lasting impact comes from making a whole team better — clear code, good reviews, sharing what you know — not from one hero coding alone at 2am. Chasing the '10x' label tends to reward showing off and burnout over the steady, collaborative work that actually ships good software.",
+  },
+  {
+    term: "On-call — what it means",
+    answer:
+      "On-call means taking turns being the person who gets paged when production breaks — sometimes at night or on weekends. Teams rotate it so no one carries it alone, and healthy teams keep it rare by fixing root causes and often pay or give time back for it. It's a normal part of many engineering jobs, especially in backend, DevOps, and SRE. It's fair to ask about the on-call load in an interview — how often, how noisy, and how it's compensated.",
+  },
+  {
+    term: "Remote vs hybrid vs on-site",
+    answer:
+      "Remote means you work from anywhere, with no regular office. On-site means you're expected in the office most days. Hybrid is a mix — a few set days in, the rest at home. Each has real trade-offs: remote offers freedom and no commute but can feel isolating and needs strong writing; on-site makes mentoring and casual learning easier, which can help early in your career. Policies shift often, so check what a company actually does now, not just what a job ad says.",
+  },
+  {
+    term: "Big Tech / FAANG vs everyone else",
+    answer:
+      "FAANG is an old nickname for a handful of giant US tech firms (Meta, Amazon, Apple, Netflix, Google), now used loosely for 'big-name tech'. These jobs often pay more and look good on a CV, but they're highly competitive, narrow in scope, and not automatically better for you. Plenty of great engineers build strong careers at smaller companies with more ownership and variety. Chase the work and the growth that fit you, not just the logo.",
+  },
+  {
+    term: "Web3 / dApp / smart contract",
+    answer:
+      "These are the everyday words of the blockchain world. Web3 is a broad label for apps built on blockchains instead of on one company's servers. A smart contract is a small program that runs on a blockchain and enforces rules automatically — often moving real money, which is why bugs are so costly. A dApp ('decentralized app') is an app whose backend logic lives in those smart contracts rather than on a normal server. It's a smaller, more hype-prone field, so learn it with clear eyes.",
+  },
+  {
+    term: "Business Analyst vs Product Manager vs Data Analyst",
+    answer:
+      "All three inform what gets built, but they own different things. A Business Analyst digs into what stakeholders need and turns it into clear requirements for the team. A Product Manager decides what to build and why, and owns the product's direction and priorities. A Data Analyst answers questions with data — charts and reports about what's actually happening. The BA and PM roles overlap a lot at some companies; the Data Analyst is the more distinct one.",
+  },
+  {
+    term: "Technical Writer vs Content Designer vs Developer Advocate",
+    answer:
+      "All three 'explain things', but for different readers and goals. A Technical Writer creates the docs, guides, and references people use to actually operate a product. A Content Designer shapes the words inside the product itself — button labels, error messages, and flows — so the interface is clear. A Developer Advocate is part engineer, part communicator: they teach other developers through demos, talks, and tutorials, and carry that community's feedback back to the product team.",
+  },
+  {
+    term: "AR vs VR vs MR vs XR",
+    answer:
+      "These describe how much digital content mixes with the real world. VR (virtual reality) replaces your view with a fully virtual world, usually through a headset. AR (augmented reality) adds digital things on top of the real world you can still see, like on a phone screen. MR (mixed reality) blends the two so virtual objects react to your real surroundings. XR ('extended reality') is the umbrella term that covers all of them.",
   },
 ];

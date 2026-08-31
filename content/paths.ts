@@ -354,6 +354,139 @@ export const paths: Path[] = [
       ["Certifications & growing", "Be honest about certifications: a CSM (Certified ScrumMaster) or PSM (Professional Scrum Master) can help you get hired and give you a shared vocabulary, but a two-day course doesn't make you good — real skill comes from working with teams. From here, many people grow toward Agile Coach, working with several teams or a whole organisation. The role rewards patience, listening, and genuinely caring that the team does well."],
     ],
   },
+  {
+    id: "data-engineer",
+    name: "Data Engineer",
+    tag: "Builds the pipes that move data",
+    color: "#1971C2",
+    blurb:
+      "You build the pipelines that move, clean, and store data, so analysts and scientists always have data they can trust. It's different from the Data Analyst path: they study the data, you make sure it arrives clean and on time.",
+    steps: [
+      ["SQL, and know it deeply", "SQL is the language for asking a database questions. For this job it's not optional — you'll live in it, so go past the basics and learn to write, read, and speed up serious queries."],
+      ["A language: Python", "Python is the glue of data work. You'll use it to move data around, clean it up, and connect the tools in your pipeline together."],
+      ["How data flows: batch vs streaming", "Learn the two main ways data moves. Batch means processing a big chunk on a schedule, like every night. Streaming means handling each event the moment it happens. Knowing when to use which shapes everything you build."],
+      ["Build ETL/ELT pipelines", "A pipeline takes data from one place, reshapes it, and drops it somewhere useful. ETL and ELT are just two orderings of those steps — extract, transform, load. This is the core of the job."],
+      ["Data warehouses & lakes", "A warehouse stores neat, organised data ready for analysis (like Snowflake or BigQuery). A lake stores raw data of every shape for later. Learn what each is for, and when to reach for which."],
+      ["Orchestration: scheduling jobs", "Real pipelines have many steps that must run in the right order, at the right time. A tool like Airflow schedules them, runs them, and tells you when a step fails, instead of you babysitting it by hand."],
+      ["Data quality & reliability", "Bad data quietly ruins every decision made from it. Learn to check data as it flows — catching missing values, duplicates, and sudden weird numbers — so problems get caught before anyone builds a report on them."],
+      ["Cloud data tools", "Most data work today runs on cloud platforms like AWS, Google Cloud, or Azure. Learn the data services one provider offers, since that's where you'll build and run your pipelines."],
+      ["Scaling to big data", "When data gets too big for one machine, you spread the work across many. Learn the ideas behind tools like Spark, which crunch huge datasets by splitting the job up. This is the deep end — save it for last."],
+    ],
+  },
+  {
+    id: "blockchain",
+    name: "Blockchain / Web3 Developer",
+    tag: "Builds apps that run on a blockchain",
+    color: "#9C36B5",
+    blurb:
+      "You build apps that run on a blockchain — smart contracts and the apps on top of them. Be honest with yourself: it's a smaller, fast-moving, and volatile niche, with big swings in hype and jobs. Learn it because the tech interests you, not because of promised riches.",
+    steps: [
+      ["Programming basics first", "Before anything blockchain-specific, learn ordinary programming — variables, loops, functions. A shaky foundation here will hurt you badly later, since this field punishes small mistakes."],
+      ["How a blockchain actually works", "Learn the real mechanics: blocks of records chained together, consensus (how a network of strangers agrees on what's true), and wallets (how you hold and prove ownership). Skip the hype and understand the machine."],
+      ["A smart-contract language: Solidity", "A smart contract is a small program that runs on the blockchain and can't be quietly changed later. Solidity is the most common language for writing them, especially on Ethereum."],
+      ["The EVM & gas", "The EVM is the shared computer that runs your contract across the whole network. Gas is the fee you pay for each bit of work it does. Both shape how you write code — wasteful code is literally expensive."],
+      ["Build & test a smart contract", "Write a small contract and test it hard. Testing matters far more here than in normal apps: once a contract is live, a bug can't just be patched, and it may be holding real money."],
+      ["Connect a frontend", "Learn web3 libraries that let a normal website talk to the blockchain and a user's wallet. This is how people actually click buttons instead of typing raw commands."],
+      ["Security, taken seriously", "This field is a huge target for hackers, because bugs can directly drain funds. Learn the common attacks and safe patterns early — security isn't a final step here, it's the whole mindset."],
+      ["Deploy to a testnet, then mainnet", "A testnet is a practice network with fake money, where mistakes are free. Ship there first, get everything right, and only then deploy to mainnet, the real network with real value at stake."],
+      ["Keep learning — it moves fast", "This space changes quickly: tools, networks, and best practices shift year to year. Expect to keep relearning, and treat anything you learned as possibly out of date already."],
+    ],
+  },
+  {
+    id: "embedded-iot",
+    name: "Embedded / IoT Developer",
+    tag: "Code that runs on physical devices",
+    color: "#2B8A3E",
+    blurb:
+      "You write low-level code that runs directly on physical devices and sensors — the tiny computers inside gadgets, appliances, and machines. It's a hands-on path where software meets real hardware.",
+    steps: [
+      ["C, then C++", "These are the main languages for device code, because they run fast and let you control memory closely. They're less forgiving than beginner languages, but that control is exactly what tiny devices need."],
+      ["Basic electronics", "Learn just enough electronics to be safe and useful: voltage, current, and how a circuit works. This is where software meets hardware, and you can't fully avoid the physical side."],
+      ["Microcontrollers", "A microcontroller is a tiny, cheap computer on a single chip. Start with a beginner-friendly board like an Arduino or ESP32, and get a simple program running on real hardware."],
+      ["Read sensors & control outputs", "The whole point of a device is sensing and acting. Learn to read inputs like temperature or motion, and to control outputs like lights, motors, and buzzers."],
+      ["Work within tight limits", "These chips have very little memory and power to spare. Learn to write lean code that does a lot with almost nothing — a very different mindset from writing for a laptop or server."],
+      ["Real-time behavior & on-device debugging", "Devices often must react at an exact moment, every time. Learn how that timing works, and how to debug code running on the chip itself, where you can't just print to a screen easily."],
+      ["Connect devices to the internet (IoT)", "IoT means Internet of Things — devices that talk to the internet or each other. Learn how a small device sends its readings to a server and receives commands back."],
+      ["Data & security for devices", "Connected devices can be attacked or leak data, and many ship with weak protection. Learn to send device data safely and lock down the device, since a hacked gadget is a real-world risk."],
+      ["Build a full device project", "Tie it all together: sense something, act on it, send the data online, and keep it reliable. One finished device teaches you more than a dozen tutorials."],
+    ],
+  },
+  {
+    id: "ar-vr",
+    name: "AR / VR (XR) Developer",
+    tag: "Immersive 3D for headsets & phones",
+    color: "#BE4BDB",
+    blurb:
+      "You build immersive 3D experiences for headsets and phones — augmented reality that adds things to the real world, and virtual reality that drops people into a made-up one. XR is the umbrella word for both.",
+    steps: [
+      ["Programming basics: C#", "Learn ordinary programming first, in C#. It's the main language of Unity, the most common beginner engine for this work, and it's friendlier than it looks."],
+      ["The 3D math you actually need", "You don't need to be a mathematician, but 3D worlds run on some geometry: positions, directions, and rotations in space. Learn the practical bits, and you'll stop fighting the tools."],
+      ["A game engine: Unity or Unreal", "An engine handles the hard parts of 3D — rendering, physics, and headset support — so you can focus on the experience. Unity is the usual starting point; Unreal is the other big one."],
+      ["Build a simple 3D scene", "Start small: place some objects, add a light and a camera, and move around them. Getting one plain scene working teaches you how the whole engine fits together."],
+      ["Interaction & input in 3D", "In XR, input isn't just a mouse — it's controllers, hand movements, and gaze. Learn to let people grab, point at, and interact with things in the 3D space around them."],
+      ["AR basics vs VR basics", "Learn both sides. AR places digital things into the real world through a camera, so it has to understand real surfaces. VR builds a fully virtual world instead. They share tools but solve different problems."],
+      ["Performance & comfort", "This one's not optional: low frame rates and jerky motion make people genuinely nauseous in a headset. Learn to keep things running smoothly, because comfort is a feature, not a nice-to-have."],
+      ["Publish to a device", "Get your experience onto a real headset or phone. Testing on actual hardware always reveals things the preview on your computer never showed."],
+      ["Build a small XR project", "Make one small, complete experience end to end. Finishing something real — even tiny — teaches you far more than half-building something ambitious."],
+    ],
+  },
+  {
+    id: "technical-writer",
+    name: "Technical Writer",
+    tag: "Makes complex tech clear",
+    color: "#0B7285",
+    blurb:
+      "You turn complicated technical things into clear docs, guides, and tutorials that people can actually follow. It's a real, in-demand job, and one of the most common ways strong writers get into tech without a heavy coding background.",
+    steps: [
+      ["Strong, plain writing", "Everything here rests on clear writing: short sentences, plain words, and a logical order. If you can explain a hard idea simply, you already have the core skill this job is built on."],
+      ["Learn enough tech to explain it", "You don't need to build the software, but you need to understand it well enough to be trusted. Learn the basics of how apps, code, and the web work, so your explanations are actually right."],
+      ["The types of docs", "Good docs come in a few distinct shapes: tutorials (learning by doing), how-to guides (steps for one task), reference (the dry facts), and explanation (the why). Learn what each is for, and don't mix them up."],
+      ["Write a great how-to guide", "Practise the most common doc: a clear guide that walks someone through one task, start to finish. Test it by actually following your own steps and watching where a reader would get stuck."],
+      ["API documentation basics", "An API is how one piece of software talks to another, and its docs are prized and well-paid work. Learn to document what each part does, what it expects, and what it gives back, with examples that run."],
+      ["Docs tools: Markdown & docs-as-code", "Learn Markdown (a simple way to format text) and the 'docs-as-code' approach, where docs live alongside the code in Git and ship the same way. This is how modern teams write and publish docs."],
+      ["Work with engineers", "You'll get much of your material from busy developers. Learn to ask good questions, draft something, and check it with them — the back-and-forth is how docs become accurate."],
+      ["Structure a whole docs site", "One page is easy; a whole site is a craft. Learn to organise many docs so readers can find what they need and follow a sensible path, instead of drowning in a pile of pages."],
+      ["Edit & keep docs accurate", "Software changes, and stale docs are worse than none. Learn to edit ruthlessly and to keep docs up to date over time — the unglamorous work that separates good docs from abandoned ones."],
+    ],
+  },
+  {
+    id: "developer-advocate",
+    name: "Developer Advocate (DevRel)",
+    tag: "Part engineer, part teacher",
+    color: "#FA5252",
+    blurb:
+      "You're part engineer, part teacher, part communicator. You help other developers succeed with a product through demos, tutorials, talks, and community — and you carry their honest feedback back to the team that builds it. DevRel is short for Developer Relations.",
+    steps: [
+      ["Code well enough to build real demos", "You don't need to be the strongest engineer, but you must genuinely code, because your audience is developers and they can smell fakery. Learn enough to build real, working demos with the product."],
+      ["Communication & teaching", "The heart of the job is making hard things click for other people. Work on explaining clearly, reading your audience, and teaching patiently — these matter as much as your coding."],
+      ["Write tutorials & blog posts", "Learn to write guides and posts that help developers get something working. Clear, honest writing that respects the reader's time is what builds trust and an audience."],
+      ["Build demo apps & sample code", "Create small example apps and clean sample code that show what the product can do. Good examples are often what actually convince a developer to try something."],
+      ["Public speaking & video", "Learn to talk about tech in front of people and on camera — at meetups, conferences, and in recorded videos. It's uncomfortable at first for almost everyone, and it gets better with practice."],
+      ["Engage a community", "Show up where developers gather — forums, Discord, and social platforms. Learn to answer questions, be genuinely helpful, and be a real person, not a walking advertisement."],
+      ["Carry feedback back to the team", "This is the 'relations' half of the job, and it's easy to skip. Gather what developers struggle with and bring it honestly to the product team, even when it's not what they want to hear."],
+      ["Measure impact honestly", "It's tempting to brag about follower counts. Learn to look at whether you actually helped developers succeed, and be honest about what's working and what isn't."],
+      ["Grow into DevRel strategy", "With experience, you move from making individual demos and talks to shaping the whole approach: what to build content around, which communities to invest in, and how to prove it's worth it."],
+    ],
+  },
+  {
+    id: "business-analyst",
+    name: "Business Analyst",
+    tag: "The bridge between business & tech",
+    color: "#15AABF",
+    blurb:
+      "You're the bridge between the business and the tech team. You figure out what the business actually needs, then turn it into clear requirements developers can build. It's light on code and heavy on listening, asking, and writing clearly.",
+    steps: [
+      ["How software projects work", "Get a plain-English picture of how an idea becomes working software, and how teams plan and ship it. You won't write the code, but you need to understand the work to sit between the two sides of it."],
+      ["Talk to stakeholders, ask the right questions", "Stakeholders are the people who care about the outcome — users, managers, whoever. The core skill is drawing out what they truly need by asking good questions, since people rarely state the real problem up front."],
+      ["Write clear requirements & user stories", "Turn a fuzzy request into something a team can build. Learn to write short user stories — 'as a manager, I want a weekly summary' — so developers know exactly what's needed and why, with no guessing."],
+      ["Basic diagrams: process flows", "A simple diagram often explains more than a page of text. Learn to draw process flows — a box-and-arrow map of how a task moves from step to step — so everyone sees the same picture."],
+      ["Data basics & SQL", "You'll often need to answer questions with data. Learn the basics, plus a little SQL — the language for asking a database questions — so you can check facts yourself instead of always waiting on someone else."],
+      ["Work with product & engineering", "You sit alongside product managers and developers. Learn how to hand off requirements, answer their questions as they build, and keep everyone pointed at the same goal without stepping on toes."],
+      ["Validate it solves the real problem", "Building the thing correctly isn't the same as building the right thing. Once work ships, check that it actually solves the original problem for real people — not just that it matches the spec on paper."],
+      ["Tools of the trade", "Learn the everyday tools analysts use: ticket boards like Jira for tracking work, wikis for documentation, and spreadsheets for quick analysis. The specific tool matters less than being comfortable in them."],
+      ["Grow toward product or analytics", "Business analyst is a great launch pad. From here, many people grow toward product management (deciding what to build) or data analytics (digging deeper into the numbers). Pick the pull you feel and lean in."],
+    ],
+  },
 ];
 
 export function getPath(id: string): Path | undefined {
@@ -378,7 +511,7 @@ export type PathGroup = {
   pathIds: string[];
 };
 
-/** The 5 groups (everything except `foundations`), in page order. */
+/** The 6 groups (everything except `foundations`), in page order. */
 export const pathGroups: PathGroup[] = [
   {
     eyebrow: "Build",
@@ -389,8 +522,8 @@ export const pathGroups: PathGroup[] = [
   {
     eyebrow: "Data & AI",
     title: "Work with data & AI",
-    description: "Find answers hidden in data, and build things that learn.",
-    pathIds: ["data-analyst", "data-scientist-ml", "ai-engineer"],
+    description: "Find answers hidden in data, build the pipelines that feed it, and make things that learn.",
+    pathIds: ["data-analyst", "data-engineer", "data-scientist-ml", "ai-engineer"],
   },
   {
     eyebrow: "Ship & run",
@@ -405,10 +538,16 @@ export const pathGroups: PathGroup[] = [
     pathIds: ["qa-test-automation", "cybersecurity"],
   },
   {
-    eyebrow: "Product & people",
-    title: "Shape the product & the team",
-    description: "Decide what to build, keep it working, and help the team build it well — lighter on code.",
-    pathIds: ["product-manager", "product-qa", "scrum-master"],
+    eyebrow: "Product & comms",
+    title: "Shape it, explain it, run the team",
+    description: "Decide what to build, document it, tell its story, and help the team work well — lighter on code.",
+    pathIds: ["product-manager", "business-analyst", "product-qa", "scrum-master", "technical-writer", "developer-advocate"],
+  },
+  {
+    eyebrow: "Emerging",
+    title: "Emerging & specialized",
+    description: "Newer or niche fields for when you want something different.",
+    pathIds: ["blockchain", "embedded-iot", "ar-vr"],
   },
 ];
 
@@ -418,6 +557,8 @@ export const GOOD_FIRST_PATHS = new Set([
   "data-analyst",
   "product-qa",
   "uiux-to-developer",
+  "technical-writer",
+  "business-analyst",
 ]);
 
 // Build-time guard: every path is spotlighted or in exactly one group. If a new
