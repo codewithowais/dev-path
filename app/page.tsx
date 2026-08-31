@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PathsExplorer } from "@/components/PathsExplorer";
 import { Reveal } from "@/components/Reveal";
@@ -5,6 +6,13 @@ import { paths } from "@/content/paths";
 import { lessons } from "@/content/lessons";
 import { roleTrees } from "@/content/career";
 import { BrandChip } from "@/components/Brand";
+
+// Canonical is set here (not in the root layout) on purpose: Next.js inherits a
+// layout's `alternates` into any page that doesn't set its own, so a root-level
+// canonical of "/" would wrongly point /about, /grow, and /learn at the homepage.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const STATS = [
   { value: `${lessons.length}`, label: "lessons" },

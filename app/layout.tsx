@@ -50,6 +50,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "DevPath by codewithowais",
     url: siteUrl,
+    locale: "en_US",
     title: "DevPath — Learn to code & grow your career, in plain words",
     description:
       "Figure out what to learn, see where your job title can grow, and understand data structures, algorithms, and design patterns — explained like a patient friend, with runnable code and the exact output you should expect.",
@@ -60,6 +61,19 @@ export const metadata: Metadata = {
     description:
       "A beginner-friendly hub for learning to code and growing your tech career, in plain words.",
     creator: "@codewithowais",
+  },
+  // Let every page be indexed and followed. googleBot gets the extra
+  // rich-result directives Google reads (full snippets, image + video previews).
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
   },
 };
 

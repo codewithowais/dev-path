@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   title: "About — why DevPath exists",
   description:
     "DevPath makes the first steps into coding and tech careers clear: plain-language explanations, runnable code with the exact output to expect, and honest career maps. A free, open, solo project by codewithowais.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    type: "website",
+    title: "About DevPath — why it exists",
+    description:
+      "Why DevPath exists and who makes it: plain-language explanations, runnable code with the exact output to expect, and honest career maps. A free, open, solo project.",
+    url: "/about",
+  },
 };
 
 const GH_PROFILE = "https://github.com/codewithowais";
