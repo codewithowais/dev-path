@@ -1,31 +1,12 @@
 import Link from "next/link";
-import { roleTrees } from "@/content/career";
+import { roleTrees, type RoleTree } from "@/content/career";
 import { accentText, accentFill } from "@/lib/accent";
 
-/**
- * Which learning path each role maps to. Clicking a role card takes you to the
- * roadmap that teaches that role. Roles without a dedicated path fall back to
- * the full list of paths.
- */
-const ROLE_TO_PATH: Record<string, string> = {
-  "frontend-developer": "frontend",
-  "backend-developer": "backend",
-  "fullstack-developer": "fullstack",
-  "mobile-developer": "mobile-developer",
-  "devops-sre": "devops",
-  "data-analyst-scientist": "data-analyst",
-  "ai-ml-engineer": "ai-engineer",
-  "qa-sdet": "qa-test-automation",
-  cybersecurity: "cybersecurity",
-  "cloud-engineer": "cloud-engineer",
-  "game-developer": "game-developer",
-  "data-engineer": "data-scientist-ml",
-  "mlops-engineer": "ai-engineer",
-};
-
-function hrefFor(roleId: string): string {
-  const pathId = ROLE_TO_PATH[roleId];
-  return pathId ? `/paths/${pathId}` : "/paths/foundations";
+// Clicking a role card takes you to the roadmap that teaches that role. The
+// mapping is data-driven: each role declares its own `pathId` (or none, in
+// which case we fall back to the Foundations path).
+function hrefFor(role: RoleTree): string {
+  return role.pathId ? `/paths/${role.pathId}` : "/paths/foundations";
 }
 
 export function RoleTree() {
@@ -42,7 +23,7 @@ export function RoleTree() {
                 link name is just the role. */}
             <h3>
               <Link
-                href={hrefFor(role.id)}
+                href={hrefFor(role)}
                 className="inline-flex items-center rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-wide text-white after:absolute after:inset-0 after:z-20 after:content-['']"
                 style={{ backgroundColor: accentFill(role.color) }}
               >
@@ -81,7 +62,7 @@ export function RoleTree() {
             className="relative z-10 mt-5 flex items-center gap-1.5 text-sm font-semibold"
             style={{ color: accentText(role.color) }}
           >
-            {ROLE_TO_PATH[role.id]
+            {role.pathId
               ? "Explore this path"
               : "No dedicated path yet — start with Foundations"}
             <span aria-hidden="true">→</span>

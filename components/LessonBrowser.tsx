@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Pillar } from "@/content/lessons";
 import { pillarColor } from "@/content/lessons";
 import { PillarIcon } from "@/components/PillarIcon";
+import { PillarProgress, useLessonProgress } from "@/components/LessonProgress";
 import { accentText } from "@/lib/accent";
 
 export type LessonItem = {
@@ -42,6 +43,18 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const q = query.trim().toLowerCase();
   const searching = q.length > 0;
+
+  // Per-device completion. Renders a stable 0/total placeholder until `ready`
+  // (mounted), so the server and first client paint match — no hydration jump.
+  const { count, ready } = useLessonProgress();
+
+  // All lesson ids per pillar (full set — progress ignores the search filter).
+  const idsByPillar = useMemo(() => {
+    const map = {} as Record<Pillar, string[]>;
+    for (const p of pillars) map[p] = [];
+    for (const l of items) (map[l.pillar] ??= []).push(l.id);
+    return map;
+  }, [items, pillars]);
 
   useEffect(() => {
     const id = decodeURIComponent(window.location.hash.slice(1));
@@ -189,6 +202,18 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                       {pillarBlurb[pillar]}
                     </span>
                   </span>
+                  {(() => {
+                    const ids = idsByPillar[pillar] ?? [];
+                    return (
+                      <PillarProgress
+                        total={ids.length}
+                        completed={ready ? count(ids) : 0}
+                        color={color}
+                        label={pillar}
+                        className="hidden shrink-0 md:flex"
+                      />
+                    );
+                  })()}
                   <span
                     className="hidden shrink-0 rounded-pill px-3 py-1 font-mono text-xs font-semibold sm:inline"
                     style={{ backgroundColor: `${color}16`, color: accentText(color) }}

@@ -3,6 +3,7 @@ import { GrowthTree } from "@/components/GrowthTree";
 import { RoleTree } from "@/components/RoleTree";
 import { TitleGuide } from "@/components/TitleGuide";
 import { Reveal } from "@/components/Reveal";
+import { titleGuide } from "@/content/career";
 
 export const metadata: Metadata = {
   title: "Grow — where your career can go",
@@ -68,7 +69,9 @@ export default function GrowPage() {
             Confusing titles, in plain words
           </h2>
           <p className="mt-3 text-lg leading-relaxed text-muted">
-            The job-title soup, decoded. Short, honest, no fluff. Tap to expand.
+            {titleGuide.length} job titles, in plain words. The job-title soup,
+            decoded — short, honest, no fluff. Search for a term, then tap to
+            expand.
           </p>
         </header>
         <Reveal className="mt-8">

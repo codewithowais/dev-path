@@ -63,6 +63,11 @@ export function GrowthTree() {
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">
                   {rung.desc}
                 </p>
+                {rung.aka && rung.aka.length > 0 && (
+                  <p className="mt-2 font-mono text-xs text-muted">
+                    Also called: {rung.aka.join(" · ")}
+                  </p>
+                )}
                 {!isHere && (
                   <span className="mt-2 inline-block text-xs font-semibold text-here">
                     Tap if this is you

@@ -41,6 +41,12 @@ export function Footer() {
             >
               Learn
             </Link>
+            <Link
+              href="/about"
+              className="w-fit text-muted transition-colors duration-[var(--dp-dur-fast)] ease-[var(--dp-ease)] hover:text-ink"
+            >
+              About
+            </Link>
           </div>
           <div className="flex flex-col gap-2.5">
             <span className="dp-eyebrow text-muted">

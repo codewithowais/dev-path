@@ -37,6 +37,30 @@ export function BrandChip() {
   );
 }
 
+/**
+ * A larger, standalone brand block for the About page credit.
+ * Same </> monogram identity, sized up and with the GitHub handle beside it.
+ */
+export function BrandBadge() {
+  return (
+    <div className="flex items-center gap-4">
+      <Monogram className="h-16 w-16 text-xl" />
+      <div className="leading-tight">
+        <p className="dp-eyebrow text-muted">Made by</p>
+        <p className="font-display text-2xl font-bold text-ink">codewithowais</p>
+        <a
+          href={GH}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-muted transition-colors hover:text-primary"
+        >
+          github.com/codewithowais →
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function BrandSignature() {
   return (
     <div className="flex items-center gap-3">

@@ -3,6 +3,7 @@ import type { Lesson } from "@/content/lessons";
 import { pillarColor, lessonsByPillar } from "@/content/lessons";
 import { CodeRunner } from "@/components/CodeRunner";
 import { PillarIcon } from "@/components/PillarIcon";
+import { MarkDoneButton } from "@/components/LessonProgress";
 import { accentText } from "@/lib/accent";
 
 /** Full lesson page: short explanation on the left, live editor + output on the
@@ -34,7 +35,7 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
           </Link>
         </div>
 
-        <header className="mt-5 flex items-start gap-4">
+        <header className="mt-5 flex flex-wrap items-start gap-4">
           <span
             aria-hidden="true"
             className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm"
@@ -60,6 +61,12 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
               </p>
             )}
           </div>
+          {/* "I finished this" — personal, per-device progress (localStorage). */}
+          <MarkDoneButton
+            lessonId={lesson.id}
+            color={color}
+            className="ml-auto mt-1 shrink-0"
+          />
         </header>
 
         <div

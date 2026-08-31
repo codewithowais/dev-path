@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { lessons, pillars, pillarBlurb } from "@/content/lessons";
 import { LessonBrowser, type LessonItem } from "@/components/LessonBrowser";
+import { OverallProgress } from "@/components/LessonProgress";
 
 export const metadata: Metadata = {
   title: "Learn — data structures, algorithms, design & more",
@@ -37,6 +38,7 @@ export default function LearnPage() {
           lesson gives you an everyday example, a code editor you can run, and
           the exact result to expect. Search or browse, then open one.
         </p>
+        <OverallProgress ids={lessons.map((l) => l.id)} className="mt-6" />
       </section>
 
       <LessonBrowser items={items} pillars={activePillars} pillarBlurb={pillarBlurb} />

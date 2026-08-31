@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/", label: "Paths", hint: "What to learn" },
   { href: "/grow", label: "Grow", hint: "Where your career goes" },
   { href: "/learn", label: "Learn", hint: "The lessons" },
+  { href: "/about", label: "About", hint: "Why this exists" },
 ] as const;
 
 function isActive(pathname: string, href: string) {

@@ -13,6 +13,8 @@ export type Rung = {
   desc: string;
   /** Accent color token (hex) for the rung. */
   color: string;
+  /** Common equivalent titles / levels at this rung. */
+  aka?: string[];
 };
 
 export type Branch = {
@@ -48,6 +50,7 @@ export const ladder: Rung[] = [
     years: "About 0–2 years",
     desc: "This is your first real job. You build features with guidance and ask lots of questions — that's exactly what you should do. Some companies skip the word 'junior' and just call you 'Engineer'.",
     color: "#5B4BEB",
+    aka: ["SDE I", "Engineer I", "L3", "SWE I", "New Grad"],
   },
   {
     id: "mid",
@@ -55,6 +58,7 @@ export const ladder: Rung[] = [
     years: "About 2–5 years",
     desc: "You can now take on a task and finish it on your own. You need less help, and you start guiding newer teammates. Many companies drop the label and just call this 'Engineer'.",
     color: "#5B4BEB",
+    aka: ["SDE II", "Engineer II", "L4", "Software Engineer"],
   },
   {
     id: "senior",
@@ -62,6 +66,7 @@ export const ladder: Rung[] = [
     years: "5+ years (it varies a lot)",
     desc: "You handle big, unclear problems and make smart trade-offs. You help lift the whole team's work. The years above are a rough guide, not a promise — some people get here sooner, many take longer, and that's normal. From here, the path often splits in two, but you can still switch between them later.",
     color: "#191C33",
+    aka: ["SDE III", "Senior SWE", "L5", "Engineer III"],
   },
 ];
 
@@ -100,6 +105,8 @@ export type RoleTree = {
   color: string;
   /** Ordered [title, plain-English description] levels, entry → senior/lead/architect. */
   levels: [title: string, description: string][];
+  /** Learning-path id this role maps to (from content/paths.ts), or omit if none fits. */
+  pathId?: string;
 };
 
 /** Role-specific growth trees — many more designations than the shared ladder. */
@@ -116,6 +123,7 @@ export const roleTrees: RoleTree[] = [
       ["Frontend Tech Lead", "You decide how the frontend code is structured, and set the patterns the rest of the team follows."],
       ["Principal Frontend Engineer / UI Architect", "You decide how the frontend is built across the whole company, and mentor senior engineers on other teams."],
     ],
+    pathId: "frontend",
   },
   {
     id: "backend-developer",
@@ -129,6 +137,7 @@ export const roleTrees: RoleTree[] = [
       ["Backend Tech Lead", "You guide how different services talk to each other, and set standards for the backend code."],
       ["Principal Backend Engineer / Systems Architect", "You design the large-scale structure that the entire backend runs on."],
     ],
+    pathId: "backend",
   },
   {
     id: "fullstack-developer",
@@ -142,6 +151,7 @@ export const roleTrees: RoleTree[] = [
       ["Full-stack Tech Lead", "You coordinate frontend and backend decisions so the whole product fits together."],
       ["Staff / Principal Full-stack Engineer", "You shape technical direction across many products, and mentor other full-stack engineers."],
     ],
+    pathId: "fullstack",
   },
   {
     id: "mobile-developer",
@@ -155,6 +165,7 @@ export const roleTrees: RoleTree[] = [
       ["Mobile Tech Lead", "You decide the app's structure, and how code is shared across iOS, Android, or cross-platform tools."],
       ["Principal Mobile Engineer", "You set mobile strategy for the whole company, including new platforms and tools."],
     ],
+    pathId: "mobile-developer",
   },
   {
     id: "devops-sre",
@@ -168,6 +179,7 @@ export const roleTrees: RoleTree[] = [
       ["Senior DevOps / SRE", "You design the infrastructure strategy and lead the response when something major breaks."],
       ["Principal SRE / Infrastructure Architect", "You set reliability and infrastructure standards for the whole engineering team."],
     ],
+    pathId: "devops",
   },
   {
     id: "data-analyst-scientist",
@@ -182,6 +194,7 @@ export const roleTrees: RoleTree[] = [
       ["Machine Learning Engineer", "You take models out of notebooks and turn them into real, running systems."],
       ["Staff Data Scientist / ML Lead", "You set the data and modeling strategy across multiple teams."],
     ],
+    pathId: "data-analyst",
   },
   {
     id: "ai-ml-engineer",
@@ -195,6 +208,7 @@ export const roleTrees: RoleTree[] = [
       ["Applied AI / ML Lead", "You decide which AI approach — including using existing large models — fits each product problem."],
       ["Principal ML Engineer / AI Architect", "You set the AI strategy and infrastructure standards for the whole company."],
     ],
+    pathId: "ai-engineer",
   },
   {
     id: "qa-sdet",
@@ -208,6 +222,7 @@ export const roleTrees: RoleTree[] = [
       ["Senior SDET / QA Lead", "You build the test-automation tools and strategy the whole team relies on."],
       ["Principal QA / Test Architect", "You set quality standards and testing strategy for every team in the company."],
     ],
+    pathId: "qa-test-automation",
   },
   {
     id: "cybersecurity",
@@ -221,6 +236,7 @@ export const roleTrees: RoleTree[] = [
       ["Senior Security Engineer", "You lead security reviews for major projects and respond to serious incidents."],
       ["Security Architect / CISO", "You set the security strategy, policies, and standards for the whole organization. CISO stands for Chief Information Security Officer."],
     ],
+    pathId: "cybersecurity",
   },
   {
     id: "cloud-engineer",
@@ -234,6 +250,7 @@ export const roleTrees: RoleTree[] = [
       ["Cloud Architect", "You design the overall cloud strategy: which services to use, and how systems fit together."],
       ["Principal Cloud Architect", "You set cloud standards and vendor strategy for the whole company."],
     ],
+    pathId: "cloud-engineer",
   },
   {
     id: "game-developer",
@@ -247,6 +264,7 @@ export const roleTrees: RoleTree[] = [
       ["Lead Game Programmer", "You guide the technical direction of the whole game, and mentor the programming team."],
       ["Technical Director", "You own every technical decision across the studio's games and tools."],
     ],
+    pathId: "game-developer",
   },
   {
     id: "data-engineer",
@@ -260,6 +278,7 @@ export const roleTrees: RoleTree[] = [
       ["Data Engineering Lead", "You set the standards and tools the whole data team uses, and guide how data flows across the company."],
       ["Principal Data Engineer / Data Architect", "You design the big-picture data platform the entire organization depends on."],
     ],
+    pathId: "data-scientist-ml",
   },
   {
     id: "mlops-engineer",
@@ -273,6 +292,7 @@ export const roleTrees: RoleTree[] = [
       ["MLOps / ML Platform Lead", "You design the platform other teams use to ship their models safely and repeatably."],
       ["Principal MLOps / ML Platform Architect", "You set the strategy and standards for how the whole company runs AI in production."],
     ],
+    pathId: "ai-engineer",
   },
   {
     id: "engineering-manager",
@@ -313,6 +333,89 @@ export const roleTrees: RoleTree[] = [
       ["Lead / Staff Technical Writer", "You set documentation standards and tools, and guide other writers."],
       ["Documentation Manager / Content Architect", "You own the strategy for all of a company's technical content."],
     ],
+  },
+  {
+    id: "founding-engineer",
+    name: "Founding Engineer",
+    sub: "You're one of the first engineers at a startup. You build the first version of the product across the whole stack, with little structure to lean on. It's more a stage than a rung: you usually get more equity (a share of the company) in exchange for more risk and less certainty.",
+    color: "#BE4BDB",
+    levels: [
+      ["First engineering hire", "You join a tiny team, often right after the founders. You set up the codebase from scratch and make fast calls with very little in place yet."],
+      ["Founding Engineer", "You build the first real product end-to-end — frontend, backend, and infrastructure — and do a bit of everything, including talking to early users."],
+      ["Eng Lead / Head of Engineering", "As the team grows, you start setting the technical direction and hiring the next engineers. You still code, but you also shape how the team works."],
+      ["VP Engineering / CTO (at a growing startup)", "If the company succeeds and scales, early engineers often step into senior leadership. Others prefer to stay hands-on, or move on to the next early-stage company — all normal."],
+    ],
+    pathId: "fullstack",
+  },
+  {
+    id: "platform-engineer",
+    name: "Platform Engineer",
+    sub: "You build the internal tools and 'paved paths' that other engineers use to ship their work — things like deployment systems, shared libraries, and developer tooling. Your customers are your own company's engineers. It overlaps with DevOps, but leans more toward building products for developers than running servers.",
+    color: "#3B5BDB",
+    levels: [
+      ["Junior Platform Engineer", "You help build and maintain internal tools and scripts that other engineers rely on, with guidance."],
+      ["Platform Engineer", "You build self-service tools and templates so other teams can deploy and run their code without reinventing the basics."],
+      ["Senior Platform Engineer", "You design the internal platform other teams build on, weighing what to standardize and what to leave flexible."],
+      ["Platform Tech Lead", "You set the direction for the developer platform and the standards teams follow to use it."],
+      ["Principal Platform Engineer", "You shape the internal-tooling strategy for the whole company, so every team ships faster and more safely."],
+    ],
+    pathId: "devops",
+  },
+  {
+    id: "solutions-engineer",
+    name: "Solutions / Sales Engineer",
+    sub: "You're a technical engineer who works directly with customers: you run demos, build integrations, and help deploy the product into a client's own systems. A Forward-Deployed Engineer is a close cousin who embeds with a customer to build custom solutions on top of the product. You need both coding skills and people skills.",
+    color: "#087F5B",
+    levels: [
+      ["Associate Solutions Engineer", "You learn the product deeply and support demos and customer questions, with a senior teammate leading."],
+      ["Solutions / Sales Engineer", "You run technical demos, answer hard questions, and build proof-of-concept integrations to help close deals."],
+      ["Forward-Deployed Engineer", "You embed with a customer to build and deploy custom solutions using the product, inside their real environment."],
+      ["Senior Solutions Engineer", "You own the technical relationship for big customers, and shape how the product fits their needs."],
+      ["Solutions Architect / Solutions Engineering Lead", "You design end-to-end solutions for major accounts, and guide the rest of the solutions team."],
+    ],
+    pathId: "fullstack",
+  },
+  {
+    id: "ux-engineer",
+    name: "UX Engineer / Design Engineer",
+    sub: "You sit between design and frontend. You build polished, pixel-accurate interfaces, design systems (shared, reusable UI pieces), and interactive prototypes. You care about how something looks and feels as much as how the code works.",
+    color: "#C2255C",
+    levels: [
+      ["Junior UX Engineer", "You turn designs into clean, accurate UI, and help maintain the shared component library, with support."],
+      ["UX Engineer / Design Engineer", "You build refined interfaces and interactive prototypes, working closely with designers to get the details right."],
+      ["Senior UX Engineer", "You own the design system and the tricky, high-polish interactions the whole product depends on."],
+      ["UX Engineering Lead", "You set how design and frontend work together, and guide the standards for a consistent, quality interface."],
+      ["Principal Design Engineer", "You shape the design-engineering practice across the company, bridging design and engineering at scale."],
+    ],
+    pathId: "uiux-to-developer",
+  },
+  {
+    id: "embedded-firmware",
+    name: "Embedded / Firmware Engineer",
+    sub: "You write low-level code that runs directly on physical devices — think smart watches, cars, medical devices, and appliances. You work close to the hardware, where memory and power are tight, so careful, efficient code really matters.",
+    color: "#364FC7",
+    levels: [
+      ["Junior Embedded Engineer", "You write and test small pieces of device code, and learn how the hardware and software fit together, with guidance."],
+      ["Embedded / Firmware Engineer", "You build the software that controls a device's features, working within tight memory and power limits."],
+      ["Senior Embedded Engineer", "You own tricky, low-level problems — timing, power use, and reliability — on the devices that ship to customers."],
+      ["Embedded Tech Lead", "You decide how the firmware is structured, and how it talks to both the hardware and the outside world."],
+      ["Principal Embedded / Firmware Architect", "You set the technical direction for firmware across a whole product line."],
+    ],
+    pathId: "foundations",
+  },
+  {
+    id: "database-administrator",
+    name: "Database Administrator (DBA) / Database Engineer",
+    sub: "You keep databases fast, safe, backed up, and reliable — the systems that store a company's most important data. When queries are slow or data is at risk, you're the person who fixes it. A Database Engineer leans more toward building and automating; a DBA leans more toward running and protecting.",
+    color: "#2F9E44",
+    levels: [
+      ["Junior DBA", "You run backups, watch database health, and help with routine maintenance, following set procedures."],
+      ["Database Administrator / Database Engineer", "You keep databases fast and reliable: you tune slow queries, plan backups, and manage access safely."],
+      ["Senior DBA / Database Engineer", "You design how data is stored and scaled, and lead recovery when something goes wrong with the data."],
+      ["Database Lead", "You set the standards and tools for how the whole company runs and protects its databases."],
+      ["Principal Database Engineer / Data Architect", "You shape the big-picture database strategy the entire organization depends on."],
+    ],
+    pathId: "backend",
   },
 ];
 
@@ -429,5 +532,80 @@ export const titleGuide: TitleQA[] = [
     term: "Do titles and pay work the same in every country?",
     answer:
       "No. Titles, typical timelines, salaries, and even which roles exist all vary a lot by country and city. The levels and 'years' shown here are a general guide from the global tech industry. Treat them as a rough map, and check what's normal where you actually plan to work.",
+  },
+  {
+    term: "Founding Engineer",
+    answer:
+      "This is one of the first engineers at a startup, often hired right after the founders. You build the first version of the product across the whole stack, with almost no structure to lean on. The trade-off is real: you usually get more equity (a share of the company) in return for more risk, longer hours, and less certainty. It's less a fixed 'level' and more a stage — as the company grows, founding engineers often become Staff engineers or leaders, or move on to the next early-stage company.",
+  },
+  {
+    term: "Staff, Principal, Distinguished, Fellow",
+    answer:
+      "These are the senior individual-contributor (IC) levels above Senior — you keep building and influencing, without becoming a people manager. Roughly: Staff influences several teams, Principal shapes a whole area, Distinguished shapes the company's technology, and Fellow is the rarest of all. Each step up is much rarer than the last, and many companies stop at Staff or Principal. Treat the top ones as a bonus, not a target you must hit.",
+  },
+  {
+    term: "Fractional / Interim CTO",
+    answer:
+      "A fractional CTO is a senior tech leader who works part-time, often across several small companies at once. An interim CTO is a temporary one, filling the seat until a permanent hire is found. Both are common at startups that need experienced leadership but can't yet justify a full-time executive.",
+  },
+  {
+    term: "Platform Engineer vs DevOps vs SRE",
+    answer:
+      "These overlap a lot and the lines are blurry. DevOps focuses on automating how code is built, tested, and deployed. SRE (Site Reliability Engineer) focuses on keeping systems up and recovering fast when they break. A Platform Engineer builds internal tools and 'paved paths' so other engineers can ship easily — more like building a product for developers. Many companies mix these titles freely.",
+  },
+  {
+    term: "Solutions Architect vs Software Architect",
+    answer:
+      "A Software Architect designs the internal structure of a system — how the code and services fit together. A Solutions Architect is usually customer-facing: they design how a product or set of technologies solves a specific client's problem, often during a sale or a big rollout. One looks inward at the codebase; the other looks outward at the customer.",
+  },
+  {
+    term: "Sales Engineer / Forward-Deployed Engineer",
+    answer:
+      "Both are engineers who work directly with customers. A Sales (or Solutions) Engineer supports the sales process with demos, technical answers, and proof-of-concept integrations. A Forward-Deployed Engineer goes further and embeds with a customer to build custom solutions on top of the product, inside their real systems. You need coding skills and people skills for both.",
+  },
+  {
+    term: "Leveling: L3/L4/L5, E3/E4, SDE I/II/III",
+    answer:
+      "Most companies number their engineering levels, but there's no shared standard, so the numbers mean different things in different places. Loosely: the first working level is entry/junior, the next is mid, and the one after is senior — for example L3/L4/L5 at one company, or SDE I/II/III at another. The exact numbers differ, so ask what a given level actually means rather than assuming it matches another company's.",
+  },
+  {
+    term: "UX Engineer / Design Engineer",
+    answer:
+      "This is a hybrid that sits between design and frontend. You build polished, pixel-accurate interfaces, design systems (shared, reusable UI pieces), and prototypes. You care about how something looks and feels as much as how the code works — a good fit if you like both design and coding.",
+  },
+  {
+    term: "Application Security (AppSec) Engineer",
+    answer:
+      "This is a security role focused on the app and its code itself, rather than networks or servers. An AppSec engineer reviews code for weak spots, helps developers write safer code, and sets up tools that catch security bugs before they ship. It's a specialty within the broader security field.",
+  },
+  {
+    term: "Web Developer vs Software Engineer",
+    answer:
+      "These overlap heavily and are often the same work. 'Web Developer' usually points specifically at building websites and web apps. 'Software Engineer' is a broader term that can include web, but also mobile, desktop, and systems that never touch a browser. The 'engineer' label sometimes carries a hint of more pay or scope, but that's about connotation, not a hard rule.",
+  },
+  {
+    term: "Consultant vs Freelancer vs Contractor",
+    answer:
+      "All three work outside a normal full-time job, but the flavor differs. A freelancer usually takes on smaller, hands-on project work, often for several clients. A contractor is typically hired to fill a role for a fixed period, working much like an employee but without permanent status. A consultant is usually brought in for their expertise and advice, sometimes charging more for guidance than for building. The words get used loosely and overlap.",
+  },
+  {
+    term: "Open-source maintainer",
+    answer:
+      "This is someone who runs or heavily contributes to an open-source project — reviewing changes, fixing bugs, and guiding its direction. It can be a paid job, a volunteer role, or a side project, and it counts as real, visible experience. Many people land jobs partly on the strength of open-source work anyone can go and see.",
+  },
+  {
+    term: "Director vs VP vs CTO",
+    answer:
+      "These are the upper rungs of the management track, and each covers more ground than the last. A Director leads several teams through the managers under them. A VP of Engineering sets direction for a large part of engineering and turns company goals into plans. A CTO (Chief Technology Officer) owns the company's overall technology direction. These seats are few by nature — usually only one CTO.",
+  },
+  {
+    term: "Product Manager vs Product Engineer",
+    answer:
+      "These sound alike but are different jobs. A Product Manager (PM) owns the 'what' and 'why': they decide what to build and why it matters, usually without writing the code. A Product Engineer builds it, and cares a lot about the product and its users while doing so. They work closely together, but one mainly decides and the other mainly builds.",
+  },
+  {
+    term: "Intern vs New Grad",
+    answer:
+      "An intern is a student on a short, often paid work placement — usually a summer — to learn and try the job before finishing school. A 'new grad' role is a real, full-time first job aimed at people who just finished a degree or program. Internships are temporary and about learning; new-grad roles are permanent and about starting your career.",
   },
 ];
