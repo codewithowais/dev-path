@@ -191,7 +191,7 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
           search shares the row with the expand/collapse control (or the live
           match count while searching) so the bar reads as an intentional
           toolbar instead of a lonely floating pill. */}
-      <div className="sticky top-[73px] z-30 mb-5 mx-[calc(50%-50vw)] border-b border-line bg-paper shadow-[0_6px_14px_-12px_rgba(25,28,51,0.3)]">
+      <div className="sticky top-[73px] sm:top-[61px] z-30 mb-5 mx-[calc(50%-50vw)] border-b border-line bg-paper shadow-[0_6px_14px_-12px_rgba(25,28,51,0.3)]">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <svg
