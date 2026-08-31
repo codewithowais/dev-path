@@ -50,6 +50,10 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Allow full-bleed sticky bars (100vw) without a horizontal scrollbar. `clip`
+     (unlike hidden/auto) does not create a scroll container, so position:sticky
+     still anchors to the viewport. */
+  overflow-x: clip;
 }
 
 /* Atmosphere so pages never feel flat: a faint dot-grid texture layered under

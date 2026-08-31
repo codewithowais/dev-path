@@ -181,37 +181,41 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
 
   return (
     <div>
-      {/* Search — sticks flush under the 73px nav with a SOLID background, so
-          lesson cards scrolling underneath never ghost through it. */}
-      <div className="sticky top-[73px] z-30 -mx-5 mb-4 border-b border-line bg-paper px-5 py-3 shadow-[0_10px_22px_-18px_rgba(25,28,51,0.5)]">
-        <div className="relative">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${items.length} lessons…`}
-            aria-label="Search lessons"
-            className="dp-shadow-sm w-full rounded-pill border border-line bg-card py-3.5 pl-12 pr-4 text-ink outline-none transition-colors focus:border-primary"
-          />
+      {/* Search — a full-width sticky bar (like the nav) that sits flush under
+          the 73px nav. Full-bleed via mx-[calc(50%-50vw)] so it spans the
+          viewport instead of floating as a boxed rectangle; the input inside
+          stays aligned to the content column. Solid bg = no ghosting. */}
+      <div className="sticky top-[73px] z-30 mb-4 mx-[calc(50%-50vw)] border-b border-line bg-paper shadow-[0_6px_14px_-12px_rgba(25,28,51,0.3)]">
+        <div className="mx-auto max-w-6xl px-5 py-3">
+          <div className="relative">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${items.length} lessons…`}
+              aria-label="Search lessons"
+              className="dp-shadow-sm w-full rounded-pill border border-line bg-card py-3.5 pl-12 pr-4 text-ink outline-none transition-colors focus:border-primary"
+            />
+          </div>
+          {searching && (
+            <p className="mt-2 px-1 text-sm text-muted" aria-live="polite">
+              {filtered.length} {filtered.length === 1 ? "lesson" : "lessons"} match
+              {filtered.length === 0 ? " — try another word" : ""}
+            </p>
+          )}
         </div>
-        {searching && (
-          <p className="mt-2 px-1 text-sm text-muted" aria-live="polite">
-            {filtered.length} {filtered.length === 1 ? "lesson" : "lessons"} match
-            {filtered.length === 0 ? " — try another word" : ""}
-          </p>
-        )}
       </div>
 
       {!searching && (
