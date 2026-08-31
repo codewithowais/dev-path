@@ -13,6 +13,8 @@ import systemDesign from "./system-design";
 import cloud from "./cloud";
 import dataScience from "./data-science";
 import genai from "./genai";
+import testingQa from "./testing-qa";
+import product from "./product";
 
 export * from "./types";
 
@@ -27,6 +29,8 @@ export const lessons: Lesson[] = [
   ...cloud,
   ...dataScience,
   ...genai,
+  ...testingQa,
+  ...product,
 ];
 
 export function lessonsByPillar(pillar: Pillar): Lesson[] {

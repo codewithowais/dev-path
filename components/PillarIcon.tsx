@@ -51,6 +51,20 @@ const PATHS: Record<Pillar, React.ReactNode> = {
       <path d="m18.5 15 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z" />
     </>
   ),
+  // A passing test: a tick inside a circle.
+  "Testing & QA": (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </>
+  ),
+  // A target/bullseye: hitting the goal.
+  Product: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4" />
+    </>
+  ),
 };
 
 export function PillarIcon({ pillar, className }: { pillar: Pillar; className?: string }) {

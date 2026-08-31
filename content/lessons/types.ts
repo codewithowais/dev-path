@@ -14,7 +14,9 @@ export type Pillar =
   | "System Design"
   | "Cloud"
   | "Data Science"
-  | "Generative AI";
+  | "Generative AI"
+  | "Testing & QA"
+  | "Product";
 
 export type Lesson = {
   id: string;
@@ -50,6 +52,8 @@ export const pillars: Pillar[] = [
   "Cloud",
   "Data Science",
   "Generative AI",
+  "Testing & QA",
+  "Product",
 ];
 
 /** Accent colour per pillar — used for icon tiles, chips, and lesson headers so
@@ -65,6 +69,8 @@ export const pillarColor: Record<Pillar, string> = {
   Cloud: "#0CA5E9",
   "Data Science": "#E64980",
   "Generative AI": "#0CA678",
+  "Testing & QA": "#F03E3E",
+  Product: "#F59F00",
 };
 
 export const pillarBlurb: Record<Pillar, string> = {
@@ -78,6 +84,8 @@ export const pillarBlurb: Record<Pillar, string> = {
   Cloud: "How real apps run on rented computers — scaling, staying up, and shipping safely.",
   "Data Science": "How to find the story hidden in data — the math behind the charts.",
   "Generative AI": "How AI that writes, answers, and creates actually works underneath.",
+  "Testing & QA": "How we prove code works and keep it working — the safety net under every change.",
+  Product: "How teams decide what to build and measure whether it actually worked.",
 };
 
 /** Higher-level bands over the 10 pillars, shown as light signpost labels on the
@@ -87,4 +95,5 @@ export const pillarGroups: { label: string; pillars: Pillar[] }[] = [
   { label: "Data & the web", pillars: ["Databases", "Web & Internet"] },
   { label: "Design at scale", pillars: ["Design Patterns", "System Design", "Cloud"] },
   { label: "Data & AI", pillars: ["Data Science", "Generative AI"] },
+  { label: "Ship & measure", pillars: ["Testing & QA", "Product"] },
 ];
