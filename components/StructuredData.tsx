@@ -10,7 +10,7 @@ import type { Path } from "@/content/paths";
 
 /** Canonical origin for the deployed site. Mirrors app/layout.tsx. */
 export const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://dev-path-omega.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://dev-path-by-codewithowais.vercel.app";
 
 /** Join the site origin with a path, guaranteeing exactly one slash. */
 export function absoluteUrl(path = "/"): string {
