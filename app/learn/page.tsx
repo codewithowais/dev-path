@@ -49,7 +49,7 @@ export default function LearnPage() {
         description={`${lessons.length} beginner-friendly lessons across ${activePillars.length} topics, each with an everyday analogy, a runnable code editor, and verified output in JavaScript & Python.`}
         items={listItems}
       />
-      <section className="dp-stagger py-14 sm:py-20">
+      <section className="dp-stagger pb-6 pt-14 sm:pb-8 sm:pt-20">
         <p className="dp-eyebrow text-primary">Learn</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
           The hard stuff, made simple

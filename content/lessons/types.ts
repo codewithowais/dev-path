@@ -79,3 +79,12 @@ export const pillarBlurb: Record<Pillar, string> = {
   "Data Science": "How to find the story hidden in data — the math behind the charts.",
   "Generative AI": "How AI that writes, answers, and creates actually works underneath.",
 };
+
+/** Higher-level bands over the 10 pillars, shown as light signpost labels on the
+ *  Learn page so the journey has visible groups. Order matches `pillars`. */
+export const pillarGroups: { label: string; pillars: Pillar[] }[] = [
+  { label: "Code foundations", pillars: ["Programming Basics", "Data Structures", "Algorithms"] },
+  { label: "Data & the web", pillars: ["Databases", "Web & Internet"] },
+  { label: "Design at scale", pillars: ["Design Patterns", "System Design", "Cloud"] },
+  { label: "Data & AI", pillars: ["Data Science", "Generative AI"] },
+];

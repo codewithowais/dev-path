@@ -417,6 +417,49 @@ export const roleTrees: RoleTree[] = [
     ],
     pathId: "backend",
   },
+  {
+    id: "product-manager",
+    name: "Product Manager",
+    sub: "You decide what the team builds and why — the user problem to solve, not the code. You lead through influence, since the engineers and designers don't report to you.",
+    color: "#A61E4D",
+    levels: [
+      ["Associate Product Manager (APM)", "This is the entry rung, often a structured program for new PMs. You own a small feature or slice of a product, learn the craft, and lean on senior PMs for the bigger calls."],
+      ["Product Manager", "You own a product area on your own: you talk to users, decide what to build, write the requirements, and work with design and engineering to ship it."],
+      ["Senior Product Manager", "You own a bigger or more important area, and you handle the fuzzy, high-stakes problems. You also start guiding newer PMs, and connect your work to the company's wider goals."],
+      ["Group / Principal Product Manager", "The path splits here. A Group PM leads a few PMs and coordinates a whole product line. A Principal PM stays hands-on (an individual contributor) but tackles the hardest, most strategic product problems — both are senior, without necessarily managing people yet."],
+      ["Director of Product", "You lead several PMs through the managers under you, own the strategy for a large part of the product, and make sure the teams' work adds up to something coherent."],
+      ["VP of Product / CPO", "You set product direction for the whole company and turn business goals into a product plan. CPO stands for Chief Product Officer. These top seats are few by nature — usually just one."],
+    ],
+    pathId: "product-manager",
+  },
+  {
+    id: "product-qa",
+    name: "Product QA (manual / exploratory)",
+    sub: "You test the product by hand to catch problems before users do. This ladder is the hands-on, exploratory side of quality. Many QA folks also grow toward automation (the SDET path), where you write code that tests the app — the two often blend as you climb.",
+    color: "#5C940D",
+    levels: [
+      ["QA Tester", "You run tests by hand, follow written test steps, and report bugs clearly, while learning the product inside out."],
+      ["QA Analyst / QA Engineer", "You design your own test cases and checklists, and dig into a whole feature to find edge cases — not just the obvious path. (The two titles overlap; 'Engineer' sometimes hints at more technical or automation work.)"],
+      ["Senior QA Engineer", "You own the test strategy for big features, decide what's most important to check before a release, and mentor newer testers. Many people start picking up test automation around here."],
+      ["QA Lead", "You guide the testing approach for a whole product or team, and coordinate the QA work across a release. You still test hands-on, but you also set how the team does it."],
+      ["QA Manager / Head of Quality", "You own quality across many teams: the people, the process, and the standards. You focus less on testing yourself and more on making sure the whole organization ships reliable software."],
+    ],
+    pathId: "product-qa",
+  },
+  {
+    id: "scrum-master",
+    name: "Scrum Master / Agile Coach",
+    sub: "You help a team work well together using Agile ways of working, often with little or no coding. This track is about influence and coaching, not managing people directly — nobody on the team reports to you. It overlaps a lot with delivery and project roles, and how far it goes depends heavily on the company.",
+    color: "#099268",
+    levels: [
+      ["Scrum Master", "You help one team run its Agile ways of working: you facilitate the meetings, remove blockers, and protect the team's focus. You don't assign work or manage people — you help the team work better together. Many people come into this from testing, business analysis, project coordination, or development."],
+      ["Senior Scrum Master", "You do the same for a more complex or higher-stakes team, and you handle the harder people situations — conflict, unclear priorities, a team that's going through the motions. You start coaching newer Scrum Masters and spotting 'fake agile' early, where the rituals happen but nothing actually improves."],
+      ["Agile Coach", "You step beyond a single team and coach several teams, and the people who lead them, on how to work well. The focus shifts from running ceremonies to changing habits and mindsets. You influence through questions and trust, not authority, and you help managers and leaders — not just teams — work in a more Agile way."],
+      ["Enterprise / Lead Agile Coach", "You work across a whole organisation, helping many teams and senior leaders improve how work flows end-to-end. You deal with the messy, political parts — org structures, budgets, and habits that quietly block agility. This is broad influence work: you rarely have direct authority, so persuasion and credibility are everything."],
+      ["Head of Agile Delivery / Agile Practice Lead", "You own how the whole organisation approaches delivery and ways of working. You set the standards, hire and grow coaches, and connect the teams' work to business goals. Titles here vary a lot and blur into delivery and programme leadership — the honest truth is this top rung looks different at almost every company, and not every company has it at all."],
+    ],
+    pathId: "scrum-master",
+  },
 ];
 
 export type TitleQA = {
@@ -607,5 +650,60 @@ export const titleGuide: TitleQA[] = [
     term: "Intern vs New Grad",
     answer:
       "An intern is a student on a short, often paid work placement — usually a summer — to learn and try the job before finishing school. A 'new grad' role is a real, full-time first job aimed at people who just finished a degree or program. Internships are temporary and about learning; new-grad roles are permanent and about starting your career.",
+  },
+  {
+    term: "Product Manager vs Product Owner",
+    answer:
+      "A Product Manager (PM) owns the 'why' and 'what': the strategy, the user problems, and which direction the product should go. A Product Owner (PO) is often a specific Scrum role focused on the 'how and when' of building it — owning the backlog and making sure the team builds the right things in the right order. At many companies the two heavily overlap, and one person does both; at others they're separate jobs. It varies a lot by company.",
+  },
+  {
+    term: "Product Manager vs Project Manager vs Program Manager",
+    answer:
+      "The three PMs, and they're genuinely different. A Product Manager decides what to build and why, based on users and business goals. A Project Manager makes sure one specific project ships on time and on budget — they own the plan, not the product direction. A Program Manager coordinates many related projects or teams toward a bigger goal. Roughly: product owns the 'what', project owns the 'when', program owns the 'how it all fits together'.",
+  },
+  {
+    term: "QA vs QC",
+    answer:
+      "These sound the same but point in opposite directions. QA (Quality Assurance) is about preventing bugs — building quality into how the software is made, through good process and testing early. QC (Quality Control) is about catching them — checking the finished product to find defects before it ships. QA asks 'are we building it right?'; QC asks 'did this come out right?' In everyday tech jobs, 'QA' is often used loosely to cover both.",
+  },
+  {
+    term: "QA Analyst vs QA Engineer vs Tester",
+    answer:
+      "These titles overlap a lot and companies use them loosely. 'Tester' or 'QA Tester' usually points at hands-on testing: running through the app and reporting bugs. 'QA Analyst' often leans toward planning what to test and analyzing quality, still mostly by hand. 'QA Engineer' sometimes hints at more technical work, including writing automated tests. But the lines are blurry — always read what the job actually involves rather than trusting the label.",
+  },
+  {
+    term: "Agile vs Waterfall",
+    answer:
+      "These are two ways to run a project. Waterfall plans everything up front, then builds it in order — design, then build, then test — like following a fixed blueprint. Agile builds a little at a time, shows it, gets feedback, and adjusts as it goes. Waterfall suits work where the requirements really won't change; Agile suits the common case where you learn what's actually needed as you go.",
+  },
+  {
+    term: "Scrum vs Kanban",
+    answer:
+      "Both are Agile ways of working, but they're organised differently. Scrum works in fixed time-boxes called sprints (often two weeks), with set roles and regular meetings. Kanban has no sprints — work flows continuously across a board, and the team limits how many things are in progress at once so nothing piles up. Scrum adds rhythm and structure; Kanban is lighter and focuses on smooth flow. Some teams blend the two.",
+  },
+  {
+    term: "Extreme Programming (XP)",
+    answer:
+      "XP is an Agile approach that's heavy on engineering practices, not just meetings. Its habits include pair programming (two people working at one screen), test-driven development (writing the test before the code), and continuous integration (merging and testing small changes often, instead of one big merge later). The goal is to keep the code healthy enough to change safely and often. Teams often borrow XP's technical practices even when they use Scrum for the rest.",
+  },
+  {
+    term: "Scrum Master vs Project Manager",
+    answer:
+      "A Scrum Master is a servant and facilitator: they help the team work well, run the meetings, and clear blockers, but they don't own the plan or tell people what to do. A Project Manager owns the project's scope, budget, and timeline, and is accountable for delivering it on schedule. One helps the team help themselves; the other drives a plan to a deadline. Some companies blur the two into one role.",
+  },
+  {
+    term: "Agile Coach vs Scrum Master",
+    answer:
+      "A Scrum Master usually helps one team with its day-to-day ways of working. An Agile Coach works broader — across several teams, and often with managers and leaders — to change how a whole part of the organisation thinks and works. It's usually a more senior step: less about running one team's ceremonies, more about shifting habits and mindsets at a larger scale.",
+  },
+  {
+    term: "The Agile ceremonies",
+    answer:
+      "These are Scrum's four regular meetings, and each has a clear purpose. Sprint planning: agree what the team will build next. Daily standup: a short daily sync to spot blockers early, not a status report to a boss. Sprint review: show the finished work and gather feedback. Retrospective: the team reflects on how to work better next time. Kept short and useful they help; run out of habit with no purpose, they become the meetings people dread.",
+  },
+  {
+    term: "\"Agile\" — the overloaded word",
+    answer:
+      "'Agile' started as a mindset — build a bit, get feedback, adjust — but it's often reduced to a set of rituals and tools. Be honest about 'fake agile' (also called cargo-cult agile): a team holds all the standups and sprints, yet nothing actually improves, and 'Agile' becomes a way to micromanage or track output. Real agility is about how a team learns and adapts, not how many ceremonies it performs. The word gets used to mean almost anything, so always look at how a team actually works.",
   },
 ];

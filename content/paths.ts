@@ -297,8 +297,136 @@ export const paths: Path[] = [
       ["Accessibility basics", "Make sure your well-designed app also works for people using screen readers or keyboard-only navigation."],
     ],
   },
+  {
+    id: "product-manager",
+    name: "Product Manager",
+    tag: "Decides what to build, and why",
+    color: "#A61E4D",
+    blurb:
+      "You decide what the team should build and why it matters — not the code itself. Your job is to point everyone at the right problem, then help them ship a solution users actually want.",
+    steps: [
+      ["How software gets built", "Get a plain-English picture of how engineers and designers turn an idea into a working product. You won't write the code, but you need to understand the work well enough to plan it and talk to the people doing it."],
+      ["Talk to users, find real problems", "Learn to interview users and watch how they actually behave, not just what they say. The whole job starts here: finding a real problem worth solving, instead of guessing or building your own pet idea."],
+      ["Write clear requirements", "Turn a fuzzy problem into something a team can build. Learn to write short user stories — 'as a shopper, I want to save my cart' — so engineers and designers know exactly what's needed and why."],
+      ["Prioritize, and say no", "You'll always have more ideas than time. Learn simple ways to rank what matters most, and get comfortable saying 'not now' to good ideas. Deciding what NOT to build is half the job."],
+      ["Work with design", "Partner with designers on wireframes and prototypes — rough sketches of a feature before anyone builds it. You don't need to design, but you do need to give useful feedback and keep it tied to the user's problem."],
+      ["Basic data & metrics", "Learn to read the numbers that show whether a feature worked: how many people used it, and whether it actually helped. You don't need heavy math — just enough to tell progress from wishful thinking."],
+      ["Roadmaps & stakeholders", "A roadmap is a simple plan of what's coming and roughly when. Learn to build one, and to keep leaders, sales, and support in the loop — honestly, without overpromising dates you can't hit."],
+      ["Ship, measure, and iterate", "Getting a feature live is the start, not the finish. Learn to release it, watch how it does, and decide what to fix or improve next. Good products are built in small loops, not one big launch."],
+      ["Lead without authority", "The hard part: nobody on your team reports to you, yet you have to get everyone rowing the same way. Learn to build trust, communicate clearly, and make decisions the team believes in. These soft skills matter more than any tool."],
+    ],
+  },
+  {
+    id: "product-qa",
+    name: "Product QA",
+    tag: "Finds problems before users do",
+    color: "#5C940D",
+    blurb:
+      "You test the product by hand to catch problems before real users hit them — clicking through it, thinking like a user, and trying to break it. This is hands-on manual and exploratory testing. It's different from the QA / Test Automation path, which is code-heavy and focuses on writing automated tests.",
+    steps: [
+      ["What QA actually is", "QA stands for Quality Assurance. Your job is to find problems before users do, and to help the team ship something that works. It's not about blaming developers — it's about protecting the user's experience together."],
+      ["Learn how software works", "You don't need to code, but you do need to understand how an app is put together: the screens, the server behind them, and how data flows. The better you understand it, the better you can guess where bugs hide."],
+      ["Write clear test cases", "A test case is a simple, written check: do this, expect that. Learn to write clear test cases and checklists, so testing is repeatable and nothing important gets skipped when you're tired or rushed."],
+      ["Exploratory testing", "Here you go off the script and poke at the app like a curious, slightly mischievous user. Try weird inputs, tap things in the wrong order, and ask 'what if?' This is where you find the surprising bugs a checklist would miss."],
+      ["Write great bug reports", "A good bug report gets a bug fixed fast. Learn to write clear steps to reproduce it, what you expected versus what happened, and how serious it is (its severity). A vague report just bounces back to you."],
+      ["Regression & release testing", "Regression testing means re-checking things that already worked, to make sure a new change didn't quietly break them. Learn what to test before every release, so a fix in one place doesn't cause a fire somewhere else."],
+      ["Test across devices & browsers", "Your app runs on many phones, screen sizes, and browsers — and it can look fine on one and broken on another. Learn to check the important combinations, so users aren't the ones who discover the difference."],
+      ["Work with developers", "QA and developers are on the same team. Learn to report problems kindly and clearly, help confirm fixes, and join in early — asking questions before a feature is built catches bugs cheaper than finding them after."],
+      ["A first look at automation", "Once you can test well by hand, learn what automated testing is: code that runs the boring, repetitive checks for you. You don't have to become a coder, but this is the natural next step, and it bridges toward the QA / Test Automation path."],
+    ],
+  },
+  {
+    id: "scrum-master",
+    name: "Scrum Master & Agile",
+    tag: "Helps a team work well together",
+    color: "#099268",
+    blurb:
+      "You help a team work well together using Agile ways of working — often with little or no coding. It's a facilitation and coaching role, not a boss role, and it only really works when the team genuinely wants to work this way. Done badly, it's just running meetings; done well, it quietly removes the friction that slows everyone down.",
+    steps: [
+      ["What 'Agile' really means", "Agile is a mindset, not a tool or a checklist. It comes from the Agile Manifesto, which values people and working software over rigid process and heavy documents. The core idea is simple: build a little, show it, get feedback, and adjust — instead of planning everything up front and hoping you got it right."],
+      ["The Scrum framework", "Scrum is the most common way teams try to work in an Agile way. Learn its three roles (a Scrum Master who helps the team, a Product Owner who decides what's most important, and the developers who build it), the sprint (a short, fixed stretch of work, often two weeks), and the backlog (the ordered to-do list of what's next)."],
+      ["The ceremonies, and what each is FOR", "Scrum has four regular meetings, and each has a real purpose — not meeting for meeting's sake. Sprint planning: agree what to build next. Daily standup: a quick sync so the team spots blockers early. Sprint review: show the finished work and get feedback. Retrospective: the team talks about how to work better. If a meeting isn't helping, that's a problem to fix, not to sit through."],
+      ["Facilitation skills", "Your core skill is running meetings that are useful and short. Learn to keep a discussion on track, make sure quieter people get heard, cut off rambling kindly, and end with clear next steps. A good facilitator makes a meeting feel like time well spent — that's harder than it sounds, and it's most of the job."],
+      ["Removing blockers & protecting focus", "A blocker is anything stopping the team from finishing work — a slow approval, a missing answer, a broken tool. Your job is to spot these and clear them, often by chasing people outside the team. You also protect the team's focus by pushing back on constant interruptions and last-minute changes, so they can actually get things done."],
+      ["Other flavours: Kanban and XP", "Scrum isn't the only way. Kanban focuses on smooth flow: you visualise the work on a board and limit how many things are in progress at once, instead of working in fixed sprints. XP (Extreme Programming) is an Agile approach heavy on engineering habits — pair programming (two people, one screen), test-driven development (write the test first), and continuous integration (merge and test small changes often). Knowing these helps you pick what fits your team."],
+      ["Healthy metrics vs vanity metrics", "Numbers can help a team or fool it. Velocity — how much work a team gets through in a sprint — is a planning tool to help the team forecast, not a scoreboard to compare teams or push people harder. The moment a metric becomes a target to hit, people game it and it stops telling the truth. Learn to watch for whether real, working software is reaching users, not just whether the numbers look busy."],
+      ["Coaching a team toward real agility", "This is the heart of the role: helping a team genuinely adopt the mindset, not just perform the rituals. Watch for 'fake agile' (also called cargo-cult agile) — where a team holds all the ceremonies but nothing actually improves, and 'Agile' becomes a way to micromanage. Real agility shows up as a team that ships steadily, learns from feedback, and fixes its own problems. You coach toward that by asking questions, not giving orders."],
+      ["Certifications & growing", "Be honest about certifications: a CSM (Certified ScrumMaster) or PSM (Professional Scrum Master) can help you get hired and give you a shared vocabulary, but a two-day course doesn't make you good — real skill comes from working with teams. From here, many people grow toward Agile Coach, working with several teams or a whole organisation. The role rewards patience, listening, and genuinely caring that the team does well."],
+    ],
+  },
 ];
 
 export function getPath(id: string): Path | undefined {
   return paths.find((p) => p.id === id);
+}
+
+// ─────────────────────────── Group-wise taxonomy ───────────────────────────
+// The home page groups the tracks so 17 cards aren't one overwhelming wall.
+// `foundations` is pulled out as a "start here" spotlight above the groups.
+
+/** The starting-point track, spotlighted above the groups. */
+export const FOUNDATION_ID = "foundations";
+
+export type PathGroup = {
+  /** Short label above the group title. */
+  eyebrow: string;
+  /** Group heading. */
+  title: string;
+  /** One plain-English line describing the group. */
+  description: string;
+  /** Path ids in this group, in display order. */
+  pathIds: string[];
+};
+
+/** The 5 groups (everything except `foundations`), in page order. */
+export const pathGroups: PathGroup[] = [
+  {
+    eyebrow: "Build",
+    title: "Build what people use",
+    description: "Make the apps, sites, and games people open every day.",
+    pathIds: ["frontend", "backend", "fullstack", "mobile-developer", "uiux-to-developer", "game-developer"],
+  },
+  {
+    eyebrow: "Data & AI",
+    title: "Work with data & AI",
+    description: "Find answers hidden in data, and build things that learn.",
+    pathIds: ["data-analyst", "data-scientist-ml", "ai-engineer"],
+  },
+  {
+    eyebrow: "Ship & run",
+    title: "Ship it & keep it running",
+    description: "Get code online and keep it fast, safe, and always up.",
+    pathIds: ["devops", "cloud-engineer"],
+  },
+  {
+    eyebrow: "Quality & security",
+    title: "Keep it safe & working",
+    description: "Catch bugs before users do, and keep attackers out.",
+    pathIds: ["qa-test-automation", "cybersecurity"],
+  },
+  {
+    eyebrow: "Product & people",
+    title: "Shape the product & the team",
+    description: "Decide what to build, keep it working, and help the team build it well — lighter on code.",
+    pathIds: ["product-manager", "product-qa", "scrum-master"],
+  },
+];
+
+/** A hand-picked set of gentle entry points, flagged as "Good first path". */
+export const GOOD_FIRST_PATHS = new Set([
+  "frontend",
+  "data-analyst",
+  "product-qa",
+  "uiux-to-developer",
+]);
+
+// Build-time guard: every path is spotlighted or in exactly one group. If a new
+// path is added but never grouped, the build fails here instead of silently
+// dropping the card from the home page.
+{
+  const grouped = new Set<string>([FOUNDATION_ID, ...pathGroups.flatMap((g) => g.pathIds)]);
+  const missing = paths.filter((p) => !grouped.has(p.id)).map((p) => p.id);
+  if (missing.length) {
+    throw new Error(`content/paths.ts: these paths are not in any group: ${missing.join(", ")}`);
+  }
 }

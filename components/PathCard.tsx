@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Path } from "@/content/paths";
+import { GOOD_FIRST_PATHS } from "@/content/paths";
 import { PathIcon } from "@/components/PathIcon";
 import { accentText } from "@/lib/accent";
 
@@ -39,6 +40,14 @@ export function PathCard({ path }: Props) {
               style={{ color: accentText("#12b886") }}
             >
               <span aria-hidden="true">★</span> Start here
+            </span>
+          )}
+          {GOOD_FIRST_PATHS.has(path.id) && (
+            <span
+              className="inline-flex items-center gap-1 rounded-pill bg-output/15 px-2.5 py-1 font-mono text-[0.7rem] font-semibold"
+              style={{ color: accentText("#12b886") }}
+            >
+              <span aria-hidden="true">✦</span> Good first path
             </span>
           )}
           <span

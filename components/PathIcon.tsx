@@ -92,6 +92,29 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="m11.5 6.5 6 6" />
     </>
   ),
+  // Target — decide what to build & why
+  "product-manager": (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
+  // Clipboard with a check — testing the product
+  "product-qa": (
+    <>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V3h6v1" />
+      <path d="m8.5 13 2.5 2.5 4.5-4.5" />
+    </>
+  ),
+  // Sprint cycle — iterate in short loops (Agile / Scrum)
+  "scrum-master": (
+    <>
+      <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+      <path d="M20 4v4h-4" />
+    </>
+  ),
 };
 
 const FALLBACK = (

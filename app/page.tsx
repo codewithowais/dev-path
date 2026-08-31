@@ -92,8 +92,9 @@ export default function HomePage() {
             What should I learn?
           </h2>
           <p className="mt-3 text-lg leading-relaxed text-muted">
-            Pick a goal and follow an ordered roadmap — learn this, then this.
-            Tap any track to open its full journey.
+            {paths.length} paths, grouped so they&apos;re easy to scan. Not sure
+            which is you? Start with the basics below — they help with every
+            path. Each track is an ordered roadmap: learn this, then this.
           </p>
         </header>
         {/* Per-card staggered "rise" lives inside PathsExplorer. */}

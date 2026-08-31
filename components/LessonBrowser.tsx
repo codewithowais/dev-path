@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Pillar } from "@/content/lessons";
-import { pillarColor } from "@/content/lessons";
+import { pillarColor, pillarGroups } from "@/content/lessons";
 import { PillarIcon } from "@/components/PillarIcon";
 import { PillarProgress, useLessonProgress } from "@/components/LessonProgress";
 import { accentText } from "@/lib/accent";
@@ -24,6 +24,10 @@ type Props = {
 
 /** Accent colour per pillar — shared with the lesson pages via content/lessons. */
 const PILLAR_COLOR = pillarColor;
+
+/** Pillar → its higher-level group label, for the signpost dividers. */
+const groupLabelByPillar: Partial<Record<Pillar, string>> = {};
+for (const g of pillarGroups) for (const p of g.pillars) groupLabelByPillar[p] = g.label;
 
 function slug(pillar: string) {
   return pillar
@@ -181,13 +185,15 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
 
   return (
     <div>
-      {/* Search — a full-width sticky bar (like the nav) that sits flush under
-          the 73px nav. Full-bleed via mx-[calc(50%-50vw)] so it spans the
-          viewport instead of floating as a boxed rectangle; the input inside
-          stays aligned to the content column. Solid bg = no ghosting. */}
-      <div className="sticky top-[73px] z-30 mb-4 mx-[calc(50%-50vw)] border-b border-line bg-paper shadow-[0_6px_14px_-12px_rgba(25,28,51,0.3)]">
-        <div className="mx-auto max-w-6xl px-5 py-3">
-          <div className="relative">
+      {/* Search + controls — a full-width sticky toolbar (like the nav) flush
+          under the 73px nav. Full-bleed via mx-[calc(50%-50vw)] so it spans the
+          viewport; the row inside stays aligned to the content column. The
+          search shares the row with the expand/collapse control (or the live
+          match count while searching) so the bar reads as an intentional
+          toolbar instead of a lonely floating pill. */}
+      <div className="sticky top-[73px] z-30 mb-5 mx-[calc(50%-50vw)] border-b border-line bg-paper shadow-[0_6px_14px_-12px_rgba(25,28,51,0.3)]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1">
             <svg
               aria-hidden="true"
               viewBox="0 0 24 24"
@@ -206,33 +212,33 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search ${items.length} lessons…`}
               aria-label="Search lessons"
-              className="dp-shadow-sm w-full rounded-pill border border-line bg-card py-3.5 pl-12 pr-4 text-ink outline-none transition-colors focus:border-primary"
+              className="dp-shadow-sm w-full rounded-pill border border-line bg-card py-3 pl-12 pr-4 text-ink outline-none transition-colors focus:border-primary"
             />
           </div>
-          {searching && (
-            <p className="mt-2 px-1 text-sm text-muted" aria-live="polite">
+
+          {searching ? (
+            <p
+              className="shrink-0 px-1 text-sm text-muted sm:text-right"
+              aria-live="polite"
+            >
               {filtered.length} {filtered.length === 1 ? "lesson" : "lessons"} match
               {filtered.length === 0 ? " — try another word" : ""}
             </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                setOpen((o) =>
+                  o.size === pillars.length ? new Set() : new Set(pillars.map(slug))
+                )
+              }
+              className="min-h-11 inline-flex shrink-0 items-center justify-center rounded-pill border border-line bg-card px-4 text-sm font-semibold text-primary transition-colors hover:border-primary hover:text-ink"
+            >
+              {open.size === pillars.length ? "Collapse all" : "Expand all"}
+            </button>
           )}
         </div>
       </div>
-
-      {!searching && (
-        <div className="mb-3 flex justify-end">
-          <button
-            type="button"
-            onClick={() =>
-              setOpen((o) =>
-                o.size === pillars.length ? new Set() : new Set(pillars.map(slug))
-              )
-            }
-            className="min-h-11 inline-flex items-center text-sm font-semibold text-primary transition-colors hover:text-ink"
-          >
-            {open.size === pillars.length ? "Collapse all" : "Expand all"}
-          </button>
-        </div>
-      )}
 
       {/* Friendly empty state when a search matches nothing */}
       {searching && filtered.length === 0 && (
@@ -253,18 +259,30 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
         </div>
       )}
 
-      {/* Accordions */}
+      {/* Accordions, with light signpost labels between higher-level groups
+          (hidden while searching, since search flattens the journey). */}
       <div className="space-y-3">
-        {shownPillars.map((pillar) => {
+        {shownPillars.map((pillar, idx) => {
           const list = filtered.filter((l) => l.pillar === pillar);
           const id = slug(pillar);
           const expanded = isOpen(pillar);
           const color = PILLAR_COLOR[pillar];
+          const groupLabel = groupLabelByPillar[pillar];
+          const showGroup =
+            !searching &&
+            groupLabel &&
+            groupLabel !== (idx > 0 ? groupLabelByPillar[shownPillars[idx - 1]] : undefined);
           return (
-            <section
-              key={pillar}
-              id={id}
-              style={{ ["--accent" as string]: color }}
+            <Fragment key={pillar}>
+              {showGroup && (
+                <div className="flex items-center gap-3 pt-5 first:pt-0" role="presentation">
+                  <p className="dp-eyebrow text-muted">{groupLabel}</p>
+                  <span aria-hidden="true" className="h-px flex-1 bg-line" />
+                </div>
+              )}
+              <section
+                id={id}
+                style={{ ["--accent" as string]: color }}
               className={`dp-card scroll-mt-32 overflow-hidden rounded-card border transition-colors ${
                 expanded
                   ? "border-[color:var(--accent)]/45"
@@ -367,7 +385,8 @@ export function LessonBrowser({ items, pillars, pillarBlurb }: Props) {
                   </div>
                 </div>
               )}
-            </section>
+              </section>
+            </Fragment>
           );
         })}
       </div>
