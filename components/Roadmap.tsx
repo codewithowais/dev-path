@@ -135,7 +135,11 @@ export function Roadmap({ path }: Props) {
             >
               {/* Station + straight connector share this column so they align */}
               <div className="flex flex-col items-center self-stretch">
-                <span className="relative z-10 flex items-center justify-center">
+                {/* Lift the 36px node by (36 − 24)/2 = 6px so its centre lines up
+                    with the optical centre of the title's first line (text-base,
+                    24px line-box), not a few px below it. Halo rides with it, and
+                    the flex-1 connector below simply absorbs the shift. */}
+                <span className="relative z-10 -mt-1.5 flex items-center justify-center">
                   {isStart && <span aria-hidden="true" className="dp-rm-halo" />}
                   <span
                     aria-hidden="true"
@@ -165,13 +169,13 @@ export function Roadmap({ path }: Props) {
               </div>
 
               <div className={`flex-1 ${isLast ? "pb-1" : "pb-8"}`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="dp-rm-title font-display text-base font-bold text-ink">
+                <div className="flex items-center gap-2">
+                  <h3 className="dp-rm-title min-w-0 font-display text-base font-bold text-ink">
                     {title}
                   </h3>
                   {isStart && (
                     <span
-                      className="rounded-pill px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
+                      className="shrink-0 whitespace-nowrap rounded-pill px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
                       style={{
                         backgroundColor: `color-mix(in srgb, ${c} 84%, #10121f)`,
                       }}
@@ -181,7 +185,7 @@ export function Roadmap({ path }: Props) {
                   )}
                   {isLast && (
                     <span
-                      className="rounded-pill px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
+                      className="shrink-0 whitespace-nowrap rounded-pill px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
                       style={{
                         backgroundColor: `color-mix(in srgb, ${c} 84%, #10121f)`,
                       }}

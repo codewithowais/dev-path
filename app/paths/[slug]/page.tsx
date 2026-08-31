@@ -61,7 +61,7 @@ export default async function PathDetailPage({ params }: Params) {
       <div className="py-10 sm:py-14">
         <Link
           href="/#paths"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-ink"
+          className="-m-2 inline-flex items-center gap-1.5 p-2 text-sm font-semibold text-muted transition-colors hover:text-ink"
         >
           <span aria-hidden="true">←</span> All paths
         </Link>
