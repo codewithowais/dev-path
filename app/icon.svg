@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DevPath">
+  <defs>
+    <linearGradient id="dp-tile" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f5cf5"/>
+      <stop offset="0.5" stop-color="#5b4beb"/>
+      <stop offset="1" stop-color="#4263eb"/>
+    </linearGradient>
+  </defs>
+  <!-- Brand purple rounded-square tile (carries its own background on light & dark chrome) -->
+  <rect width="512" height="512" rx="116" fill="url(#dp-tile)"/>
+  <!-- Bold white "path" route: start node (bottom-left) -> destination (top-right) -->
+  <path d="M156 356 C156 268 356 288 356 200 C356 150 312 132 264 132"
+        fill="none" stroke="#ffffff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- start node -->
+  <circle cx="156" cy="356" r="54" fill="#ffffff"/>
+  <circle cx="156" cy="356" r="22" fill="#5b4beb"/>
+  <!-- destination node -->
+  <circle cx="264" cy="132" r="66" fill="#ffffff"/>
+  <circle cx="264" cy="132" r="28" fill="#5b4beb"/>
+</svg>

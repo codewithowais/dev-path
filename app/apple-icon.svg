@@ -1,0 +1,19 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DevPath">
+  <defs>
+    <linearGradient id="dp-tile-a" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f5cf5"/>
+      <stop offset="0.5" stop-color="#5b4beb"/>
+      <stop offset="1" stop-color="#4263eb"/>
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed brand tile (iOS masks its own corners); glyph inset with extra padding -->
+  <rect width="180" height="180" rx="40" fill="url(#dp-tile-a)"/>
+  <g transform="translate(90 90) scale(0.78) translate(-90 -90)">
+    <path d="M55 125 C55 94 125 101 125 70 C125 53 109 47 93 47"
+          fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="55" cy="125" r="19" fill="#ffffff"/>
+    <circle cx="55" cy="125" r="7.5" fill="#5b4beb"/>
+    <circle cx="93" cy="47" r="23" fill="#ffffff"/>
+    <circle cx="93" cy="47" r="10" fill="#5b4beb"/>
+  </g>
+</svg>
