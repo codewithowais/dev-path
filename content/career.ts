@@ -511,6 +511,10 @@ export type RoleCategory = {
   id: string;
   /** Short, plain-English group name shown on the filter tab. */
   label: string;
+  /** Distinct accent color (hex) — the department colour on the Org chart. */
+  color: string;
+  /** One plain-English line: what this department does. */
+  blurb: string;
   /** Ordered role ids (must match roleTrees[].id) that belong to this group. */
   roleIds: string[];
 };
@@ -523,6 +527,8 @@ export const roleCategories: RoleCategory[] = [
   {
     id: "build",
     label: "Build the product",
+    color: "#5B4BEB",
+    blurb: "The people who design and ship what users actually see and use.",
     roleIds: [
       "frontend-developer",
       "backend-developer",
@@ -537,6 +543,8 @@ export const roleCategories: RoleCategory[] = [
   {
     id: "data-ai",
     label: "Data & AI",
+    color: "#7048E8",
+    blurb: "Turns raw data into insight, models, and intelligent features.",
     roleIds: [
       "data-analyst-scientist",
       "ai-ml-engineer",
@@ -547,6 +555,8 @@ export const roleCategories: RoleCategory[] = [
   {
     id: "infrastructure",
     label: "Cloud & infrastructure",
+    color: "#4263EB",
+    blurb: "Keeps everything running, scalable, and fast behind the scenes.",
     roleIds: [
       "devops-sre",
       "cloud-engineer",
@@ -558,11 +568,15 @@ export const roleCategories: RoleCategory[] = [
   {
     id: "quality-security",
     label: "Quality & security",
+    color: "#12B886",
+    blurb: "Makes sure what ships works, stays safe, and can be trusted.",
     roleIds: ["qa-sdet", "product-qa", "cybersecurity"],
   },
   {
     id: "lead",
     label: "Lead & manage",
+    color: "#FF8A3D",
+    blurb: "Sets direction, unblocks people, and connects work to the goal.",
     roleIds: [
       "engineering-manager",
       "scrum-master",
@@ -574,9 +588,20 @@ export const roleCategories: RoleCategory[] = [
   {
     id: "advise",
     label: "Advise & communicate",
+    color: "#E64980",
+    blurb: "Bridges engineering with users, customers, and the wider world.",
     roleIds: ["developer-advocate", "technical-writer", "solutions-engineer"],
   },
 ];
+
+/** The single node the departments report into on the Org chart. Generic and
+ *  educational — this is how a typical software team is organised, not a real
+ *  company's people. */
+export const orgLeadership = {
+  title: "Engineering Leadership",
+  role: "CTO / VP of Engineering",
+  sub: "Owns the technical vision and the health of every team below. The whole software organization rolls up to this seat.",
+};
 
 export type TitleQA = {
   /** The confusing pair or term. */
