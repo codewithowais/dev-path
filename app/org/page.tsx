@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OrgChart } from "@/components/OrgChart";
+import { SeniorityLadder } from "@/components/SeniorityLadder";
 import { roleCategories, roleTrees } from "@/content/career";
 import { absoluteUrl } from "@/components/StructuredData";
 
@@ -42,8 +43,30 @@ export default function OrgPage() {
         </p>
       </section>
 
-      <section aria-label="Software organization chart" className="pb-16 sm:pb-20">
+      <section aria-label="Software organization chart" className="pb-8">
         <OrgChart />
+      </section>
+
+      <section aria-labelledby="levels-heading" className="pb-16 sm:pb-20">
+        <header className="max-w-2xl">
+          <p className="dp-eyebrow text-primary">Seniority</p>
+          <h2
+            id="levels-heading"
+            className="mt-2 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl"
+          >
+            Every role also has levels
+          </h2>
+          <p className="mt-3 text-lg leading-relaxed text-muted">
+            The departments above are the “what you do”. This is the “how far you
+            go”: everyone climbs the same base ladder, then at Senior it splits
+            into staying hands-on (IC — Staff, Principal, Distinguished) or
+            leading people (Manager, Director, VP). Titles vary by company; these
+            are the common ones.
+          </p>
+        </header>
+        <div className="mt-8">
+          <SeniorityLadder />
+        </div>
       </section>
     </div>
   );
