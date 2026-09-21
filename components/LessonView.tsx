@@ -4,23 +4,9 @@ import { pillarColor, lessonsByPillar } from "@/content/lessons";
 import { CodeRunner } from "@/components/CodeRunner";
 import { PillarIcon } from "@/components/PillarIcon";
 import { MarkDoneButton } from "@/components/LessonProgress";
-import { lessonVisualizers } from "@/components/lessonVisualizers";
+import { LessonCodeProvider } from "@/components/LessonCode";
+import { LiveVisualizer } from "@/components/LiveVisualizer";
 import { accentText } from "@/lib/accent";
-
-/** Pull the first integer-array literal out of a code sample, e.g.
- *  `const data = [5, 2, 9, 1, 5, 6];` → [5, 2, 9, 1, 5, 6]. Lets a visualizer
- *  run on the exact numbers the learner sees in the editor. */
-function firstNumberArray(code?: string): number[] | undefined {
-  if (!code) return undefined;
-  const m = code.match(/\[\s*-?\d+(?:\s*,\s*-?\d+)+\s*\]/);
-  if (!m) return undefined;
-  const nums = m[0]
-    .slice(1, -1)
-    .split(",")
-    .map((s) => Number(s.trim()))
-    .filter((n) => Number.isFinite(n));
-  return nums.length >= 2 ? nums : undefined;
-}
 
 /** Full lesson page: short explanation on the left, live editor + output on the
  *  right (stacked on mobile). Designed so you can see it all without hunting. */
@@ -85,6 +71,7 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
           />
         </header>
 
+        <LessonCodeProvider initialCode={lesson.code?.JavaScript}>
         <div
           className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
           style={{ ["--accent" as string]: color }}
@@ -148,30 +135,15 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
           </div>
         </div>
 
-        {/* "See it in motion" — the lesson's interactive visualizer, if it has
-            one. Registered by lesson id in lessonVisualizers. */}
-        {(() => {
-          const Viz = lessonVisualizers[lesson.id];
-          if (!Viz) return null;
-          return (
-            <section className="mt-10" style={{ ["--accent" as string]: color }}>
-              <h2 className="dp-eyebrow mb-2.5 flex items-center gap-2 text-muted">
-                <span
-                  aria-hidden="true"
-                  className="h-3.5 w-1 rounded-full"
-                  style={{ backgroundColor: "var(--accent)" }}
-                />
-                See it in motion
-              </h2>
-              <Viz
-                accent={color}
-                complexity={lesson.big}
-                lessonData={firstNumberArray(lesson.code?.JavaScript)}
-                code={lesson.code?.JavaScript}
-              />
-            </section>
-          );
-        })()}
+        {/* "See it in motion" — the lesson's interactive visualizer, bound to
+            the LIVE editor code so editing the numbers updates the chart. */}
+        <LiveVisualizer
+          lessonId={lesson.id}
+          accent={color}
+          complexity={lesson.big}
+          initialCode={lesson.code?.JavaScript}
+        />
+        </LessonCodeProvider>
 
         {/* Prev / next within this pillar — keep learners moving in order */}
         <nav

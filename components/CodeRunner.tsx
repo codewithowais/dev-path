@@ -23,6 +23,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { tags as t } from "@lezer/highlight";
 import type { Language } from "@/content/lessons";
+import { useSetLiveCode } from "@/components/LessonCode";
 
 type Props = {
   code: Partial<Record<Language, string>>;
@@ -182,6 +183,10 @@ export function CodeRunner({ code, output }: Props) {
   const isJS = lang === "JavaScript";
   const edited = current !== original;
 
+  // Push edits to the shared live-code context so the visualizer can chart the
+  // numbers you type. Called only from event handlers below (never an effect).
+  const setLiveCode = useSetLiveCode();
+
   // Keep the current language readable from async callbacks that captured an
   // older render, so a late run can tell whether the language changed.
   useEffect(() => {
@@ -206,17 +211,20 @@ export function CodeRunner({ code, output }: Props) {
     runTokenRef.current++; // invalidate any in-flight run
     setLang(next);
     setRun({ kind: "idle" });
+    setLiveCode(drafts[next] ?? code[next] ?? "");
   }
   function edit(value: string) {
     runTokenRef.current++; // invalidate any in-flight run
     setDrafts((d) => ({ ...d, [lang]: value }));
     setRun({ kind: "idle" });
+    setLiveCode(value);
   }
   function reset() {
     runTokenRef.current++; // invalidate any in-flight run
     setDrafts((d) => ({ ...d, [lang]: original }));
     setRun({ kind: "idle" });
     view?.focus();
+    setLiveCode(original);
   }
   async function copy() {
     let ok = false;
