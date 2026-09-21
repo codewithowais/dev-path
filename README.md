@@ -8,7 +8,7 @@ DevPath answers three questions:
 | --- | --- | --- |
 | **Paths** | "What should I learn?" — 14 ordered learning tracks, each a dedicated roadmap page | `/` · `/paths/[slug]` |
 | **Grow** | "Where can my career go?" — a ladder from Student to Senior, branching into building vs. leading, 16 role-specific growth trees, and a plain-words job-title guide | `/grow` |
-| **Learn** | The lessons — 194 lessons across 10 pillars, with a searchable, collapsible overview and a live, runnable code editor on every lesson page | `/learn` · `/learn/[id]` |
+| **Learn** | The lessons — 194 lessons across 10 pillars, with a searchable, collapsible overview, a live, runnable code editor on every lesson page, and a "Watch it sort" algorithm visualizer on sorting lessons | `/learn` · `/learn/[id]` |
 
 ## Paths — what should I learn?
 
@@ -46,6 +46,17 @@ The home page (`/`) shows every path as a clickable card; each one opens a dedic
 
 - **Left** — the teaching, in the same shape every time: the idea in plain English (analogy first), how it works step by step, when you'd actually use it, complexity explained in words (not just `O(n²)`), and common beginner mistakes.
 - **Right** — a **live, runnable code editor**: edit the code and hit **Run**. JavaScript executes right in your browser inside a Web Worker (so an infinite loop can't freeze the page), while Python shows its verified expected output. The editor has Prism syntax highlighting and line numbers, and a "Reset" button to get back to the original snippet.
+
+## Watch it sort — algorithms in motion
+
+Sorting and algorithm lessons carry a **live visualizer**. Under **See it in motion**, a bar chart animates the algorithm step by step, so you can *watch* how it works instead of only reading about it:
+
+- **Driven by the lesson's own code** — press **From code** and the animation runs the exact snippet from the editor above; press **Random** to shuffle in a fresh array.
+- **Live metrics** — a running count of **comparisons**, **writes**, the current **step** (e.g. `12 / 39`), and elapsed **time**.
+- **You set the pace** — **Play** the whole run, **Step** through one operation at a time, **Shuffle** the data, and adjust **Speed** and array **Size**.
+- **Color-coded bars** — they light up for **comparing**, **swapping**, and **sorted**, so the signature pattern of each algorithm (bubble, insertion, merge, quick…) becomes obvious at a glance.
+
+It turns "`O(n log n)` vs `O(n²)`" from a phrase into something you can actually see.
 
 ## Verified outputs
 
