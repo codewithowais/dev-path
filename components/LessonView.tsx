@@ -4,31 +4,8 @@ import { pillarColor, lessonsByPillar } from "@/content/lessons";
 import { CodeRunner } from "@/components/CodeRunner";
 import { PillarIcon } from "@/components/PillarIcon";
 import { MarkDoneButton } from "@/components/LessonProgress";
-import { SortVisualizer, type SortAlgo } from "@/components/SortVisualizer";
-import { SearchVisualizer, type SearchAlgo } from "@/components/SearchVisualizer";
-import { GraphVisualizer, type GraphAlgo } from "@/components/GraphVisualizer";
+import { lessonVisualizers } from "@/components/lessonVisualizers";
 import { accentText } from "@/lib/accent";
-
-/** Lessons that ship with a "watch it sort" animation. The lesson id doubles
- *  as the algorithm the visualizer plays. */
-const SORT_ALGOS = new Set<SortAlgo>([
-  "bubble-sort",
-  "selection-sort",
-  "insertion-sort",
-  "merge-sort",
-  "quick-sort",
-  "heap-sort",
-]);
-
-/** Lessons that ship with a "watch it search" animation. */
-const SEARCH_ALGOS = new Set<SearchAlgo>([
-  "linear-search",
-  "binary-search",
-  "jump-search",
-]);
-
-/** Lessons that ship with a "watch it traverse" graph animation. */
-const GRAPH_ALGOS = new Set<GraphAlgo>(["bfs", "dfs"]);
 
 /** Full lesson page: short explanation on the left, live editor + output on the
  *  right (stacked on mobile). Designed so you can see it all without hunting. */
@@ -156,66 +133,25 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
           </div>
         </div>
 
-        {/* Watch-it-sort animation for the sorting lessons — see the algorithm
-            actually move, count its comparisons and swaps, and feel how long it
-            takes. */}
-        {SORT_ALGOS.has(lesson.id as SortAlgo) && (
-          <section className="mt-10" style={{ ["--accent" as string]: color }}>
-            <h2 className="dp-eyebrow mb-2.5 flex items-center gap-2 text-muted">
-              <span
-                aria-hidden="true"
-                className="h-3.5 w-1 rounded-full"
-                style={{ backgroundColor: "var(--accent)" }}
-              />
-              See it in motion
-            </h2>
-            <SortVisualizer
-              algo={lesson.id as SortAlgo}
-              accent={color}
-              complexity={lesson.big}
-            />
-          </section>
-        )}
-
-        {/* Watch-it-search animation for the array-search lessons — see the
-            algorithm hunt for a target, and count how few checks it needs. */}
-        {SEARCH_ALGOS.has(lesson.id as SearchAlgo) && (
-          <section className="mt-10" style={{ ["--accent" as string]: color }}>
-            <h2 className="dp-eyebrow mb-2.5 flex items-center gap-2 text-muted">
-              <span
-                aria-hidden="true"
-                className="h-3.5 w-1 rounded-full"
-                style={{ backgroundColor: "var(--accent)" }}
-              />
-              See it in motion
-            </h2>
-            <SearchVisualizer
-              algo={lesson.id as SearchAlgo}
-              accent={color}
-              complexity={lesson.big}
-            />
-          </section>
-        )}
-
-        {/* Watch-it-traverse animation for the graph-search lessons — see BFS
-            fan out level by level from a queue, or DFS dive deep with a stack. */}
-        {GRAPH_ALGOS.has(lesson.id as GraphAlgo) && (
-          <section className="mt-10" style={{ ["--accent" as string]: color }}>
-            <h2 className="dp-eyebrow mb-2.5 flex items-center gap-2 text-muted">
-              <span
-                aria-hidden="true"
-                className="h-3.5 w-1 rounded-full"
-                style={{ backgroundColor: "var(--accent)" }}
-              />
-              See it in motion
-            </h2>
-            <GraphVisualizer
-              algo={lesson.id as GraphAlgo}
-              accent={color}
-              complexity={lesson.big}
-            />
-          </section>
-        )}
+        {/* "See it in motion" — the lesson's interactive visualizer, if it has
+            one. Registered by lesson id in lessonVisualizers. */}
+        {(() => {
+          const Viz = lessonVisualizers[lesson.id];
+          if (!Viz) return null;
+          return (
+            <section className="mt-10" style={{ ["--accent" as string]: color }}>
+              <h2 className="dp-eyebrow mb-2.5 flex items-center gap-2 text-muted">
+                <span
+                  aria-hidden="true"
+                  className="h-3.5 w-1 rounded-full"
+                  style={{ backgroundColor: "var(--accent)" }}
+                />
+                See it in motion
+              </h2>
+              <Viz accent={color} complexity={lesson.big} />
+            </section>
+          );
+        })()}
 
         {/* Prev / next within this pillar — keep learners moving in order */}
         <nav
