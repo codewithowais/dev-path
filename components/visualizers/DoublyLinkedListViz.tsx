@@ -48,8 +48,6 @@ type LLConfig = {
   insertAfterIdx: number; // insert the new node after this base index
   insertVal: number; // value carried by the inserted node
 };
-const DEFAULT_CONFIG: LLConfig = { values: [10, 20, 30, 40], insertAfterIdx: 1, insertVal: 25 };
-
 type Built = { frames: Frame[]; values: Record<number, number> };
 
 /** Both directions of a chain: a .next arrow and a .prev arrow per adjacent pair. */
@@ -73,6 +71,35 @@ function makeConfig(values: number[]): LLConfig {
   if (insertVal === a || insertVal === b || values.includes(insertVal)) insertVal = a + 1;
   if (values.includes(insertVal)) insertVal = Math.max(...values) + 5;
   return { values, insertAfterIdx, insertVal };
+}
+
+/** Seeded PRNG (mulberry32) so a given seed always yields the same list — the
+ *  server and client render identically, and "New list" just bumps the seed. */
+function makeRng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A random list of 3–4 distinct values, with a derived insert. */
+function randomConfig(seed: number): LLConfig {
+  const rng = makeRng(seed);
+  const n = 3 + Math.floor(rng() * 2);
+  const values: number[] = [];
+  const used = new Set<number>();
+  while (values.length < n) {
+    const v = (1 + Math.floor(rng() * 9)) * 5 + Math.floor(rng() * 5);
+    if (!used.has(v)) {
+      used.add(v);
+      values.push(v);
+    }
+  }
+  return makeConfig(values);
 }
 
 /** Parse the node values from the lesson demo's `list.addLast(n)` calls so the
@@ -356,10 +383,12 @@ export function DoublyLinkedListViz({
   const codeConfig = useMemo(() => parseDoublyLinkedListConfig(code), [code]);
   const hasCodeData = codeConfig !== null;
   const [useCode, setUseCode] = useState<boolean>(hasCodeData);
+  // Fixed initial seed → deterministic first paint; "New list" bumps it.
+  const [seed, setSeed] = useState<number>(1);
 
   const built = useMemo(
-    () => buildRun(useCode && codeConfig ? codeConfig : DEFAULT_CONFIG),
-    [useCode, codeConfig],
+    () => buildRun(useCode && codeConfig ? codeConfig : randomConfig(seed)),
+    [useCode, codeConfig, seed],
   );
   const frames = built.frames;
   const values = built.values;
@@ -424,6 +453,11 @@ export function DoublyLinkedListViz({
   const toggleSource = (next: boolean) => {
     restart();
     setUseCode(next);
+  };
+
+  const newList = () => {
+    restart();
+    setSeed((s) => s + 1);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -679,8 +713,16 @@ export function DoublyLinkedListViz({
         >
           ⤾ Restart
         </button>
+        <button
+          type="button"
+          onClick={newList}
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
+        >
+          ⤨ New list
+        </button>
 
-        {/* Data source: the lesson's own node values vs the default list. */}
+        {/* Data source: the lesson's own node values vs a random list. */}
         {hasCodeData && (
           <div
             className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
@@ -711,7 +753,7 @@ export function DoublyLinkedListViz({
                   : { color: "var(--color-muted)" }
               }
             >
-              Default
+              Random
             </button>
           </div>
         )}
