@@ -97,6 +97,29 @@ body::before {
     0 12px 28px -18px rgba(25, 28, 51, 0.22);
 }
 
+/* Sort-visualizer bars — height + colour glide between steps so a swap reads as
+   motion, not a jump. Transform-based emphasis avoids layout work; the global
+   prefers-reduced-motion block flattens these transitions automatically. */
+.dp-bar {
+  transition:
+    height 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 140ms ease,
+    background 140ms ease,
+    transform 120ms ease;
+  transform-origin: bottom;
+}
+
+/* Graph-traversal visualizer — nodes recolour and edges light up between
+   steps. Transform/opacity + colour only; the global prefers-reduced-motion
+   block flattens these transitions automatically. */
+.dp-graph .dp-node circle,
+.dp-graph .dp-node text {
+  transition: fill 180ms ease, stroke 180ms ease;
+}
+.dp-graph .dp-edge {
+  transition: stroke 180ms ease, stroke-width 180ms ease;
+}
+
 /* Section eyebrow — the small mono/label above a heading, one consistent look. */
 .dp-eyebrow {
   font-family: var(--font-mono), ui-monospace, monospace;
