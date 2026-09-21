@@ -41,11 +41,16 @@ type Frame = {
   done: boolean;
 };
 
-/* The lesson's example list (10 ⇄ 20 ⇄ 30 ⇄ 40) plus the node we insert. */
-const VALUES: Record<number, number> = { 1: 10, 2: 20, 3: 30, 4: 40, 5: 25 };
-const BASE = [1, 2, 3, 4];
-const NEW_ID = 5;
-const AFTER_ID = 2; // insert 25 after 20
+/* The lesson's example list (10 ⇄ 20 ⇄ 30 ⇄ 40) plus the node we insert — the
+ * default when the lesson code can't be parsed. */
+type LLConfig = {
+  values: number[]; // base node values in head → tail order
+  insertAfterIdx: number; // insert the new node after this base index
+  insertVal: number; // value carried by the inserted node
+};
+const DEFAULT_CONFIG: LLConfig = { values: [10, 20, 30, 40], insertAfterIdx: 1, insertVal: 25 };
+
+type Built = { frames: Frame[]; values: Record<number, number> };
 
 /** Both directions of a chain: a .next arrow and a .prev arrow per adjacent pair. */
 function duplex(ids: number[], kind: ArrowKind = "idle"): Arrow[] {
@@ -57,7 +62,53 @@ function duplex(ids: number[], kind: ArrowKind = "idle"): Arrow[] {
   return out;
 }
 
-function buildFrames(): Frame[] {
+/** Derive an insert (position + value) for a parsed list: slot the new node
+ *  after the second node when possible, carrying the midpoint of its two
+ *  neighbours (kept distinct from every existing value). */
+function makeConfig(values: number[]): LLConfig {
+  const insertAfterIdx = values.length >= 3 ? 1 : 0;
+  const a = values[insertAfterIdx];
+  const b = values[insertAfterIdx + 1];
+  let insertVal = Math.floor((a + b) / 2);
+  if (insertVal === a || insertVal === b || values.includes(insertVal)) insertVal = a + 1;
+  if (values.includes(insertVal)) insertVal = Math.max(...values) + 5;
+  return { values, insertAfterIdx, insertVal };
+}
+
+/** Parse the node values from the lesson demo's `list.addLast(n)` calls so the
+ *  animation walks the exact list shown in the editor. Returns null when there
+ *  is no usable demo — the component then falls back to the default list. */
+function parseDoublyLinkedListConfig(code: string | undefined): LLConfig | null {
+  if (!code) return null;
+  const inst = /(?:const|let|var)\s+(\w+)\s*=\s*new\s+DoublyLinkedList\s*\(/.exec(code);
+  if (!inst) return null;
+  const name = inst[1];
+  const re = new RegExp(`\\b${name}\\.addLast\\s*\\(\\s*(-?\\d+)\\s*\\)`, "g");
+  const values: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) values.push(Number(m[1]));
+  if (values.length < 2 || values.length > 4) return null;
+  return makeConfig(values);
+}
+
+/* Build the full frame timeline for a given list configuration. The default
+ * config reproduces the original 10 ⇄ 20 ⇄ 30 ⇄ 40 walk exactly. */
+function buildRun(cfg: LLConfig): Built {
+  const { values: vals, insertAfterIdx, insertVal } = cfg;
+  const n = vals.length;
+  const BASE = vals.map((_, i) => i + 1); // node ids 1..n
+  const NEW_ID = n + 1;
+  const AFTER_ID = insertAfterIdx + 1; // id of the node we insert after
+  const NEXT_ID = insertAfterIdx + 2; // id of the node currently after it
+  const afterVal = vals[insertAfterIdx];
+  const nextVal = vals[insertAfterIdx + 1];
+
+  const values: Record<number, number> = {};
+  vals.forEach((v, i) => {
+    values[i + 1] = v;
+  });
+  values[NEW_ID] = insertVal;
+
   const frames: Frame[] = [];
   const base = (): Pick<Frame, "order" | "raisedId" | "raisedAfter"> => ({
     order: [...BASE],
@@ -74,17 +125,17 @@ function buildFrames(): Frame[] {
     caption:
       "A doubly linked list: every node points to the next node AND the previous one.",
     op: "ready",
-    length: 4,
+    length: n,
     done: false,
   });
 
   // ── Act 1: forward traversal (follow .next from the head) ────────────────
-  const fwdCaps = [
-    "Start at the head (10) and walk forward with .next.",
-    "Follow .next to 20.",
-    "Follow .next to 30.",
-    "Follow .next to 40 — the tail.",
-  ];
+  const fwdCaption = (i: number): string => {
+    const v = vals[i];
+    if (i === 0) return `Start at the head (${v}) and walk forward with .next.`;
+    if (i === n - 1) return `Follow .next to ${v} — the tail.`;
+    return `Follow .next to ${v}.`;
+  };
   for (let i = 0; i < BASE.length; i++) {
     const states: Record<number, NodeState> = {};
     for (let j = 0; j < i; j++) states[BASE[j]] = "visited";
@@ -98,22 +149,22 @@ function buildFrames(): Frame[] {
           ? { ...a, kind: "accent" as ArrowKind }
           : a,
       ),
-      caption: fwdCaps[i],
+      caption: fwdCaption(i),
       op: "forward",
-      length: 4,
+      length: n,
       done: false,
     });
   }
 
   // ── Act 2: backward traversal (follow .prev from the tail) ───────────────
-  const bwdCaps = [
-    "Now start at the tail (40) and walk backward with .prev.",
-    "Follow .prev to 30.",
-    "Follow .prev to 20.",
-    "Follow .prev to 10 — the head. A singly linked list can't do this.",
-  ];
+  const bwdCaption = (i: number, idx: number): string => {
+    const v = vals[idx];
+    if (i === 0) return `Now start at the tail (${v}) and walk backward with .prev.`;
+    if (idx === 0) return `Follow .prev to ${v} — the head. A singly linked list can't do this.`;
+    return `Follow .prev to ${v}.`;
+  };
   for (let i = 0; i < BASE.length; i++) {
-    const idx = BASE.length - 1 - i; // 3,2,1,0
+    const idx = BASE.length - 1 - i; // n-1 … 0
     const states: Record<number, NodeState> = {};
     for (let j = BASE.length - 1; j > idx; j--) states[BASE[j]] = "visited";
     states[BASE[idx]] = "cursor";
@@ -126,22 +177,22 @@ function buildFrames(): Frame[] {
           ? { ...a, kind: "accent" as ArrowKind }
           : a,
       ),
-      caption: bwdCaps[i],
+      caption: bwdCaption(i, idx),
       op: "backward",
-      length: 4,
+      length: n,
       done: false,
     });
   }
 
-  // ── Act 3: insert 25 between 20 and 30 (four pointers) ───────────────────
+  // ── Act 3: insert the new node between AFTER_ID and NEXT_ID (four pointers) ──
   frames.push({
     ...base(),
     cursor: null,
-    states: { 2: "rewire", 3: "rewire" },
+    states: { [AFTER_ID]: "rewire", [NEXT_ID]: "rewire" },
     arrows: duplex(BASE),
-    caption: "Insert 25 between 20 and 30 — a doubly linked insert rewires four pointers.",
+    caption: `Insert ${insertVal} between ${afterVal} and ${nextVal} — a doubly linked insert rewires four pointers.`,
     op: "insert",
-    length: 4,
+    length: n,
     done: false,
   });
   // Create the raised node.
@@ -150,112 +201,113 @@ function buildFrames(): Frame[] {
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 3: "rewire", 5: "new" },
+    states: { [AFTER_ID]: "rewire", [NEXT_ID]: "rewire", [NEW_ID]: "new" },
     arrows: duplex(BASE),
-    caption: "Create the new node 25, sitting above the gap. None of its links are set yet.",
+    caption: `Create the new node ${insertVal}, sitting above the gap. None of its links are set yet.`,
     op: "insert",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Step 1: 25.prev → 20.
+  // Step 1: new.prev → AFTER_ID.
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 3: "rewire", 5: "new" },
-    arrows: [...duplex(BASE), { from: NEW_ID, to: 2, dir: "prev", kind: "violet" }],
-    caption: "1 of 4: point 25's .prev back to 20.",
+    states: { [AFTER_ID]: "rewire", [NEXT_ID]: "rewire", [NEW_ID]: "new" },
+    arrows: [...duplex(BASE), { from: NEW_ID, to: AFTER_ID, dir: "prev", kind: "violet" }],
+    caption: `1 of 4: point ${insertVal}'s .prev back to ${afterVal}.`,
     op: "rewire",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Step 2: 25.next → 30.
+  // Step 2: new.next → NEXT_ID.
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 3: "rewire", 5: "new" },
+    states: { [AFTER_ID]: "rewire", [NEXT_ID]: "rewire", [NEW_ID]: "new" },
     arrows: [
       ...duplex(BASE),
-      { from: NEW_ID, to: 2, dir: "prev", kind: "violet" },
-      { from: NEW_ID, to: 3, dir: "next", kind: "violet" },
+      { from: NEW_ID, to: AFTER_ID, dir: "prev", kind: "violet" },
+      { from: NEW_ID, to: NEXT_ID, dir: "next", kind: "violet" },
     ],
-    caption: "2 of 4: point 25's .next forward to 30.",
+    caption: `2 of 4: point ${insertVal}'s .next forward to ${nextVal}.`,
     op: "rewire",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Step 3: 20.next → 25 (fade the old 20→30 next).
+  // Step 3: AFTER_ID.next → new (fade the old AFTER→NEXT next).
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 3: "rewire", 5: "new" },
+    states: { [AFTER_ID]: "rewire", [NEXT_ID]: "rewire", [NEW_ID]: "new" },
     arrows: [
       ...duplex(BASE).map((a) =>
-        a.from === 2 && a.to === 3 && a.dir === "next" ? { ...a, faded: true } : a,
+        a.from === AFTER_ID && a.to === NEXT_ID && a.dir === "next" ? { ...a, faded: true } : a,
       ),
-      { from: NEW_ID, to: 2, dir: "prev", kind: "violet" },
-      { from: NEW_ID, to: 3, dir: "next", kind: "violet" },
-      { from: 2, to: NEW_ID, dir: "next", kind: "violet" },
+      { from: NEW_ID, to: AFTER_ID, dir: "prev", kind: "violet" },
+      { from: NEW_ID, to: NEXT_ID, dir: "next", kind: "violet" },
+      { from: AFTER_ID, to: NEW_ID, dir: "next", kind: "violet" },
     ],
-    caption: "3 of 4: re-point 20's .next to 25.",
+    caption: `3 of 4: re-point ${afterVal}'s .next to ${insertVal}.`,
     op: "rewire",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Step 4: 30.prev → 25 (fade the old 30→20 prev).
+  // Step 4: NEXT_ID.prev → new (fade the old NEXT→AFTER prev).
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 3: "rewire", 5: "new" },
+    states: { [AFTER_ID]: "rewire", [NEXT_ID]: "rewire", [NEW_ID]: "new" },
     arrows: [
       ...duplex(BASE).map((a) => {
-        if (a.from === 2 && a.to === 3 && a.dir === "next") return { ...a, faded: true };
-        if (a.from === 3 && a.to === 2 && a.dir === "prev") return { ...a, faded: true };
+        if (a.from === AFTER_ID && a.to === NEXT_ID && a.dir === "next") return { ...a, faded: true };
+        if (a.from === NEXT_ID && a.to === AFTER_ID && a.dir === "prev") return { ...a, faded: true };
         return a;
       }),
-      { from: NEW_ID, to: 2, dir: "prev", kind: "violet" },
-      { from: NEW_ID, to: 3, dir: "next", kind: "violet" },
-      { from: 2, to: NEW_ID, dir: "next", kind: "violet" },
-      { from: 3, to: NEW_ID, dir: "prev", kind: "violet" },
+      { from: NEW_ID, to: AFTER_ID, dir: "prev", kind: "violet" },
+      { from: NEW_ID, to: NEXT_ID, dir: "next", kind: "violet" },
+      { from: AFTER_ID, to: NEW_ID, dir: "next", kind: "violet" },
+      { from: NEXT_ID, to: NEW_ID, dir: "prev", kind: "violet" },
     ],
-    caption: "4 of 4: re-point 30's .prev to 25.",
+    caption: `4 of 4: re-point ${nextVal}'s .prev to ${insertVal}.`,
     op: "rewire",
-    length: 4,
+    length: n,
     done: false,
   });
   // Settle: the new node drops into the row, all four links green.
-  const FINAL = [1, 2, NEW_ID, 3, 4];
+  const FINAL = [
+    ...BASE.slice(0, insertAfterIdx + 1),
+    NEW_ID,
+    ...BASE.slice(insertAfterIdx + 1),
+  ];
   frames.push({
     order: FINAL,
     raisedId: null,
     raisedAfter: null,
     cursor: null,
-    states: { 5: "new" },
-    arrows: [
-      { from: 1, to: 2, dir: "next", kind: "idle" },
-      { from: 2, to: 1, dir: "prev", kind: "idle" },
-      { from: 2, to: NEW_ID, dir: "next", kind: "green" },
-      { from: NEW_ID, to: 2, dir: "prev", kind: "green" },
-      { from: NEW_ID, to: 3, dir: "next", kind: "green" },
-      { from: 3, to: NEW_ID, dir: "prev", kind: "green" },
-      { from: 3, to: 4, dir: "next", kind: "idle" },
-      { from: 4, to: 3, dir: "prev", kind: "idle" },
-    ],
-    caption:
-      "Done — four pointers rewired and 25 is fully stitched into the chain both ways.",
+    states: { [NEW_ID]: "new" },
+    arrows: duplex(FINAL).map((a) =>
+      (a.from === AFTER_ID && a.to === NEW_ID) ||
+      (a.from === NEW_ID && a.to === AFTER_ID) ||
+      (a.from === NEW_ID && a.to === NEXT_ID) ||
+      (a.from === NEXT_ID && a.to === NEW_ID)
+        ? { ...a, kind: "green" as ArrowKind }
+        : a,
+    ),
+    caption: `Done — four pointers rewired and ${insertVal} is fully stitched into the chain both ways.`,
     op: "insert",
-    length: 5,
+    length: n + 1,
     done: true,
   });
 
-  return frames;
+  return { frames, values };
 }
 
 /* ───────────────────────────── Geometry ────────────────────────────── */
@@ -294,11 +346,23 @@ const SPEEDS = [1100, 750, 500, 300, 160] as const;
 export function DoublyLinkedListViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — parsed for the exact node values shown. */
+  code?: string;
 }) {
-  const frames = useMemo(() => buildFrames(), []);
+  const codeConfig = useMemo(() => parseDoublyLinkedListConfig(code), [code]);
+  const hasCodeData = codeConfig !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
+
+  const built = useMemo(
+    () => buildRun(useCode && codeConfig ? codeConfig : DEFAULT_CONFIG),
+    [useCode, codeConfig],
+  );
+  const frames = built.frames;
+  const values = built.values;
   const total = frames.length;
 
   const [step, setStep] = useState(0);
@@ -355,6 +419,11 @@ export function DoublyLinkedListViz({
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const toggleSource = (next: boolean) => {
+    restart();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -536,7 +605,7 @@ export function DoublyLinkedListViz({
                   fill="var(--color-ink)"
                   style={{ fontFamily: "var(--font-mono), monospace" }}
                 >
-                  {VALUES[id]}
+                  {values[id]}
                 </text>
                 {/* prev pointer origin (or null slash on the head) */}
                 {hasPrev(id) ? (
@@ -611,7 +680,45 @@ export function DoublyLinkedListViz({
           ⤾ Restart
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own node values vs the default list. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Default
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

@@ -123,15 +123,43 @@ function pickPair(seed: number): [string, string] {
   return STRING_PAIRS[Math.floor(rng() * STRING_PAIRS.length)];
 }
 
+/** Parse the two strings the lesson compares from its code, e.g.
+ *  `const a = "ABCBDAB"` / `const b = "BDCABA"`. Requires a quote right after
+ *  `=`, so identifiers like `a.length` never match. Returns null (→ no toggle,
+ *  existing random behavior) if the code is missing or either string is absent
+ *  or too long to fit the grid. */
+function parseStrings(code: string | undefined): [string, string] | null {
+  if (!code) return null;
+  const aMatch = code.match(/\ba\s*=\s*["'`]([A-Za-z]+)["'`]/);
+  const bMatch = code.match(/\bb\s*=\s*["'`]([A-Za-z]+)["'`]/);
+  if (!aMatch || !bMatch) return null;
+  const a = aMatch[1];
+  const b = bMatch[1];
+  if (a.length < 1 || a.length > 8 || b.length < 1 || b.length > 8) return null;
+  return [a, b];
+}
+
 export function LCSGrid({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's full JavaScript source — the grid binds to the two strings in it. */
+  code?: string;
 }) {
+  // The exact pair of strings from the lesson's own code, when they parse.
+  const codePair = useMemo(() => parseStrings(code), [code]);
+  const hasCodeData = codePair !== null;
+  // Default to the lesson's own strings when present, so the grid matches the
+  // code on the page; the learner can switch to a random pair for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(3);
-  const [a, b] = useMemo(() => pickPair(seed), [seed]);
+  const [a, b] = useMemo(
+    () => (useCode && hasCodeData ? (codePair as [string, string]) : pickPair(seed)),
+    [useCode, hasCodeData, codePair, seed],
+  );
   const recording = useMemo(() => recordLCS(a, b), [a, b]);
 
   const [step, setStep] = useState(0);
@@ -203,6 +231,11 @@ export function LCSGrid({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const currentOp = step > 0 ? recording.ops[step - 1] : undefined;
@@ -339,12 +372,51 @@ export function LCSGrid({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own strings vs a random pair. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

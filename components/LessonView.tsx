@@ -167,6 +167,7 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
                 accent={color}
                 complexity={lesson.big}
                 lessonData={firstNumberArray(lesson.code?.JavaScript)}
+                code={lesson.code?.JavaScript}
               />
             </section>
           );

@@ -46,6 +46,19 @@ function makeSeed(tag: string): number {
   return (h >>> 0) % 100000;
 }
 
+/** Pull the tuple's two values straight from the lesson's JavaScript (the
+ *  `Object.freeze([3, 4])` pair), so the reel walks the exact example on the
+ *  page. Returns null (→ fall back to the seeded pairs) if anything is off. */
+function parseCode(code: string | undefined): [number, number] | null {
+  if (!code) return null;
+  const m = code.match(/Object\.freeze\(\s*\[\s*(-?\d+)\s*,\s*(-?\d+)\s*\]/);
+  if (!m) return null;
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return [a, b];
+}
+
 /** The fixed reel of stages. Values come from the chosen pair. */
 function buildStages(pair: [number, number]): Stage[] {
   const [a, b] = pair;
@@ -153,10 +166,18 @@ function narrate(f: Frame, started: boolean, pair: [number, number]): string {
 export function TupleViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source. When it parses, the reel runs on the exact
+   *  tuple values from the demo instead of a seeded pair. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed != null;
+  // Default to the lesson's own values when we can read them.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("tuple"));
   const [speedIdx, setSpeedIdx] = useState<number>(1);
   const [step, setStep] = useState(0);
@@ -164,7 +185,10 @@ export function TupleViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const pair = useMemo<[number, number]>(() => PAIRS[seed % PAIRS.length], [seed]);
+  const pair = useMemo<[number, number]>(
+    () => (useCode && parsed ? parsed : PAIRS[seed % PAIRS.length]),
+    [useCode, parsed, seed],
+  );
   const stages = useMemo(() => buildStages(pair), [pair]);
   const total = stages.length;
   const done = step >= total;
@@ -206,6 +230,11 @@ export function TupleViz({
   const newSequence = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const slotStyle = (index: number) => {
@@ -434,12 +463,51 @@ export function TupleViz({
         <button
           type="button"
           onClick={newSequence}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New values
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own values vs a seeded pair. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

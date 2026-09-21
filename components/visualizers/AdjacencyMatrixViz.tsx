@@ -20,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
    client first render match.
    ──────────────────────────────────────────────────────────────────────── */
 
-const N = 5; // nodes A..E
+const N = 5; // default node count for the random demo (A..E)
 const SPEEDS = [900, 620, 420, 260, 150] as const;
 
 type Op = { t: "addEdge"; i: number; j: number } | { t: "scan"; i: number };
@@ -48,10 +48,10 @@ function makeSeed(tag: string): number {
 const nodeLabel = (i: number) => String.fromCharCode(65 + i);
 
 /** Pick a deterministic set of ~5 distinct edges, then script build + scans. */
-function record(seed: number): { ops: Op[]; edges: [number, number][] } {
+function record(seed: number, n: number): { ops: Op[]; edges: [number, number][] } {
   const rng = makeRng(seed);
   const pairs: [number, number][] = [];
-  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) pairs.push([i, j]);
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([i, j]);
   // Seeded Fisher–Yates shuffle, then take the first few as our edge set.
   for (let i = pairs.length - 1; i > 0; i--) {
     const k = Math.floor(rng() * (i + 1));
@@ -61,18 +61,79 @@ function record(seed: number): { ops: Op[]; edges: [number, number][] } {
 
   const ops: Op[] = [];
   for (const [i, j] of edges) ops.push({ t: "addEdge", i, j });
-  for (let i = 0; i < N; i++) ops.push({ t: "scan", i });
+  for (let i = 0; i < n; i++) ops.push({ t: "scan", i });
   return { ops, edges };
+}
+
+/* ─────────────────────────── Bind to the lesson's code ───────────────────
+   Parse the graph the lesson builds: the node list and the addEdge(a, b) calls
+   (a, b may be quoted names resolved against that list, or plain indices). The
+   animation then adds those exact edges and scans every row. Defensive — any
+   surprise returns null and the component keeps its seeded random graph. */
+
+type ParsedAdj = { n: number; ops: Op[] };
+
+function parseAdjacencyCode(code?: string): ParsedAdj | null {
+  if (!code) return null;
+  try {
+    // The node list: the first array literal made only of quoted strings.
+    const names: string[] = [];
+    const arrays = code.match(/\[[^\]]*\]/g) ?? [];
+    for (const lit of arrays) {
+      const inner = lit.slice(1, -1).trim();
+      if (inner === "") continue;
+      const strs = inner.match(/"([^"]*)"|'([^']*)'/g);
+      // A pure string array (every comma-separated slot is a quoted string).
+      if (strs && strs.length === inner.split(",").length) {
+        for (const s of strs) names.push(s.slice(1, -1));
+        break;
+      }
+    }
+
+    const idx = (token: string): number => {
+      const t = token.trim();
+      const str = t.match(/^"([^"]*)"$/) ?? t.match(/^'([^']*)'$/);
+      if (str) return names.indexOf(str[1]);
+      if (/^\d+$/.test(t)) return Number(t);
+      return -1;
+    };
+
+    // addEdge(a, b) calls, in source order.
+    const edges: [number, number][] = [];
+    const edgeRe =
+      /\.add(?:Edge|_edge)\(\s*("[^"]*"|'[^']*'|\d+)\s*,\s*("[^"]*"|'[^']*'|\d+)\s*\)/g;
+    let m: RegExpExecArray | null;
+    let maxIdx = -1;
+    while ((m = edgeRe.exec(code)) !== null) {
+      const i = idx(m[1]);
+      const j = idx(m[2]);
+      if (i < 0 || j < 0 || i === j) return null;
+      edges.push([i, j]);
+      maxIdx = Math.max(maxIdx, i, j);
+    }
+    if (edges.length === 0) return null;
+
+    const n = names.length > 0 ? names.length : maxIdx + 1;
+    if (n < 2 || n > 8) return null;
+    if (maxIdx >= n) return null;
+
+    const ops: Op[] = [];
+    for (const [i, j] of edges) ops.push({ t: "addEdge", i, j });
+    for (let i = 0; i < n; i++) ops.push({ t: "scan", i });
+    return { n, ops };
+  } catch {
+    return null;
+  }
 }
 
 /** Node positions on a circle — pure math (no Math.random), so it is safe to
  *  compute during render without a hydration mismatch. */
-function nodePositions(): { x: number; y: number }[] {
+function nodePositions(n: number): { x: number; y: number }[] {
   const cx = 100;
   const cy = 100;
   const r = 72;
-  return Array.from({ length: N }, (_, i) => {
-    const ang = (-90 + (360 / N) * i) * (Math.PI / 180);
+  return Array.from({ length: n }, (_, i) => {
+    const ang = (-90 + (360 / n) * i) * (Math.PI / 180);
     return { x: cx + r * Math.cos(ang), y: cy + r * Math.sin(ang) };
   });
 }
@@ -96,10 +157,16 @@ function narrate(
 export function AdjacencyMatrixViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — bind to the graph it builds. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseAdjacencyCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("adjacency-matrix"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -107,15 +174,20 @@ export function AdjacencyMatrixViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { ops } = useMemo(() => record(seed), [seed]);
-  const pos = useMemo(() => nodePositions(), []);
+  // The active dataset: the lesson's own graph, or a seeded random one.
+  const active = useMemo(
+    () => (useCode && parsed ? parsed : { n: N, ops: record(seed, N).ops }),
+    [useCode, parsed, seed],
+  );
+  const { n, ops } = active;
+  const pos = useMemo(() => nodePositions(n), [n]);
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
 
   const frame = useMemo(() => {
-    const matrix: number[][] = Array.from({ length: N }, () =>
-      new Array(N).fill(0),
+    const matrix: number[][] = Array.from({ length: n }, () =>
+      new Array(n).fill(0),
     );
     const drawn: [number, number][] = [];
     let edgeCount = 0;
@@ -135,11 +207,11 @@ export function AdjacencyMatrixViz({
         activeEdge = [op.i, op.j];
       } else {
         scanRow = op.i;
-        for (let j = 0; j < N; j++) if (matrix[op.i][j] === 1) neighbors.push(j);
+        for (let j = 0; j < n; j++) if (matrix[op.i][j] === 1) neighbors.push(j);
       }
     }
     return { matrix, drawn, edgeCount, activeEdge, scanRow, neighbors };
-  }, [ops, step]);
+  }, [ops, step, n]);
 
   const { matrix, drawn, edgeCount, activeEdge, scanRow, neighbors } = frame;
   const current = step > 0 ? ops[step - 1] : undefined;
@@ -177,6 +249,11 @@ export function AdjacencyMatrixViz({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const isActiveEdge = (a: number, b: number) =>
@@ -223,7 +300,7 @@ export function AdjacencyMatrixViz({
             color: "var(--accent)",
           }}
         >
-          Adjacency matrix · {N}×{N}
+          Adjacency matrix · {n}×{n}
         </span>
         {complexity && (
           <span className="ml-auto font-mono text-[11px] text-muted">{complexity}</span>
@@ -280,7 +357,7 @@ export function AdjacencyMatrixViz({
         {/* Matrix */}
         <div className="w-max">
           <div className="flex gap-1 pl-6">
-            {Array.from({ length: N }, (_, c) => (
+            {Array.from({ length: n }, (_, c) => (
               <div
                 key={c}
                 className="flex h-5 w-8 items-center justify-center font-mono text-[10px] text-muted sm:w-9"
@@ -322,7 +399,7 @@ export function AdjacencyMatrixViz({
 
       {/* Stats */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-        <Stat label="Nodes" value={N} />
+        <Stat label="Nodes" value={n} />
         <Stat label="Edges" value={edgeCount} />
         <Stat
           label="Row degree"
@@ -352,12 +429,51 @@ export function AdjacencyMatrixViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New graph
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own graph vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

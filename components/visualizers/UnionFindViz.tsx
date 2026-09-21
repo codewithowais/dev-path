@@ -28,6 +28,30 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const N = 6;
 
+/** Parse the lesson's demo: the element count from `new UnionFind(n)` and the
+ *  ordered union(a, b) calls (the method definition's non-numeric args never
+ *  match). Returns null on anything unexpected so we fall back to random. */
+function parseUnionFind(
+  code?: string,
+): { count: number; unions: [number, number][] } | null {
+  if (!code) return null;
+  const countMatch = code.match(/new\s+UnionFind\s*\(\s*(\d+)\s*\)/);
+  if (!countMatch) return null;
+  const count = Number(countMatch[1]);
+  if (!Number.isInteger(count) || count < 2 || count > 12) return null;
+  const unions: [number, number][] = [];
+  const re = /\bunion\(\s*(\d+)\s*,\s*(\d+)\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a < 0 || b < 0 || a >= count || b >= count) return null;
+    unions.push([a, b]);
+  }
+  if (unions.length === 0) return null;
+  return { count, unions };
+}
+
 type Frame = {
   parent: number[]; // parent pointer per element (snapshot)
   active: number[]; // elements spotlighted this step (accent ring)
@@ -99,9 +123,9 @@ function countSets(parent: number[]): number {
 
 /* Record the whole run: replay the union sequence, emitting a frame for each
    pointer we follow (find) and each pointer we set (link / compression). */
-function buildFrames(unions: [number, number][]): Frame[] {
-  const parent = Array.from({ length: N }, (_, i) => i);
-  const rank = new Array<number>(N).fill(0);
+function buildFrames(unions: [number, number][], count: number): Frame[] {
+  const parent = Array.from({ length: count }, (_, i) => i);
+  const rank = new Array<number>(count).fill(0);
   const frames: Frame[] = [];
 
   const snap = (
@@ -117,7 +141,7 @@ function buildFrames(unions: [number, number][]): Frame[] {
   snap({
     active: [],
     moving: null,
-    caption: "Six elements, each alone in its own set — every element is its own leader.",
+    caption: `${count} elements, each alone in its own set — every element is its own leader.`,
     op: "start",
   });
 
@@ -213,7 +237,7 @@ function buildFrames(unions: [number, number][]): Frame[] {
   // compression at least once.
   let deepest = 0;
   let deepestDepth = 0;
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < count; i++) {
     let d = 0;
     let cur = i;
     while (parent[cur] !== cur) {
@@ -251,7 +275,7 @@ const PITCH = 48;
 const R = 16;
 const BASE_CY = 150;
 const SVG_H = 176;
-const CONTENT_W = PAD * 2 + (N - 1) * PITCH + R * 2;
+const contentW = (count: number) => PAD * 2 + (count - 1) * PITCH + R * 2;
 const elemX = (i: number) => PAD + R + i * PITCH;
 
 const SPEEDS = [1100, 750, 500, 320, 170] as const;
@@ -259,14 +283,28 @@ const SPEEDS = [1100, 750, 500, 320, 170] as const;
 export function UnionFindViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — its UnionFind(n) size and union() calls. */
+  code?: string;
 }) {
+  const codeData = useMemo(() => parseUnionFind(code), [code]);
+  const hasCodeData = codeData != null;
+  // Default to the lesson's own sequence when we can parse it, so the merges
+  // match the code on the page; the learner can switch to random for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(BASE_SEED);
-  const unions = useMemo(() => makeUnions(seed), [seed]);
-  const frames = useMemo(() => buildFrames(unions), [unions]);
+
+  const count = useCode && hasCodeData ? codeData.count : N;
+  const unions = useMemo(
+    () => (useCode && hasCodeData ? codeData.unions : makeUnions(seed)),
+    [useCode, hasCodeData, codeData, seed],
+  );
+  const frames = useMemo(() => buildFrames(unions, count), [unions, count]);
   const total = frames.length;
+  const svgW = contentW(count);
 
   const [step, setStep] = useState(0);
   const [speedIdx, setSpeedIdx] = useState(2);
@@ -316,13 +354,22 @@ export function UnionFindViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -338,7 +385,7 @@ export function UnionFindViz({
   // Colour map: assign a categorical fill to every root that has >1 member.
   const setColor = useMemo(() => {
     const size: Record<number, number> = {};
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < count; i++) {
       const r = (() => {
         let cur = i;
         while (f.parent[cur] !== cur) cur = f.parent[cur];
@@ -355,7 +402,7 @@ export function UnionFindViz({
       map[r] = SET_FILLS[idx % SET_FILLS.length];
     });
     return map;
-  }, [f]);
+  }, [f, count]);
 
   const isActive = (i: number) => f.active.includes(i);
 
@@ -397,12 +444,12 @@ export function UnionFindViz({
       {/* The elements + parent arcs */}
       <div className="mt-3 overflow-x-auto rounded-xl bg-paper px-1 py-2">
         <svg
-          width={CONTENT_W}
+          width={svgW}
           height={SVG_H}
-          viewBox={`0 0 ${CONTENT_W} ${SVG_H}`}
+          viewBox={`0 0 ${svgW} ${SVG_H}`}
           className="mx-auto block"
           role="img"
-          aria-label={`Union-Find over ${N} elements, ${f.sets} sets. ${f.caption}`}
+          aria-label={`Union-Find over ${count} elements, ${f.sets} sets. ${f.caption}`}
         >
           <defs>
             <marker
@@ -433,7 +480,7 @@ export function UnionFindViz({
           </defs>
 
           {/* Parent arcs (behind elements) */}
-          {Array.from({ length: N }, (_, i) => i).map((i) => {
+          {Array.from({ length: count }, (_, i) => i).map((i) => {
             const par = f.parent[i];
             if (par === i) return null; // roots handled separately
             const hot =
@@ -457,7 +504,7 @@ export function UnionFindViz({
           })}
 
           {/* Elements */}
-          {Array.from({ length: N }, (_, i) => i).map((i) => {
+          {Array.from({ length: count }, (_, i) => i).map((i) => {
             const r = rootOf(i);
             const fill = setColor[r] ?? "var(--color-card)";
             const active = isActive(i);
@@ -570,12 +617,51 @@ export function UnionFindViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own union sequence vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

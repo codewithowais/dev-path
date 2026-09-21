@@ -82,6 +82,30 @@ function makePlan(seed: number): Plan {
   return { insertOrder, target };
 }
 
+/** Parse the lesson's demo: the inserted values (the array literal fed to
+ *  .forEach(... insert)) and the first contains(target) search. Returns null
+ *  on anything unexpected so we fall back to random. */
+function parseSkipList(code?: string): Plan | null {
+  if (!code) return null;
+  const arr = code.match(/\[([\d,\s]+)\]\s*\.forEach/);
+  if (!arr) return null;
+  const insertOrder = arr[1]
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map(Number);
+  if (
+    insertOrder.length < 2 ||
+    insertOrder.length > 12 ||
+    insertOrder.some((v) => !Number.isFinite(v))
+  ) {
+    return null;
+  }
+  const tMatch = code.match(/contains\(\s*(\d+)\s*\)/);
+  if (!tMatch) return null;
+  return { insertOrder, target: Number(tMatch[1]) };
+}
+
 type Frame = {
   cursor: number; // node id the search sits on (HEAD = 0)
   level: number; // current search level; -1 once finished
@@ -212,13 +236,13 @@ function buildFrames(plan: Plan): Frame[] {
 }
 
 /* ───────────────────────────── Geometry ────────────────────────────── */
-const COLS = 9; // head + 8 values
 const PITCH = 42;
 const PAD_L = 22;
 const R = 15;
 const TOP_Y = 24;
 const ROW_GAP = 40;
-const CONTENT_W = PAD_L * 2 + (COLS - 1) * PITCH + R * 2;
+// Width fits the head column plus one column per inserted value.
+const contentW = (valueCount: number) => PAD_L * 2 + valueCount * PITCH + R * 2;
 const colX = (pos: number) => PAD_L + R + pos * PITCH;
 
 const SPEEDS = [1100, 750, 500, 300, 160] as const;
@@ -226,15 +250,28 @@ const SPEEDS = [1100, 750, 500, 300, 160] as const;
 export function SkipListViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — its inserted values and search target. */
+  code?: string;
 }) {
+  const codePlan = useMemo(() => parseSkipList(code), [code]);
+  const hasCodeData = codePlan != null;
+  // Default to the lesson's own values/target when we can parse them, so the
+  // search matches the code; the learner can switch to random.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(BASE_SEED);
-  const plan = useMemo(() => makePlan(seed), [seed]);
+
+  const plan = useMemo(
+    () => (useCode && hasCodeData ? codePlan : makePlan(seed)),
+    [useCode, hasCodeData, codePlan, seed],
+  );
   const model = useMemo(() => buildModel(plan), [plan]);
   const frames = useMemo(() => buildFrames(plan), [plan]);
   const total = frames.length;
+  const svgW = contentW(plan.insertOrder.length);
 
   const [step, setStep] = useState(0);
   const [speedIdx, setSpeedIdx] = useState(2);
@@ -284,13 +321,22 @@ export function SkipListViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -365,9 +411,9 @@ export function SkipListViz({
       {/* The stacked levels */}
       <div className="mt-3 overflow-x-auto rounded-xl bg-paper px-1 py-2">
         <svg
-          width={CONTENT_W}
+          width={svgW}
           height={svgH}
-          viewBox={`0 0 ${CONTENT_W} ${svgH}`}
+          viewBox={`0 0 ${svgW} ${svgH}`}
           className="mx-auto block"
           role="img"
           aria-label={`Skip list with ${nodes.length} values across ${
@@ -569,12 +615,51 @@ export function SkipListViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own values vs a random set. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

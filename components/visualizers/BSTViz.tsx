@@ -72,8 +72,25 @@ function shuffled(seed: number): number[] {
 
 type Built = { frames: Frame[]; nodes: BNode[]; vbw: number; vbh: number };
 
-function build(seed: number): Built {
-  const order = shuffled(seed);
+/** Pull the exact insert sequence out of the lesson's code, e.g.
+ *  `[5, 3, 8, 1, 4, 7, 9].forEach((v) => tree.insert(v))`. The lesson has no
+ *  explicit search, so we search for the last inserted value (a leaf — it makes
+ *  the descent visible). Returns null on anything unexpected so we fall back to
+ *  the seeded random behaviour. */
+function parseCode(code?: string): { order: number[]; target: number } | null {
+  if (!code) return null;
+  const m = code.match(/\[([\d\s,]+)\]\s*\.forEach/);
+  if (!m) return null;
+  const order = m[1]
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+  // The tree keys nodes by value, so the sequence must be distinct and non-trivial.
+  if (order.length < 2 || new Set(order).size !== order.length) return null;
+  return { order, target: order[order.length - 1] };
+}
+
+function buildFrom(order: number[], target: number): Built {
   const nodes: BNode[] = [];
   let root: number | null = null;
   const frames: Frame[] = [];
@@ -181,8 +198,6 @@ function build(seed: number): Built {
   });
 
   // Search phase: follow the same rule to look up one existing value.
-  const rng = makeRng(seed ^ 0x9e3779b9);
-  const target = order[Math.floor(rng() * order.length)];
   frames.push(snap({ caption: `Now search for ${target}. Start at the root.` }));
   {
     const path: number[] = [];
@@ -220,18 +235,37 @@ function build(seed: number): Built {
   return { frames, nodes, vbw, vbh };
 }
 
+function build(seed: number): Built {
+  const order = shuffled(seed);
+  const rng = makeRng(seed ^ 0x9e3779b9);
+  const target = order[Math.floor(rng() * order.length)];
+  return buildFrom(order, target);
+}
+
 const SPEEDS = [1100, 750, 480, 300, 160] as const;
 const IDLE = "color-mix(in srgb, var(--accent) 18%, white)";
 
 export function BSTViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — we watch the tree build from the exact
+   *  insert sequence in the code, with a toggle back to a random sequence. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  // Default to the lesson's own sequence when we can read it; the learner can
+  // switch to a random tree for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(1);
-  const { frames, nodes, vbw, vbh } = useMemo(() => build(seed), [seed]);
+  const { frames, nodes, vbw, vbh } = useMemo(
+    () => (useCode && parsed ? buildFrom(parsed.order, parsed.target) : build(seed)),
+    [useCode, parsed, seed],
+  );
   const total = frames.length;
 
   const [step, setStep] = useState(0);
@@ -282,13 +316,22 @@ export function BSTViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -441,12 +484,51 @@ export function BSTViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own insert sequence vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

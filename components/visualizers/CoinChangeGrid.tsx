@@ -104,15 +104,50 @@ function fmt(v: number): string {
   return v === INF ? "∞" : String(v);
 }
 
+/** Parse the coin denominations and target amount the lesson runs on from its
+ *  code, e.g. `const coins = [1, 3, 4]` / `const amount = 6`. The `\b…\s*=`
+ *  guard keeps `coins2` / `amount2` (the second demo) from matching. Returns
+ *  null (→ no toggle, existing random behavior) if the code is missing or the
+ *  values are absent, empty, or too large to fit the strip. */
+function parseConfig(
+  code: string | undefined,
+): { coins: number[]; amount: number } | null {
+  if (!code) return null;
+  const coinsMatch = code.match(/\bcoins\s*=\s*\[([\d\s,]+)\]/);
+  const amountMatch = code.match(/\bamount\s*=\s*(\d+)/);
+  if (!coinsMatch || !amountMatch) return null;
+  const coins = coinsMatch[1]
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((v) => Number.isInteger(v) && v > 0);
+  const amount = Number(amountMatch[1]);
+  if (coins.length === 0 || !Number.isInteger(amount) || amount < 1 || amount > 16) {
+    return null;
+  }
+  return { coins, amount };
+}
+
 export function CoinChangeGrid({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's full JavaScript source — the table binds to the coins/amount in it. */
+  code?: string;
 }) {
+  // The exact coins + amount from the lesson's own code, when they parse.
+  const codeConfig = useMemo(() => parseConfig(code), [code]);
+  const hasCodeData = codeConfig !== null;
+  // Default to the lesson's own config when present, so the table matches the
+  // code on the page; the learner can switch to a random config for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(1);
-  const config = useMemo(() => pickConfig(seed), [seed]);
+  const config = useMemo(
+    () => (useCode && hasCodeData ? (codeConfig as { coins: number[]; amount: number }) : pickConfig(seed)),
+    [useCode, hasCodeData, codeConfig, seed],
+  );
   const recording = useMemo(
     () => recordCoinChange(config.amount, config.coins),
     [config]
@@ -192,6 +227,11 @@ export function CoinChangeGrid({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const currentOp = step > 0 ? recording.ops[step - 1] : undefined;
@@ -336,12 +376,51 @@ export function CoinChangeGrid({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own coins/amount vs a random config. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

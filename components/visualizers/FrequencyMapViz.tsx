@@ -57,19 +57,38 @@ function buildRun(word: string): Recording {
   return { ops, word, distinct, topChar, topCount };
 }
 
+/** Pull the exact string the lesson counts — `const text = "mississippi";`.
+ *  Only letters, and a sane length for the row + bar chart. Null otherwise, so
+ *  the viz falls back to its own word list. */
+function parseCodeWord(code?: string): string | null {
+  if (!code) return null;
+  const m = code.match(/text\s*=\s*"([^"]+)"|text\s*=\s*'([^']+)'/);
+  const word = m ? (m[1] ?? m[2]) : null;
+  if (!word || !/^[A-Za-z]+$/.test(word) || word.length < 2 || word.length > 24) return null;
+  return word;
+}
+
 const SPEEDS = [640, 420, 260, 150, 70] as const;
 
 export function FrequencyMapViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — the exact word it counts drives the "from
+   *  code" mode so the tally matches the sample on the page. */
+  code?: string;
 }) {
+  const codeWord = useMemo(() => parseCodeWord(code), [code]);
+  const hasCodeData = codeWord != null;
+  // Default to the lesson's own word when we can parse one.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [wordIdx, setWordIdx] = useState<number>(() => stableSeed("frequency-map") % WORDS.length);
 
-  const word = WORDS[wordIdx];
+  const word = useCode && codeWord ? codeWord : WORDS[wordIdx];
   const recording = useMemo(() => buildRun(word), [word]);
   const { ops, distinct, topChar, topCount } = recording;
 
@@ -142,6 +161,11 @@ export function FrequencyMapViz({
   const newInput = () => {
     reset();
     setWordIdx((i) => (i + 1) % WORDS.length);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const { counts, readIdx, tallyChar, maxRevealed } = frame;
@@ -285,12 +309,51 @@ export function FrequencyMapViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New word
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own word vs a preset list. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

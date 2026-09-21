@@ -59,8 +59,21 @@ function pickItems(seed: number): Item[] {
   return labels.slice(0, 5).map((label, i) => ({ label, p: prios[i] }));
 }
 
-function build(seed: number): Frame[] {
-  const items = pickItems(seed);
+/** Pull the exact enqueued items out of the lesson's code, e.g.
+ *  `pq.enqueue("economy", 3)`. Returns null on anything unexpected so we fall
+ *  back to the seeded random behaviour. */
+function parseCode(code?: string): Item[] | null {
+  if (!code) return null;
+  const items: Item[] = [];
+  const re = /\.enqueue\(\s*["']([^"']+)["']\s*,\s*(\d+)\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    items.push({ label: m[1], p: Number(m[2]) });
+  }
+  return items.length >= 2 ? items : null;
+}
+
+function buildFrom(items: Item[]): Frame[] {
   const heap: Item[] = [];
   const dequeued: string[] = [];
   const frames: Frame[] = [];
@@ -172,6 +185,10 @@ function build(seed: number): Frame[] {
   return frames;
 }
 
+function build(seed: number): Frame[] {
+  return buildFrom(pickItems(seed));
+}
+
 const SPEEDS = [1100, 750, 480, 300, 160] as const;
 const IDLE = "color-mix(in srgb, var(--accent) 18%, white)";
 
@@ -189,12 +206,22 @@ function nodePos(i: number, maxDepth: number, vbw: number, vbh: number) {
 export function PriorityQueueViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — we enqueue the exact items and priorities
+   *  from the code, with a toggle back to a random set. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(1);
-  const frames = useMemo(() => build(seed), [seed]);
+  const frames = useMemo(
+    () => (useCode && parsed ? buildFrom(parsed) : build(seed)),
+    [useCode, parsed, seed],
+  );
   const total = frames.length;
 
   const maxLen = useMemo(() => Math.max(1, ...frames.map((f) => f.heap.length)), [frames]);
@@ -250,13 +277,22 @@ export function PriorityQueueViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -475,12 +511,51 @@ export function PriorityQueueViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own items vs a random set. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

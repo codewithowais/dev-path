@@ -50,13 +50,28 @@ const PRESETS: Preset[] = [
   { words: ["top", "to", "toy", "tap", "ten"], lookup: "to" },
 ];
 
-function build(seed: number): {
+/** Pull the exact inserted words and the first looked-up word out of the
+ *  lesson's code, e.g. `["cat", "car", "cart"].forEach((w) => trie.insert(w))`
+ *  and `trie.search("car")`. Falls back to a stored word if the code has no
+ *  lookup, and returns null on anything unexpected so we keep the seeded
+ *  behaviour. */
+function parseCode(code?: string): Preset | null {
+  if (!code) return null;
+  const m = code.match(/\[([^\]]*)\]\s*\.forEach/);
+  if (!m) return null;
+  const words = Array.from(m[1].matchAll(/["']([a-zA-Z]+)["']/g)).map((w) => w[1].toLowerCase());
+  if (words.length < 2) return null;
+  const look = code.match(/\.(?:search|startsWith)\(\s*["']([a-zA-Z]+)["']/);
+  const lookup = (look ? look[1] : words[0]).toLowerCase();
+  return { words, lookup };
+}
+
+function buildFrom(preset: Preset): {
   frames: Frame[];
   nodes: TNode[];
   vbw: number;
   vbh: number;
 } {
-  const preset = PRESETS[seed % PRESETS.length];
   const nodes: TNode[] = [
     { id: 0, char: "•", parent: null, children: {}, isEnd: false, depth: 0, x: 0, y: 0 },
   ];
@@ -204,6 +219,15 @@ function build(seed: number): {
   return { frames, nodes, vbw, vbh };
 }
 
+function build(seed: number): {
+  frames: Frame[];
+  nodes: TNode[];
+  vbw: number;
+  vbh: number;
+} {
+  return buildFrom(PRESETS[seed % PRESETS.length]);
+}
+
 /** Rebuild the string spelled out from the root down to `id` (for captions). */
 function prefixOf(nodes: TNode[], id: number): string {
   const chars: string[] = [];
@@ -221,12 +245,22 @@ const IDLE = "color-mix(in srgb, var(--accent) 18%, white)";
 export function TrieViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — we file the exact words from the code and
+   *  look up the code's own search word, with a toggle back to a random preset. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(0);
-  const { frames, nodes, vbw, vbh } = useMemo(() => build(seed), [seed]);
+  const { frames, nodes, vbw, vbh } = useMemo(
+    () => (useCode && parsed ? buildFrom(parsed) : build(seed)),
+    [useCode, parsed, seed],
+  );
   const total = frames.length;
 
   const [step, setStep] = useState(0);
@@ -277,13 +311,22 @@ export function TrieViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -445,12 +488,51 @@ export function TrieViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New words
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own words vs a random preset. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

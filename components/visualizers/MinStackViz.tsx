@@ -79,6 +79,31 @@ function buildScript(seed: number): Op[] {
   return ops;
 }
 
+/** Pull the demo's exact push/pop/getMin sequence straight from the lesson's
+ *  JavaScript, so the two stacks animate the same example shown on the page.
+ *  Returns null (→ fall back to the seeded random script) if anything is off. */
+function parseCode(code: string | undefined): Op[] | null {
+  if (!code) return null;
+  const varMatch = code.match(/(?:const|let|var)\s+(\w+)\s*=\s*new\s+MinStack\b/);
+  if (!varMatch) return null;
+  const name = varMatch[1];
+  const callRe = new RegExp(`\\b${name}\\.(push|pop|getMin)\\s*\\(([^)]*)\\)`, "g");
+  const ops: Op[] = [];
+  for (const m of code.matchAll(callRe)) {
+    if (m[1] === "push") {
+      const value = Number(m[2].trim());
+      if (!Number.isFinite(value)) return null;
+      ops.push({ kind: "push", value });
+    } else if (m[1] === "pop") {
+      ops.push({ kind: "pop" });
+    } else {
+      ops.push({ kind: "getMin" });
+    }
+  }
+  if (ops.length < 2) return null;
+  return ops;
+}
+
 type Frame = {
   main: number[];
   min: number[];
@@ -147,10 +172,18 @@ function narrate(f: Frame, started: boolean): string {
 export function MinStackViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source. When it parses, the stacks run the exact
+   *  push/pop/getMin sequence from the demo instead of a random script. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed != null;
+  // Default to the lesson's own sequence when we can read it.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("min-stack"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -158,7 +191,10 @@ export function MinStackViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ops = useMemo(() => buildScript(seed), [seed]);
+  const ops = useMemo(
+    () => (useCode && parsed ? parsed : buildScript(seed)),
+    [useCode, parsed, seed],
+  );
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
@@ -202,6 +238,11 @@ export function MinStackViz({
   const newSequence = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const topIdx = main.length - 1;
@@ -306,12 +347,51 @@ export function MinStackViz({
         <button
           type="button"
           onClick={newSequence}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New sequence
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own sequence vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

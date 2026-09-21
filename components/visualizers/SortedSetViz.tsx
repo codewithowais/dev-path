@@ -88,19 +88,45 @@ function buildRun(stream: number[]): Recording {
   return { ops, stream };
 }
 
+/** Pull the exact values the lesson inserts — its first numeric-array literal,
+ *  e.g. [42, 17, 89, 42, 3, 56, 17] (duplicates kept, so rejection is visible).
+ *  Null if not found, so the viz keeps its seeded random stream. */
+function parseCodeStream(code?: string): number[] | null {
+  if (!code) return null;
+  const arr = code.match(/\[\s*-?\d+(?:\s*,\s*-?\d+)*\s*\]/);
+  if (!arr) return null;
+  const nums = arr[0]
+    .slice(1, -1)
+    .split(",")
+    .map((s) => Number(s.trim()));
+  if (nums.some((n) => !Number.isFinite(n))) return null;
+  return nums.length >= 2 ? nums : null;
+}
+
 const SPEEDS = [720, 480, 300, 170, 80] as const;
 
 export function SortedSetViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — the exact values it inserts drive the
+   *  "from code" mode so the sorted array matches the sample on the page. */
+  code?: string;
 }) {
+  const codeStream = useMemo(() => parseCodeStream(code), [code]);
+  const hasCodeData = codeStream != null;
+  // Default to the lesson's own values when we can parse them.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [seed, setSeed] = useState<number>(() => stableSeed("sorted-set"));
 
-  const stream = useMemo(() => buildStream(seed), [seed]);
+  const stream = useMemo(
+    () => (useCode && codeStream ? codeStream : buildStream(seed)),
+    [useCode, codeStream, seed],
+  );
   const recording = useMemo(() => buildRun(stream), [stream]);
   const { ops } = recording;
 
@@ -198,6 +224,11 @@ export function SortedSetViz({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const { arr, status, compareIdx, dupIdx, justInserted } = frame;
@@ -347,12 +378,51 @@ export function SortedSetViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own values vs a random stream. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

@@ -63,29 +63,64 @@ function makeGrid(seed: number): number[][] {
   return g;
 }
 
+/** Script the run for a given (square) grid: address one cell, walk row-major,
+ *  then transpose across the diagonal. Shared by the random and code paths. */
+function scriptGrid(grid: number[][], addr: { r: number; c: number }): Op[] {
+  const n = grid.length;
+  const ops: Op[] = [];
+
+  ops.push({ t: "address", r: addr.r, c: addr.c });
+
+  ops.push({ t: "phase", label: "traverse" });
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) ops.push({ t: "visit", r, c });
+  }
+
+  ops.push({ t: "phase", label: "transpose" });
+  for (let r = 0; r < n; r++) {
+    for (let c = r + 1; c < n; c++) ops.push({ t: "swap", r, c });
+  }
+
+  return ops;
+}
+
 /** Record: address one seeded cell, walk row-major, then transpose. */
 function record(seed: number): { ops: Op[]; grid: number[][] } {
   const grid = makeGrid(seed);
   const rng = makeRng(seed ^ 0x51ed270b);
-  const ops: Op[] = [];
+  const addr = { r: Math.floor(rng() * N), c: Math.floor(rng() * N) };
+  return { ops: scriptGrid(grid, addr), grid };
+}
 
-  ops.push({
-    t: "address",
-    r: Math.floor(rng() * N),
-    c: Math.floor(rng() * N),
-  });
+/* ─────────────────────────── Bind to the lesson's code ───────────────────
+   Parse a SQUARE 2D numeric literal (e.g. [[1,2],[3,4]]) from the lesson's
+   code — the transpose animation swaps [r][c]↔[c][r] in place, which is only
+   defined for a square grid. A non-square grid, a grid built without a literal,
+   or missing code all return null, and the component keeps its random demo. */
+function parseMatrixCode(code?: string): number[][] | null {
+  if (!code) return null;
+  try {
+    // An outer bracket wrapping one or more `[...]` rows.
+    const outer = code.match(/\[\s*(\[[^[\]]*\](?:\s*,\s*\[[^[\]]*\])*)\s*\]/);
+    if (!outer) return null;
+    const rowLits = outer[1].match(/\[[^[\]]*\]/g);
+    if (!rowLits || rowLits.length < 2) return null;
 
-  ops.push({ t: "phase", label: "traverse" });
-  for (let r = 0; r < N; r++) {
-    for (let c = 0; c < N; c++) ops.push({ t: "visit", r, c });
+    const grid: number[][] = [];
+    for (const rl of rowLits) {
+      const nums = rl.slice(1, -1).match(/-?\d+(?:\.\d+)?/g);
+      if (!nums) return null;
+      grid.push(nums.map(Number));
+    }
+    const size = grid.length;
+    if (size < 2 || size > 6) return null;
+    // Require a square grid — transpose-in-place is undefined otherwise.
+    if (!grid.every((row) => row.length === size)) return null;
+
+    return grid;
+  } catch {
+    return null;
   }
-
-  ops.push({ t: "phase", label: "transpose" });
-  for (let r = 0; r < N; r++) {
-    for (let c = r + 1; c < N; c++) ops.push({ t: "swap", r, c });
-  }
-
-  return { ops, grid };
 }
 
 function narrate(op: Op | undefined, view: number[][]): string {
@@ -108,10 +143,16 @@ function narrate(op: Op | undefined, view: number[][]): string {
 export function MatrixViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — bind to a square 2D literal within it. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseMatrixCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("matrix"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -119,7 +160,15 @@ export function MatrixViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { ops, grid } = useMemo(() => record(seed), [seed]);
+  // The active dataset: the lesson's own square grid, or a seeded random one.
+  const { ops, grid } = useMemo(
+    () =>
+      useCode && parsed
+        ? { grid: parsed, ops: scriptGrid(parsed, { r: 0, c: 0 }) }
+        : record(seed),
+    [useCode, parsed, seed],
+  );
+  const n = grid.length;
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
@@ -201,6 +250,11 @@ export function MatrixViz({
     setSeed((s) => s + 1);
   };
 
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
   const cellColor = (r: number, c: number): string => {
     if (active && active.r === r && active.c === c) return "var(--accent)";
     if (mirror && mirror.r === r && mirror.c === c) return "var(--color-primary)";
@@ -231,7 +285,7 @@ export function MatrixViz({
             color: "var(--accent)",
           }}
         >
-          Matrix · {N}×{N}
+          Matrix · {n}×{n}
         </span>
         {complexity && (
           <span className="ml-auto font-mono text-[11px] text-muted">{complexity}</span>
@@ -249,7 +303,7 @@ export function MatrixViz({
         <div className="mx-auto w-max">
           {/* Column index header */}
           <div className="flex gap-1.5 pl-7">
-            {Array.from({ length: N }, (_, c) => (
+            {Array.from({ length: n }, (_, c) => (
               <div
                 key={c}
                 className="flex h-5 w-12 items-center justify-center font-mono text-[10px] text-muted sm:w-14"
@@ -290,7 +344,7 @@ export function MatrixViz({
       {/* Stats */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
         <Stat label="Phase" value={phaseLabel} />
-        <Stat label="Cells visited" value={`${visits}/${N * N}`} />
+        <Stat label="Cells visited" value={`${visits}/${n * n}`} />
         <Stat label="Swaps" value={swaps} />
         <Stat label="Step" value={`${step}/${total}`} />
       </div>
@@ -316,12 +370,51 @@ export function MatrixViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own grid vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

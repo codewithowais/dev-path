@@ -73,6 +73,31 @@ type Op =
 
 type Recording = { ops: Op[]; added: string[]; queries: { w: string; kind: QueryKind }[] };
 
+/** Record the run: add every item (flipping its k bits), then run each query
+ *  through the same k hashes and resolve present/absent from the live bits.
+ *  Shared by both the random and the "from code" modes. */
+function buildOps(added: string[], queries: { w: string; kind: QueryKind }[]): Recording {
+  const ops: Op[] = [];
+  const live = new Array<number>(SIZE).fill(0);
+  for (const w of added) {
+    ops.push({ t: "add-start", w });
+    hashes(w).forEach((bit, fn) => {
+      live[bit] = 1;
+      ops.push({ t: "add-bit", w, fn, bit });
+    });
+  }
+  for (const q of queries) {
+    ops.push({ t: "q-start", w: q.w, kind: q.kind });
+    const hs = hashes(q.w);
+    hs.forEach((bit, fn) => {
+      ops.push({ t: "q-bit", w: q.w, fn, bit, isSet: live[bit] === 1 });
+    });
+    const present = hs.every((b) => live[b] === 1);
+    ops.push({ t: "q-result", w: q.w, present, kind: q.kind });
+  }
+  return { ops, added, queries };
+}
+
 /** Deterministically choose 4 items to add plus three queries — a true
  *  positive, a true negative, and (guaranteed) a false positive — by trying
  *  seed-derived arrangements until one yields all three from the pool. */
@@ -104,35 +129,50 @@ function buildRun(seed: number): Recording {
       { w: trueNeg, kind: "tn" },
       { w: falsePos, kind: "fp" },
     ];
-
-    const ops: Op[] = [];
-    const live = new Array<number>(SIZE).fill(0);
-    for (const w of added) {
-      ops.push({ t: "add-start", w });
-      hashes(w).forEach((bit, fn) => {
-        live[bit] = 1;
-        ops.push({ t: "add-bit", w, fn, bit });
-      });
-    }
-    for (const q of queries) {
-      ops.push({ t: "q-start", w: q.w, kind: q.kind });
-      const hs = hashes(q.w);
-      hs.forEach((bit, fn) => {
-        ops.push({ t: "q-bit", w: q.w, fn, bit, isSet: live[bit] === 1 });
-      });
-      const present = hs.every((b) => live[b] === 1);
-      ops.push({ t: "q-result", w: q.w, present, kind: q.kind });
-    }
-    return { ops, added, queries };
+    return buildOps(added, queries);
   }
   // Extremely unlikely fallback: add-only run.
-  const added = POOL.slice(0, ADD_COUNT);
-  const ops: Op[] = [];
-  for (const w of added) {
-    ops.push({ t: "add-start", w });
-    hashes(w).forEach((bit, fn) => ops.push({ t: "add-bit", w, fn, bit }));
+  return buildOps(POOL.slice(0, ADD_COUNT), []);
+}
+
+/** Build the run from the lesson's own items: add these exact words, then query
+ *  these exact words. Each query's kind (true positive / true negative / false
+ *  positive) is derived from whether it was added and whether the viz's own
+ *  bits all happen to be set. */
+function buildFromCode(added: string[], queryWords: string[]): Recording {
+  const bits = new Array<number>(SIZE).fill(0);
+  for (const w of added) for (const b of hashes(w)) bits[b] = 1;
+  const addedSet = new Set(added);
+  const queries = queryWords.map((w) => {
+    const present = hashes(w).every((b) => bits[b] === 1);
+    const kind: QueryKind = addedSet.has(w) ? "tp" : present ? "fp" : "tn";
+    return { w, kind };
+  });
+  return buildOps(added, queries);
+}
+
+/** Parse the items the lesson adds — its first string-array literal. */
+function parseCodeAdded(code?: string): string[] | null {
+  if (!code) return null;
+  const arr = code.match(/\[\s*(?:"[^"]*"|'[^']*')(?:\s*,\s*(?:"[^"]*"|'[^']*'))*\s*\]/);
+  if (!arr) return null;
+  const quoted = arr[0].match(/"([^"]*)"|'([^']*)'/g);
+  if (!quoted) return null;
+  const values = quoted.map((s) => s.slice(1, -1)).filter((s) => s.length > 0);
+  return values.length >= 1 ? values : null;
+}
+
+/** Parse the items the lesson queries — every mightContain("…") argument. */
+function parseCodeQueries(code?: string): string[] | null {
+  if (!code) return null;
+  const re = /\.mightContain\(\s*"([^"]*)"|\.mightContain\(\s*'([^']*)'/g;
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    const v = m[1] ?? m[2];
+    if (v) out.push(v);
   }
-  return { ops, added, queries: [] };
+  return out.length >= 1 ? out : null;
 }
 
 const KIND_LABEL: Record<QueryKind, string> = {
@@ -146,15 +186,30 @@ const SPEEDS = [780, 520, 320, 190, 90] as const;
 export function BloomFilterViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — the exact items it adds and queries drive
+   *  the "from code" mode so the bits and verdicts match the sample. */
+  code?: string;
 }) {
+  const codeAdded = useMemo(() => parseCodeAdded(code), [code]);
+  const codeQueries = useMemo(() => parseCodeQueries(code), [code]);
+  const hasCodeData = codeAdded != null && codeQueries != null;
+  // Default to the lesson's own items when we can parse both parts.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [seed, setSeed] = useState<number>(() => stableSeed("bloom-filter"));
 
-  const recording = useMemo(() => buildRun(seed), [seed]);
-  const { ops } = recording;
+  const recording = useMemo(
+    () =>
+      useCode && codeAdded && codeQueries
+        ? buildFromCode(codeAdded, codeQueries)
+        : buildRun(seed),
+    [useCode, codeAdded, codeQueries, seed],
+  );
+  const { ops, added } = recording;
 
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -249,6 +304,11 @@ export function BloomFilterViz({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const { bits, highlight, phase, activeWord, kind, present, resolved } = frame;
@@ -395,7 +455,7 @@ export function BloomFilterViz({
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
         <Stat label="Bits set" value={`${frame.bitsSet}/${SIZE}`} />
-        <Stat label="Items added" value={`${frame.itemsAdded}/${ADD_COUNT}`} />
+        <Stat label="Items added" value={`${frame.itemsAdded}/${added.length}`} />
         <Stat label="Queries" value={frame.queriesDone} />
         <Stat label="Verdict" value={verdict === "—" ? "—" : verdict === "checking…" ? "…" : present ? "maybe" : "no"} />
       </div>
@@ -420,12 +480,51 @@ export function BloomFilterViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own items vs a random selection. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

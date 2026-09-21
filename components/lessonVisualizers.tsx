@@ -76,7 +76,12 @@ import { TupleViz } from "./visualizers/TupleViz";
 export type VizProps = {
   accent: string;
   complexity?: string;
+  /** First integer-array literal from the lesson's code (sort/search charts). */
   lessonData?: number[];
+  /** The lesson's full JavaScript code sample. Visualizers that can bind to the
+   *  exact data in the code (DP tables, data structures) parse what they need
+   *  from this and offer a "from code / random" toggle. */
+  code?: string;
 };
 
 /** Registry: lesson id → its "see it in motion" component. Adding a visualizer

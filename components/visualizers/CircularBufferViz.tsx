@@ -22,7 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type Op = { kind: "write"; value: number } | { kind: "read" };
 
-const CAPACITY = 6;
+const DEFAULT_CAPACITY = 6;
 const NUM_OPS = 13;
 // ms per step at each slider notch (left = slow, right = fast).
 const SPEEDS = [900, 620, 420, 260, 150] as const;
@@ -55,7 +55,7 @@ function makeSeed(tag: string): number {
  *  full buffer overwrites the oldest — that's the whole point of the lesson),
  *  reads only when something is present. Biased so we fill, wrap around, and
  *  dequeue at least twice. Deterministic for a given seed. */
-function buildScript(seed: number): Op[] {
+function buildScript(seed: number, capacity: number): Op[] {
   const rng = makeRng(seed);
   const ops: Op[] = [];
   let count = 0;
@@ -72,10 +72,36 @@ function buildScript(seed: number): Op[] {
       reads++;
     } else {
       ops.push({ kind: "write", value: nextVal++ });
-      count = Math.min(CAPACITY, count + 1);
+      count = Math.min(capacity, count + 1);
     }
   }
   return ops;
+}
+
+/** Pull the demo's capacity and its ordered write/read calls straight from the
+ *  lesson's JavaScript, so the ring animates the exact example on the page.
+ *  Returns null (→ fall back to the seeded random script) if anything is off. */
+function parseCode(code: string | undefined): { capacity: number; ops: Op[] } | null {
+  if (!code) return null;
+  const capMatch = code.match(/new\s+CircularBuffer\s*\(\s*(\d+)\s*\)/);
+  const varMatch = code.match(/(?:const|let|var)\s+(\w+)\s*=\s*new\s+CircularBuffer\b/);
+  if (!capMatch || !varMatch) return null;
+  const capacity = Number(capMatch[1]);
+  if (!Number.isInteger(capacity) || capacity < 2 || capacity > 10) return null;
+  const name = varMatch[1];
+  const callRe = new RegExp(`\\b${name}\\.(write|read|dequeue)\\s*\\(([^)]*)\\)`, "g");
+  const ops: Op[] = [];
+  for (const m of code.matchAll(callRe)) {
+    if (m[1] === "write") {
+      const value = Number(m[2].trim());
+      if (!Number.isFinite(value)) return null;
+      ops.push({ kind: "write", value });
+    } else {
+      ops.push({ kind: "read" });
+    }
+  }
+  if (ops.length < 2) return null;
+  return { capacity, ops };
 }
 
 type Frame = {
@@ -90,8 +116,8 @@ type Frame = {
   lastValue: number | null; // value written or read by the current op
 };
 
-function replay(ops: Op[], step: number): Frame {
-  const slots: (number | null)[] = new Array(CAPACITY).fill(null);
+function replay(ops: Op[], step: number, capacity: number): Frame {
+  const slots: (number | null)[] = new Array(capacity).fill(null);
   let start = 0;
   let count = 0;
   let writes = 0;
@@ -105,16 +131,16 @@ function replay(ops: Op[], step: number): Frame {
     const op = ops[k];
     overwrote = false;
     if (op.kind === "write") {
-      const end = (start + count) % CAPACITY;
+      const end = (start + count) % capacity;
       slots[end] = op.value;
       active = end;
       activeKind = "write";
       lastValue = op.value;
       writes++;
-      if (count < CAPACITY) {
+      if (count < capacity) {
         count++;
       } else {
-        start = (start + 1) % CAPACITY; // full: oldest gets overwritten
+        start = (start + 1) % capacity; // full: oldest gets overwritten
         overwrote = true;
       }
     } else {
@@ -124,7 +150,7 @@ function replay(ops: Op[], step: number): Frame {
         activeKind = "read";
         lastValue = slots[start];
         slots[start] = null;
-        start = (start + 1) % CAPACITY;
+        start = (start + 1) % capacity;
         count--;
         reads++;
       }
@@ -133,15 +159,15 @@ function replay(ops: Op[], step: number): Frame {
   return { slots, start, count, active, activeKind, writes, reads, overwrote, lastValue };
 }
 
-function narrate(f: Frame, started: boolean): string {
+function narrate(f: Frame, started: boolean, capacity: number): string {
   if (!started) {
-    return "Ready. A fixed ring of 6 slots — writes wrap around with modulo math, nothing ever shifts.";
+    return `Ready. A fixed ring of ${capacity} slots — writes wrap around with modulo math, nothing ever shifts.`;
   }
   if (f.activeKind === "write") {
     if (f.overwrote) {
       return `Buffer was full — writing ${f.lastValue} overwrites the oldest value and slides head forward (wrap-around).`;
     }
-    return `write ${f.lastValue}: dropped at the tail = (start + count) % ${CAPACITY}. Tail wraps back to 0 at the end.`;
+    return `write ${f.lastValue}: dropped at the tail = (start + count) % ${capacity}. Tail wraps back to 0 at the end.`;
   }
   if (f.activeKind === "read") {
     return `read: hand back the oldest value ${f.lastValue} and advance head — O(1), no shifting.`;
@@ -152,10 +178,18 @@ function narrate(f: Frame, started: boolean): string {
 export function CircularBufferViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source. When it parses, the ring runs the exact
+   *  capacity + write/read sequence from the demo instead of a random script. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed != null;
+  // Default to the lesson's own sequence when we can read it.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("circular-buffer"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -163,17 +197,21 @@ export function CircularBufferViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ops = useMemo(() => buildScript(seed), [seed]);
+  const capacity = useCode && parsed ? parsed.capacity : DEFAULT_CAPACITY;
+  const ops = useMemo(
+    () => (useCode && parsed ? parsed.ops : buildScript(seed, capacity)),
+    [useCode, parsed, seed, capacity],
+  );
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
 
-  const frame = useMemo(() => replay(ops, step), [ops, step]);
+  const frame = useMemo(() => replay(ops, step, capacity), [ops, step, capacity]);
   const { slots, start, count, active } = frame;
 
   // Tail = the next-write slot. Head = the oldest slot (= start).
-  const tail = (start + count) % CAPACITY;
-  const full = count === CAPACITY;
+  const tail = (start + count) % capacity;
+  const full = count === capacity;
   const empty = count === 0;
 
   const reset = () => {
@@ -212,6 +250,11 @@ export function CircularBufferViz({
     setSeed((s) => s + 1);
   };
 
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
   // Geometry for the ring of slots.
   const CX = 130;
   const CY = 130;
@@ -219,12 +262,12 @@ export function CircularBufferViz({
   const SLOT_R = 24;
   const pos = (i: number) => {
     // Slot 0 at top, going clockwise.
-    const ang = (i / CAPACITY) * Math.PI * 2 - Math.PI / 2;
+    const ang = (i / capacity) * Math.PI * 2 - Math.PI / 2;
     return { x: CX + R * Math.cos(ang), y: CY + R * Math.sin(ang), ang };
   };
 
   const occupied = new Set<number>();
-  for (let i = 0; i < count; i++) occupied.add((start + i) % CAPACITY);
+  for (let i = 0; i < count; i++) occupied.add((start + i) % capacity);
 
   const started = step > 0;
 
@@ -247,7 +290,7 @@ export function CircularBufferViz({
             color: "var(--accent)",
           }}
         >
-          Circular buffer · cap {CAPACITY}
+          Circular buffer · cap {capacity}
         </span>
         {complexity && (
           <span className="ml-auto font-mono text-[11px] text-muted">{complexity}</span>
@@ -258,7 +301,7 @@ export function CircularBufferViz({
       <div
         className="mt-4 flex items-center justify-center rounded-xl bg-paper px-3 py-3"
         role="img"
-        aria-label={`Circular buffer of capacity ${CAPACITY}, ${count} slot${
+        aria-label={`Circular buffer of capacity ${capacity}, ${count} slot${
           count === 1 ? "" : "s"
         } filled, ${
           empty ? "empty" : full ? "full" : "partly full"
@@ -356,12 +399,12 @@ export function CircularBufferViz({
 
       {/* Commentary */}
       <p className="mt-3 min-h-[1.5rem] text-sm text-ink" aria-live="polite" role="status">
-        {narrate(frame, started)}
+        {narrate(frame, started, capacity)}
       </p>
 
       {/* Stats */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-        <Stat label="Fill" value={`${count}/${CAPACITY}`} />
+        <Stat label="Fill" value={`${count}/${capacity}`} />
         <Stat label="head / tail" value={`${empty ? "–" : start} / ${tail}`} />
         <Stat label="State" value={empty ? "empty" : full ? "full" : "open"} />
         <Stat label="Step" value={`${step}/${total}`} />
@@ -388,12 +431,51 @@ export function CircularBufferViz({
         <button
           type="button"
           onClick={newSequence}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New sequence
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own sequence vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

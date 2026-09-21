@@ -84,19 +84,52 @@ function pickKeys(seed: number): string[] {
   return pool.slice(0, KEY_COUNT);
 }
 
+/** Pull the exact keys the lesson inserts from its code sample. The demo stores
+ *  word → count for `["cat", "dog", "cat", "bird", "dog", "cat"]`, so the map's
+ *  keys are the unique words in first-seen order. Returns null if we can't find
+ *  a usable string-array literal (then the viz keeps its random behaviour). */
+function parseCodeKeys(code?: string): string[] | null {
+  if (!code) return null;
+  const arr = code.match(/\[\s*(?:"[^"]*"|'[^']*')(?:\s*,\s*(?:"[^"]*"|'[^']*'))*\s*\]/);
+  if (!arr) return null;
+  const quoted = arr[0].match(/"([^"]*)"|'([^']*)'/g);
+  if (!quoted) return null;
+  const values = quoted.map((s) => s.slice(1, -1)).filter((s) => s.length > 0);
+  const seen = new Set<string>();
+  const keys: string[] = [];
+  for (const v of values) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      keys.push(v);
+    }
+  }
+  return keys.length >= 2 ? keys : null;
+}
+
 const SPEEDS = [720, 480, 300, 170, 80] as const;
 
 export function HashMapViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — the exact keys it inserts drive the "from
+   *  code" mode, so the buckets fill with the words the learner sees. */
+  code?: string;
 }) {
+  const codeKeys = useMemo(() => parseCodeKeys(code), [code]);
+  const hasCodeData = codeKeys != null;
+  // Default to the lesson's own keys when we can parse them.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [seed, setSeed] = useState<number>(() => stableSeed("hash-map"));
 
-  const keys = useMemo(() => pickKeys(seed), [seed]);
+  const keys = useMemo(
+    () => (useCode && codeKeys ? codeKeys : pickKeys(seed)),
+    [useCode, codeKeys, seed],
+  );
   const recording = useMemo(() => recordRun(keys), [keys]);
 
   const [step, setStep] = useState(0);
@@ -171,6 +204,11 @@ export function HashMapViz({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const { buckets, activeKey, activeBucket, phase } = frame;
@@ -339,12 +377,51 @@ export function HashMapViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own keys vs a random set. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

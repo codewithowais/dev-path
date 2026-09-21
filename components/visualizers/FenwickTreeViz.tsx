@@ -78,8 +78,37 @@ function makePlan(seed: number): Plan {
   return { values, queryK, updatePos, updateDelta };
 }
 
+/** Parse the lesson's demo: the base array literal (`const values = [...]`),
+ *  the first prefixSum(k) boundary, and the standalone numeric update(pos,
+ *  delta) (the build loop's update(idx + 1, v) has non-numeric args, so it
+ *  never matches). Returns null on anything unexpected so we fall back. */
+function parseFenwick(code?: string): Plan | null {
+  if (!code) return null;
+  const arr = code.match(/values\s*=\s*\[([^\]]*)\]/);
+  if (!arr) return null;
+  const nums = arr[1]
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map(Number);
+  if (nums.length < 1 || nums.length > 8 || nums.some((v) => !Number.isFinite(v))) {
+    return null;
+  }
+  const qMatch = code.match(/prefixSum\(\s*(\d+)\s*\)/);
+  if (!qMatch) return null;
+  const queryK = Number(qMatch[1]);
+  const uMatch = code.match(/\.update\(\s*(\d+)\s*,\s*(-?\d+)\s*\)/);
+  if (!uMatch) return null;
+  const updatePos = Number(uMatch[1]);
+  const updateDelta = Number(uMatch[2]);
+  if (queryK < 1 || queryK > nums.length) return null;
+  if (updatePos < 1 || updatePos > nums.length) return null;
+  return { values: [0, ...nums], queryK, updatePos, updateDelta };
+}
+
 function buildFrames(plan: Plan): Frame[] {
-  const tree = new Array<number>(N + 1).fill(0);
+  const n = plan.values.length - 1; // base positions (values is 1-indexed)
+  const tree = new Array<number>(n + 1).fill(0);
   const frames: Frame[] = [];
 
   const snap = (
@@ -104,7 +133,7 @@ function buildFrames(plan: Plan): Frame[] {
   const doUpdate = (pos: number, delta: number, op: "build" | "update") => {
     let i = pos;
     const path: number[] = [];
-    while (i <= N) {
+    while (i <= n) {
       tree[i] += delta;
       path.push(i);
       snap({
@@ -124,7 +153,7 @@ function buildFrames(plan: Plan): Frame[] {
   };
 
   // Build the tree by pouring in each base value.
-  for (let p = 1; p <= N; p++) {
+  for (let p = 1; p <= n; p++) {
     doUpdate(p, plan.values[p], "build");
   }
 
@@ -203,7 +232,7 @@ const BASE_Y = 30;
 const TREE_Y = 96;
 const CELL_H = 30;
 const SVG_H = 176;
-const CONTENT_W = PAD_L * 2 + N * COL;
+const contentW = (count: number) => PAD_L * 2 + count * COL;
 const colX = (c: number) => PAD_L + (c - 1) * COL + COL / 2;
 
 const SPEEDS = [1200, 800, 520, 320, 170] as const;
@@ -211,14 +240,28 @@ const SPEEDS = [1200, 800, 520, 320, 170] as const;
 export function FenwickTreeViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — its base array, prefixSum & update. */
+  code?: string;
 }) {
+  const codePlan = useMemo(() => parseFenwick(code), [code]);
+  const hasCodeData = codePlan != null;
+  // Default to the lesson's own values/query/update when we can parse them, so
+  // the animation matches the code; the learner can switch to random.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(BASE_SEED);
-  const plan = useMemo(() => makePlan(seed), [seed]);
+
+  const plan = useMemo(
+    () => (useCode && hasCodeData ? codePlan : makePlan(seed)),
+    [useCode, hasCodeData, codePlan, seed],
+  );
   const frames = useMemo(() => buildFrames(plan), [plan]);
   const total = frames.length;
+  const count = plan.values.length - 1;
+  const svgW = contentW(count);
 
   const [step, setStep] = useState(0);
   const [speedIdx, setSpeedIdx] = useState(2);
@@ -268,13 +311,22 @@ export function FenwickTreeViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -363,12 +415,12 @@ export function FenwickTreeViz({
       {/* Base array + BIT */}
       <div className="mt-3 overflow-x-auto rounded-xl bg-paper px-1 py-2">
         <svg
-          width={CONTENT_W}
+          width={svgW}
           height={SVG_H}
-          viewBox={`0 0 ${CONTENT_W} ${SVG_H}`}
+          viewBox={`0 0 ${svgW} ${SVG_H}`}
           className="mx-auto block"
           role="img"
-          aria-label={`Fenwick tree over ${N} positions. ${f.caption}`}
+          aria-label={`Fenwick tree over ${count} positions. ${f.caption}`}
         >
           <defs>
             <marker
@@ -413,7 +465,7 @@ export function FenwickTreeViz({
           {f.active > 0 && band(f.active, "var(--accent)", `ab-${f.active}`)}
 
           {/* Base cells */}
-          {Array.from({ length: N }, (_, k) => k + 1).map((c) => {
+          {Array.from({ length: count }, (_, k) => k + 1).map((c) => {
             const isTarget = f.target === c;
             return (
               <g key={`base-${c}`}>
@@ -478,7 +530,7 @@ export function FenwickTreeViz({
           )}
 
           {/* Tree cells */}
-          {Array.from({ length: N }, (_, k) => k + 1).map((c) => {
+          {Array.from({ length: count }, (_, k) => k + 1).map((c) => {
             const col = treeCellColor(c);
             return (
               <g key={`tree-${c}`}>
@@ -560,12 +612,51 @@ export function FenwickTreeViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own values vs a random set. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

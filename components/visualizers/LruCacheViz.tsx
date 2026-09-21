@@ -25,7 +25,7 @@ type Op =
 
 type Entry = { key: string; value: number };
 
-const CAPACITY = 4;
+const DEFAULT_CAPACITY = 4;
 const NUM_OPS = 11;
 const KEYS = ["A", "B", "C", "D", "E", "F"] as const;
 // ms per step at each slider notch (left = slow, right = fast).
@@ -54,7 +54,7 @@ function makeSeed(tag: string): number {
 /** Build a script that is guaranteed to show: filling up, a get hit that
  *  reorders, a get miss, an update, and at least one eviction. We simulate the
  *  cache while generating so the ops stay sensible. Deterministic per seed. */
-function buildScript(seed: number): Op[] {
+function buildScript(seed: number, capacity: number): Op[] {
   const rng = makeRng(seed);
   const ops: Op[] = [];
   const order: string[] = []; // front = MRU
@@ -67,7 +67,7 @@ function buildScript(seed: number): Op[] {
     order.unshift(key);
   };
   const insert = (key: string) => {
-    if (!present.has(key) && order.length >= CAPACITY) {
+    if (!present.has(key) && order.length >= capacity) {
       const evicted = order.pop();
       if (evicted) present.delete(evicted);
     }
@@ -83,7 +83,7 @@ function buildScript(seed: number): Op[] {
     const r = rng();
     // Early on, fill with fresh keys. Later, mix in gets (hits + a miss) and a
     // put that forces an eviction.
-    if (order.length < CAPACITY && (i < 3 || r < 0.45)) {
+    if (order.length < capacity && (i < 3 || r < 0.45)) {
       const key = KEYS[order.length % KEYS.length];
       ops.push({ kind: "put", key, value: val() });
       insert(key);
@@ -103,7 +103,7 @@ function buildScript(seed: number): Op[] {
       // put a brand-new key — forces an eviction when full.
       const fresh = KEYS.find((k) => !present.has(k));
       const key = fresh ?? order[order.length - 1];
-      if (fresh && present.size >= CAPACITY) evicted = true;
+      if (fresh && present.size >= capacity) evicted = true;
       ops.push({ kind: "put", key, value: val() });
       insert(key);
     }
@@ -120,6 +120,43 @@ function buildScript(seed: number): Op[] {
   return ops;
 }
 
+/** Strip surrounding quotes from a call argument, e.g. `"a"` → `a`. */
+function parseKey(raw: string): string | null {
+  const t = raw.trim().replace(/^['"`]|['"`]$/g, "").trim();
+  return t.length ? t : null;
+}
+
+/** Pull the demo's capacity and its ordered get/put calls straight from the
+ *  lesson's JavaScript, so the cache animates the exact example on the page.
+ *  Returns null (→ fall back to the seeded random script) if anything is off. */
+function parseCode(code: string | undefined): { capacity: number; ops: Op[] } | null {
+  if (!code) return null;
+  const capMatch = code.match(/new\s+LRUCache\s*\(\s*(\d+)\s*\)/);
+  const varMatch = code.match(/(?:const|let|var)\s+(\w+)\s*=\s*new\s+LRUCache\b/);
+  if (!capMatch || !varMatch) return null;
+  const capacity = Number(capMatch[1]);
+  if (!Number.isInteger(capacity) || capacity < 2 || capacity > 6) return null;
+  const name = varMatch[1];
+  const callRe = new RegExp(`\\b${name}\\.(get|put)\\s*\\(([^)]*)\\)`, "g");
+  const ops: Op[] = [];
+  for (const m of code.matchAll(callRe)) {
+    if (m[1] === "get") {
+      const key = parseKey(m[2]);
+      if (key == null) return null;
+      ops.push({ kind: "get", key });
+    } else {
+      const comma = m[2].indexOf(",");
+      if (comma < 0) return null;
+      const key = parseKey(m[2].slice(0, comma));
+      const value = Number(m[2].slice(comma + 1).trim());
+      if (key == null || !Number.isFinite(value)) return null;
+      ops.push({ kind: "put", key, value });
+    }
+  }
+  if (ops.length < 2) return null;
+  return { capacity, ops };
+}
+
 type Frame = {
   entries: Entry[]; // front (index 0) = MRU
   activeKey: string | null; // entry just touched / inserted
@@ -131,7 +168,7 @@ type Frame = {
   lastLabel: string;
 };
 
-function replay(ops: Op[], step: number): Frame {
+function replay(ops: Op[], step: number, capacity: number): Frame {
   const entries: Entry[] = [];
   const idxOf = (key: string) => entries.findIndex((e) => e.key === key);
   let activeKey: string | null = null;
@@ -170,7 +207,7 @@ function replay(ops: Op[], step: number): Frame {
         activeKey = e.key;
         lastLabel = `put ${op.key}=${op.value}`;
       } else {
-        if (entries.length >= CAPACITY) {
+        if (entries.length >= capacity) {
           const gone = entries.pop();
           if (gone) {
             evicted = gone;
@@ -205,10 +242,18 @@ function narrate(f: Frame, started: boolean): string {
 export function LruCacheViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source. When it parses, the cache runs the exact
+   *  capacity + get/put sequence from the demo instead of a random script. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed != null;
+  // Default to the lesson's own sequence when we can read it.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("lru-cache"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -216,12 +261,16 @@ export function LruCacheViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ops = useMemo(() => buildScript(seed), [seed]);
+  const capacity = useCode && parsed ? parsed.capacity : DEFAULT_CAPACITY;
+  const ops = useMemo(
+    () => (useCode && parsed ? parsed.ops : buildScript(seed, capacity)),
+    [useCode, parsed, seed, capacity],
+  );
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
 
-  const frame = useMemo(() => replay(ops, step), [ops, step]);
+  const frame = useMemo(() => replay(ops, step, capacity), [ops, step, capacity]);
   const { entries, activeKey, evicted, missKey } = frame;
 
   const started = step > 0;
@@ -261,6 +310,11 @@ export function LruCacheViz({
     setSeed((s) => s + 1);
   };
 
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
   const lruKey = entries.length ? entries[entries.length - 1].key : null;
 
   return (
@@ -283,7 +337,7 @@ export function LruCacheViz({
             color: "var(--accent)",
           }}
         >
-          LRU cache · cap {CAPACITY}
+          LRU cache · cap {capacity}
         </span>
         {complexity && (
           <span className="ml-auto font-mono text-[11px] text-muted">{complexity}</span>
@@ -294,7 +348,7 @@ export function LruCacheViz({
       <div
         className="mt-4 rounded-xl bg-paper px-3 py-4"
         role="img"
-        aria-label={`LRU cache with ${entries.length} of ${CAPACITY} slots used, ${
+        aria-label={`LRU cache with ${entries.length} of ${capacity} slots used, ${
           done ? "sequence complete" : `step ${step} of ${total}`
         }`}
       >
@@ -376,7 +430,7 @@ export function LruCacheViz({
 
       {/* Stats */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-        <Stat label="Used" value={`${entries.length}/${CAPACITY}`} />
+        <Stat label="Used" value={`${entries.length}/${capacity}`} />
         <Stat label="LRU (next out)" value={lruKey ?? "–"} />
         <Stat label="Hits/Misses" value={`${frame.hits}/${frame.misses}`} />
         <Stat label="Evictions" value={frame.evictions} />
@@ -403,12 +457,51 @@ export function LruCacheViz({
         <button
           type="button"
           onClick={newSequence}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New sequence
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own sequence vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

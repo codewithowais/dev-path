@@ -62,16 +62,42 @@ function pickN(seed: number): number {
   return N_OPTIONS[Math.floor(rng() * N_OPTIONS.length)];
 }
 
+/** Parse the N of the lesson's fib example from its code, e.g. fib(10) → 10.
+ *  We match the first `fib(<number>)` call with a plain integer argument, so
+ *  the recursive `fib(n - 1, memo)` calls are ignored. Returns null (→ no
+ *  toggle, existing random behavior) if the code is missing or nothing sane
+ *  parses out. */
+function parseFibN(code: string | undefined): number | null {
+  if (!code) return null;
+  const match = code.match(/\bfib\(\s*(\d+)\s*\)/);
+  if (!match) return null;
+  const n = Number(match[1]);
+  if (!Number.isInteger(n) || n < 1 || n > 20) return null;
+  return n;
+}
+
 export function DPGrid({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's full JavaScript source — the fib table binds to the N in it. */
+  code?: string;
 }) {
+  // The N written in the lesson's own code (e.g. fib(10)), when it parses.
+  const codeN = useMemo(() => parseFibN(code), [code]);
+  const hasCodeData = codeN !== null;
+  // Default to the lesson's own N when we have it, so the table matches the
+  // code on the page; the learner can switch to a random N for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   // Stable seed → identical server/client first render (no hydration mismatch).
   const [seed, setSeed] = useState<number>(7);
-  const n = useMemo(() => pickN(seed), [seed]);
+  const n = useMemo(
+    () => (useCode && hasCodeData ? (codeN as number) : pickN(seed)),
+    [useCode, hasCodeData, codeN, seed],
+  );
   const recording = useMemo(() => recordFib(n), [n]);
 
   const [step, setStep] = useState(0);
@@ -150,6 +176,11 @@ export function DPGrid({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const currentOp = step > 0 ? recording.ops[step - 1] : undefined;
@@ -288,12 +319,51 @@ export function DPGrid({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own N vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

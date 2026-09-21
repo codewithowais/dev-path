@@ -22,17 +22,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
    prefers-reduced-motion (handled globally in globals.css).
    ──────────────────────────────────────────────────────────────────────── */
 
-const NODES = ["A", "B", "C", "D", "E"] as const;
-type NodeId = (typeof NODES)[number];
+type NodeId = string;
 
-/** Fixed pentagon layout so edges read cleanly (viewBox 0 0 300 240). */
-const POS: Record<NodeId, { x: number; y: number }> = {
-  A: { x: 150, y: 34 },
-  B: { x: 262, y: 118 },
-  C: { x: 214, y: 216 },
-  D: { x: 86, y: 216 },
-  E: { x: 38, y: 118 },
-};
+/** Fixed pentagon slots so edges read cleanly (viewBox 0 0 300 240). A node's
+ *  position is its index in the active node list, so graphs of 2–5 nodes all
+ *  land on the same tidy layout. */
+const POS_SLOTS: { x: number; y: number }[] = [
+  { x: 150, y: 34 },
+  { x: 262, y: 118 },
+  { x: 214, y: 216 },
+  { x: 86, y: 216 },
+  { x: 38, y: 118 },
+];
+const MAX_NODES = POS_SLOTS.length;
+
+/** Node labels for the random ("New graph") mode — the full pentagon. */
+const DEFAULT_NODES = ["A", "B", "C", "D", "E"];
 
 type Edge = [NodeId, NodeId];
 
@@ -68,9 +73,9 @@ const BASE_SEED = 4104;
 
 /** Build a connected, de-duplicated edge list from a seed: a random spanning
  *  path/tree over the nodes plus a couple of extra shortcuts. Deterministic. */
-function makeEdges(seed: number): Edge[] {
+function makeEdges(seed: number, nodes: NodeId[]): Edge[] {
   const rng = makeRng(seed);
-  const order = NODES.slice();
+  const order = nodes.slice();
   // Seeded Fisher–Yates shuffle for the spanning order.
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -92,31 +97,61 @@ function makeEdges(seed: number): Edge[] {
   }
   // Two extra connections for a bit of branching.
   let guard = 0;
-  while (edges.length < NODES.length + 1 && guard < 40) {
+  while (edges.length < nodes.length + 1 && guard < 40) {
     guard++;
-    const a = NODES[Math.floor(rng() * NODES.length)];
-    const b = NODES[Math.floor(rng() * NODES.length)];
+    const a = nodes[Math.floor(rng() * nodes.length)];
+    const b = nodes[Math.floor(rng() * nodes.length)];
     add(a, b);
   }
   return edges;
 }
 
-const emptyAdjacency = (): Record<NodeId, NodeId[]> => ({
-  A: [],
-  B: [],
-  C: [],
-  D: [],
-  E: [],
-});
+/** Parse the lesson's addEdge("a", "b") calls into a graph. Node names are
+ *  remapped positionally onto the pentagon's letter labels (first name seen →
+ *  A, next → B, …) so the fixed-size layout and adjacency badges stay tidy;
+ *  the topology drawn is exactly the one written in the code. Returns null on
+ *  anything unexpected so the component falls back to random graphs. */
+function parseGraph(code?: string): { nodes: NodeId[]; edges: Edge[] } | null {
+  if (!code) return null;
+  const re = /addEdge\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']\s*\)/g;
+  const order: string[] = [];
+  const raw: [string, string][] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    raw.push([m[1], m[2]]);
+    for (const name of [m[1], m[2]]) if (!order.includes(name)) order.push(name);
+  }
+  if (raw.length === 0 || order.length < 2 || order.length > MAX_NODES) return null;
+  const nodes = DEFAULT_NODES.slice(0, order.length);
+  const seen = new Set<string>();
+  const edges: Edge[] = [];
+  for (const [a, b] of raw) {
+    if (a === b) continue;
+    const la = nodes[order.indexOf(a)];
+    const lb = nodes[order.indexOf(b)];
+    const k = edgeKey(la, lb);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    edges.push([la, lb]);
+  }
+  if (edges.length === 0) return null;
+  return { nodes, edges };
+}
+
+const emptyAdjacency = (nodes: NodeId[]): Record<NodeId, NodeId[]> => {
+  const adj: Record<NodeId, NodeId[]> = {};
+  for (const n of nodes) adj[n] = [];
+  return adj;
+};
 
 /* Build the full frame timeline: draw the nodes, add edges one by one (each
    updating both neighbour lists), then spotlight every node's list in turn. */
-function buildFrames(edges: Edge[]): Frame[] {
+function buildFrames(nodes: NodeId[], edges: Edge[]): Frame[] {
   const frames: Frame[] = [];
-  const adjacency = emptyAdjacency();
+  const adjacency = emptyAdjacency(nodes);
 
   const snapshot = (): Record<NodeId, NodeId[]> => {
-    const copy = emptyAdjacency();
+    const copy = emptyAdjacency(nodes);
     (Object.keys(adjacency) as NodeId[]).forEach((k) => {
       copy[k] = [...adjacency[k]];
     });
@@ -130,8 +165,7 @@ function buildFrames(edges: Edge[]): Frame[] {
     writeNodes: [],
     focusNode: null,
     focusNeighbors: [],
-    caption:
-      "Five nodes, no connections yet. Each node's neighbour list starts empty.",
+    caption: `${nodes.length} nodes, no connections yet. Each node's neighbour list starts empty.`,
     op: "setup",
   });
 
@@ -165,7 +199,7 @@ function buildFrames(edges: Edge[]): Frame[] {
   });
 
   // Spotlight each node's neighbour list — the O(1) lookup the list gives you.
-  for (const n of NODES) {
+  for (const n of nodes) {
     frames.push({
       edges: [...drawn],
       adjacency: snapshot(),
@@ -189,13 +223,27 @@ const SPEEDS = [1100, 750, 500, 300, 160] as const;
 export function GraphDSViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — its addEdge(...) calls build the graph. */
+  code?: string;
 }) {
+  const codeGraph = useMemo(() => parseGraph(code), [code]);
+  const hasCodeData = codeGraph != null;
+  // Default to the lesson's own graph when we can parse it, so the drawing
+  // matches the code on the page; the learner can switch to random for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(BASE_SEED);
-  const edges = useMemo(() => makeEdges(seed), [seed]);
-  const frames = useMemo(() => buildFrames(edges), [edges]);
+
+  const nodes = useCode && hasCodeData ? codeGraph.nodes : DEFAULT_NODES;
+  const edges = useMemo(
+    () =>
+      useCode && hasCodeData ? codeGraph.edges : makeEdges(seed, DEFAULT_NODES),
+    [useCode, hasCodeData, codeGraph, seed],
+  );
+  const frames = useMemo(() => buildFrames(nodes, edges), [nodes, edges]);
   const total = frames.length;
 
   const [step, setStep] = useState(0); // frame index
@@ -246,16 +294,26 @@ export function GraphDSViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newGraph = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newGraph = () => {
+    resetRun();
     setSeed((s) => s + 1);
   };
 
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
+  };
+
   const f = frames[Math.min(step, total - 1)];
+  const posOf = (n: NodeId) => POS_SLOTS[nodes.indexOf(n)];
 
   const isActiveEdge = (a: NodeId, b: NodeId) =>
     f.activeEdge != null && edgeKey(a, b) === edgeKey(f.activeEdge[0], f.activeEdge[1]);
@@ -319,10 +377,10 @@ export function GraphDSViz({
               return (
                 <line
                   key={edgeKey(a, b)}
-                  x1={POS[a].x}
-                  y1={POS[a].y}
-                  x2={POS[b].x}
-                  y2={POS[b].y}
+                  x1={posOf(a).x}
+                  y1={posOf(a).y}
+                  x2={posOf(b).x}
+                  y2={posOf(b).y}
                   stroke={
                     active
                       ? "var(--accent)"
@@ -338,7 +396,7 @@ export function GraphDSViz({
             })}
 
             {/* Nodes */}
-            {NODES.map((n) => {
+            {nodes.map((n) => {
               const k = nodeKind(n);
               const fill = nodeFill(k);
               const idle = k === "idle";
@@ -346,8 +404,8 @@ export function GraphDSViz({
                 <g key={n}>
                   {(k === "active" || k === "focus") && (
                     <circle
-                      cx={POS[n].x}
-                      cy={POS[n].y}
+                      cx={posOf(n).x}
+                      cy={posOf(n).y}
                       r={23}
                       fill="none"
                       stroke="var(--accent)"
@@ -356,8 +414,8 @@ export function GraphDSViz({
                     />
                   )}
                   <circle
-                    cx={POS[n].x}
-                    cy={POS[n].y}
+                    cx={posOf(n).x}
+                    cy={posOf(n).y}
                     r={17}
                     fill={fill}
                     stroke={idle ? "var(--color-line)" : fill}
@@ -365,8 +423,8 @@ export function GraphDSViz({
                     style={{ transition: "fill 200ms" }}
                   />
                   <text
-                    x={POS[n].x}
-                    y={POS[n].y}
+                    x={posOf(n).x}
+                    y={posOf(n).y}
                     textAnchor="middle"
                     dominantBaseline="central"
                     fontSize={14}
@@ -386,7 +444,7 @@ export function GraphDSViz({
         <div className="rounded-xl bg-paper px-3 py-3">
           <div className="dp-eyebrow mb-2 text-muted">adjacency</div>
           <div className="flex flex-col gap-1.5">
-            {NODES.map((n) => {
+            {nodes.map((n) => {
               const k = nodeKind(n);
               const rowActive = k === "active" || k === "focus";
               return (
@@ -463,7 +521,7 @@ export function GraphDSViz({
 
       {/* Stats */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-        <Stat label="Nodes" value={NODES.length} />
+        <Stat label="Nodes" value={nodes.length} />
         <Stat label="Connections" value={edgeCount} />
         <Stat label="Step" value={`${step + 1}/${total}`} />
         <Stat label="Time" value={`${(elapsed / 1000).toFixed(1)}s`} />
@@ -490,12 +548,51 @@ export function GraphDSViz({
         <button
           type="button"
           onClick={newGraph}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New graph
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own graph vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

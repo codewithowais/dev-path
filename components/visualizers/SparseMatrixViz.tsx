@@ -22,7 +22,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const ROWS = 6;
 const COLS = 6;
-const DENSE = ROWS * COLS;
 const SPEEDS = [980, 680, 460, 280, 160] as const;
 
 type Op =
@@ -81,6 +80,52 @@ function record(seed: number): Op[] {
   return ops;
 }
 
+/* ─────────────────────────── Bind to the lesson's code ───────────────────
+   Parse the exact grid size and the ordered set()/clear() calls from the
+   lesson's JavaScript so the animation replays the code's own example. Each
+   set with a non-zero value stores (fresh) or updates (overwrite) a triple; a
+   set(..., 0) clears one. Parsing is defensive — anything off returns null and
+   the component keeps its seeded random demo. */
+
+type ParsedSparse = { rows: number; cols: number; ops: Op[] };
+
+function parseSparseCode(code?: string): ParsedSparse | null {
+  if (!code) return null;
+  try {
+    // Grid size from the constructor: new SparseMatrix(rows, cols).
+    const dim = code.match(/new\s+[A-Za-z_$][\w$]*\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (!dim) return null;
+    const rows = Number(dim[1]);
+    const cols = Number(dim[2]);
+    if (rows < 2 || rows > 8 || cols < 2 || cols > 8) return null;
+
+    // Ordered .set(r, c, value) calls.
+    const setRe = /\.set\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(-?\d+)\s*\)/g;
+    const ops: Op[] = [];
+    const occupied = new Set<string>();
+    let m: RegExpExecArray | null;
+    while ((m = setRe.exec(code)) !== null) {
+      const r = Number(m[1]);
+      const c = Number(m[2]);
+      const value = Number(m[3]);
+      if (r < 0 || r >= rows || c < 0 || c >= cols) return null;
+      const k = key(r, c);
+      if (value === 0) {
+        ops.push({ t: "clear", r, c });
+        occupied.delete(k);
+      } else {
+        ops.push({ t: "set", r, c, value, fresh: !occupied.has(k) });
+        occupied.add(k);
+      }
+    }
+    if (ops.length === 0) return null;
+
+    return { rows, cols, ops };
+  } catch {
+    return null;
+  }
+}
+
 function narrate(op: Op | undefined): string {
   if (!op)
     return "Ready. Press play — only non-zero cells become stored (row, col, value) triples.";
@@ -95,10 +140,16 @@ function narrate(op: Op | undefined): string {
 export function SparseMatrixViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — bind to its exact grid and set/clear run. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseSparseCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("sparse-matrix"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -106,7 +157,16 @@ export function SparseMatrixViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ops = useMemo(() => record(seed), [seed]);
+  // The active dataset: the lesson's own grid + ops, or a seeded random run.
+  const dataset = useMemo(
+    () =>
+      useCode && parsed
+        ? parsed
+        : { rows: ROWS, cols: COLS, ops: record(seed) },
+    [useCode, parsed, seed],
+  );
+  const { rows, cols, ops } = dataset;
+  const dense = rows * cols;
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
@@ -175,6 +235,11 @@ export function SparseMatrixViz({
     setSeed((s) => s + 1);
   };
 
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
   const isActive = (r: number, c: number) =>
     active != null && active.r === r && active.c === c;
 
@@ -205,7 +270,7 @@ export function SparseMatrixViz({
             color: "var(--accent)",
           }}
         >
-          Sparse matrix · {ROWS}×{COLS}
+          Sparse matrix · {rows}×{cols}
         </span>
         {complexity && (
           <span className="ml-auto font-mono text-[11px] text-muted">{complexity}</span>
@@ -216,16 +281,16 @@ export function SparseMatrixViz({
       <div
         className="mt-4 flex flex-col items-start gap-4 rounded-xl bg-paper px-3 py-4 sm:flex-row sm:justify-center sm:gap-6"
         role="img"
-        aria-label={`Sparse matrix visualization, ${stored} of ${DENSE} cells stored, ${
+        aria-label={`Sparse matrix visualization, ${stored} of ${dense} cells stored, ${
           done ? "run complete" : `step ${step} of ${total}`
         }`}
       >
         {/* Dense grid */}
         <div className="mx-auto overflow-x-auto sm:mx-0">
           <div className="w-max">
-            {Array.from({ length: ROWS }, (_, r) => (
+            {Array.from({ length: rows }, (_, r) => (
               <div key={r} className="mt-1 flex gap-1 first:mt-0">
-                {Array.from({ length: COLS }, (_, c) => {
+                {Array.from({ length: cols }, (_, c) => {
                   const { bg, white, v } = cellStyle(r, c);
                   return (
                     <div
@@ -286,9 +351,9 @@ export function SparseMatrixViz({
 
       {/* Stats */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-        <Stat label="Dense cells" value={DENSE} />
+        <Stat label="Dense cells" value={dense} />
         <Stat label="Stored (non-zero)" value={stored} />
-        <Stat label="Zeros skipped" value={DENSE - stored} />
+        <Stat label="Zeros skipped" value={dense - stored} />
         <Stat label="Step" value={`${step}/${total}`} />
       </div>
 
@@ -313,12 +378,51 @@ export function SparseMatrixViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own set/clear run vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

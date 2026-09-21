@@ -41,17 +41,67 @@ type Frame = {
   done: boolean;
 };
 
-/* The lesson's example list (10 → 20 → 30 → 40) plus the node we insert. */
-const VALUES: Record<number, number> = { 1: 10, 2: 20, 3: 30, 4: 40, 5: 25 };
-const BASE = [1, 2, 3, 4];
-const NEW_ID = 5;
-const AFTER_ID = 2; // insert 25 after the node holding 20
+/* The lesson's example list (10 → 20 → 30 → 40) plus the node we insert — the
+ * default when the lesson code can't be parsed. */
+type LLConfig = {
+  values: number[]; // base node values in head → tail order
+  insertAfterIdx: number; // insert the new node after this base index
+  insertVal: number; // value carried by the inserted node
+};
+const DEFAULT_CONFIG: LLConfig = { values: [10, 20, 30, 40], insertAfterIdx: 1, insertVal: 25 };
+
+type Built = { frames: Frame[]; values: Record<number, number> };
 
 const chain = (ids: number[], kind: ArrowKind = "idle"): Arrow[] =>
   ids.slice(0, -1).map((from, i) => ({ from, to: ids[i + 1], kind }));
 
-/* Build the full frame timeline. */
-function buildFrames(): Frame[] {
+/** Derive an insert (position + value) for a parsed list: slot the new node
+ *  after the second node when possible, carrying the midpoint of its two
+ *  neighbours (kept distinct from every existing value). */
+function makeConfig(values: number[]): LLConfig {
+  const insertAfterIdx = values.length >= 3 ? 1 : 0;
+  const a = values[insertAfterIdx];
+  const b = values[insertAfterIdx + 1];
+  let insertVal = Math.floor((a + b) / 2);
+  if (insertVal === a || insertVal === b || values.includes(insertVal)) insertVal = a + 1;
+  if (values.includes(insertVal)) insertVal = Math.max(...values) + 5;
+  return { values, insertAfterIdx, insertVal };
+}
+
+/** Parse the node values from the lesson demo's `list.add(n)` calls so the
+ *  animation walks the exact list shown in the editor. Returns null when there
+ *  is no usable demo — the component then falls back to the default list. */
+function parseLinkedListConfig(code: string | undefined): LLConfig | null {
+  if (!code) return null;
+  const inst = /(?:const|let|var)\s+(\w+)\s*=\s*new\s+LinkedList\s*\(/.exec(code);
+  if (!inst) return null;
+  const name = inst[1];
+  const re = new RegExp(`\\b${name}\\.add\\s*\\(\\s*(-?\\d+)\\s*\\)`, "g");
+  const values: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) values.push(Number(m[1]));
+  if (values.length < 2 || values.length > 4) return null;
+  return makeConfig(values);
+}
+
+/* Build the full frame timeline for a given list configuration. The default
+ * config reproduces the original 10 → 20 → 30 → 40 walk exactly. */
+function buildRun(cfg: LLConfig): Built {
+  const { values: vals, insertAfterIdx, insertVal } = cfg;
+  const n = vals.length;
+  const BASE = vals.map((_, i) => i + 1); // node ids 1..n
+  const NEW_ID = n + 1;
+  const AFTER_ID = insertAfterIdx + 1; // id of the node we insert after
+  const NEXT_ID = insertAfterIdx + 2; // id of the node currently after it
+  const afterVal = vals[insertAfterIdx];
+  const nextVal = vals[insertAfterIdx + 1];
+
+  const values: Record<number, number> = {};
+  vals.forEach((v, i) => {
+    values[i + 1] = v;
+  });
+  values[NEW_ID] = insertVal;
+
   const frames: Frame[] = [];
   const idle: Record<number, NodeState> = {};
 
@@ -66,11 +116,18 @@ function buildFrames(): Frame[] {
     caption:
       "A linked list: each box holds a value and a .next pointer to the following node.",
     op: "ready",
-    length: 4,
+    length: n,
     done: false,
   });
 
   // ── Act 1: traversal from the head ─────────────────────────────────────
+  const traverseCaption = (i: number): string => {
+    const v = vals[i];
+    if (i === 0) return `Start at the head — the list only knows this first node (${v}).`;
+    if (i === n - 1) return `Follow .next to ${v} — the tail. Its .next is null.`;
+    if (i === 1) return `Follow .next to reach ${v}. You can't jump straight here.`;
+    return `Follow .next again to ${v}.`;
+  };
   for (let i = 0; i < BASE.length; i++) {
     const states: Record<number, NodeState> = {};
     for (let j = 0; j < i; j++) states[BASE[j]] = "visited";
@@ -80,12 +137,6 @@ function buildFrames(): Frame[] {
       ...a,
       kind: (idx < i ? "accent" : "idle") as ArrowKind,
     }));
-    const captions = [
-      "Start at the head — the list only knows this first node (10).",
-      "Follow .next to reach 20. You can't jump straight here.",
-      "Follow .next again to 30.",
-      "Follow .next to 40 — the tail. Its .next is null.",
-    ];
     frames.push({
       order: [...BASE],
       raisedId: null,
@@ -93,27 +144,31 @@ function buildFrames(): Frame[] {
       cursor: BASE[i],
       states,
       arrows,
-      caption: captions[i],
+      caption: traverseCaption(i),
       op: "traverse",
-      length: 4,
+      length: n,
       done: false,
     });
   }
+  const allVisited: Record<number, NodeState> = {};
+  BASE.forEach((id) => {
+    allVisited[id] = "visited";
+  });
   frames.push({
     order: [...BASE],
     raisedId: null,
     raisedAfter: null,
     cursor: null,
-    states: { 1: "visited", 2: "visited", 3: "visited", 4: "visited" },
+    states: allVisited,
     arrows: chain(BASE, "accent"),
     caption:
       "Reaching an item means walking the whole chain — that's why find is O(n).",
     op: "traverse",
-    length: 4,
+    length: n,
     done: false,
   });
 
-  // ── Act 2: insert 25 after 20 ──────────────────────────────────────────
+  // ── Act 2: insert the new node after AFTER_ID ──────────────────────────
   frames.push({
     order: [...BASE],
     raisedId: null,
@@ -121,106 +176,110 @@ function buildFrames(): Frame[] {
     cursor: null,
     states: { ...idle },
     arrows: chain(BASE),
-    caption: "Now insert 25 into the middle — right after 20.",
+    caption: `Now insert ${insertVal} into the middle — right after ${afterVal}.`,
     op: "insert",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Walk to the head, then to 20.
+  // Walk to the head, then to the insert-after node.
   frames.push({
     order: [...BASE],
     raisedId: null,
     raisedAfter: null,
-    cursor: 1,
-    states: { 1: "cursor" },
+    cursor: BASE[0],
+    states: { [BASE[0]]: "cursor" },
     arrows: chain(BASE),
-    caption: "Walk from the head to find where 25 belongs…",
+    caption: `Walk from the head to find where ${insertVal} belongs…`,
     op: "insert",
-    length: 4,
+    length: n,
     done: false,
   });
+  const hereStates: Record<number, NodeState> = { [AFTER_ID]: "rewire" };
+  for (let j = 0; j < insertAfterIdx; j++) hereStates[BASE[j]] = "visited";
   frames.push({
     order: [...BASE],
     raisedId: null,
     raisedAfter: null,
-    cursor: 2,
-    states: { 1: "visited", 2: "rewire" },
+    cursor: AFTER_ID,
+    states: hereStates,
     arrows: chain(BASE).map((a, idx) => ({
       ...a,
-      kind: (idx < 1 ? "accent" : "idle") as ArrowKind,
+      kind: (idx < insertAfterIdx ? "accent" : "idle") as ArrowKind,
     })),
-    caption: "Here's 20 — we'll link the new node in right after it.",
+    caption: `Here's ${afterVal} — we'll link the new node in right after it.`,
     op: "insert",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Create the new node (raised above the gap after 20).
+  // Create the new node (raised above the gap after AFTER_ID).
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 5: "new" },
+    states: { [AFTER_ID]: "rewire", [NEW_ID]: "new" },
     arrows: chain(BASE),
-    caption: "Create the new node holding 25. It isn't linked in yet.",
+    caption: `Create the new node holding ${insertVal}. It isn't linked in yet.`,
     op: "insert",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Step 1: new.next → 30 (the node currently after 20).
+  // Step 1: new.next → the node currently after AFTER_ID.
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 5: "new" },
-    arrows: [...chain(BASE), { from: NEW_ID, to: 3, kind: "violet" }],
-    caption: "First point 25's .next to 30 — the node that follows 20.",
+    states: { [AFTER_ID]: "rewire", [NEW_ID]: "new" },
+    arrows: [...chain(BASE), { from: NEW_ID, to: NEXT_ID, kind: "violet" }],
+    caption: `First point ${insertVal}'s .next to ${nextVal} — the node that follows ${afterVal}.`,
     op: "rewire",
-    length: 4,
+    length: n,
     done: false,
   });
-  // Step 2: 20.next → 25 (the one existing pointer we change).
+  // Step 2: AFTER_ID.next → new (the one existing pointer we change).
   frames.push({
     order: [...BASE],
     raisedId: NEW_ID,
     raisedAfter: AFTER_ID,
     cursor: null,
-    states: { 2: "rewire", 5: "new" },
+    states: { [AFTER_ID]: "rewire", [NEW_ID]: "new" },
     arrows: [
-      { from: 1, to: 2, kind: "idle" },
-      { from: 2, to: 3, kind: "idle", faded: true },
-      { from: 3, to: 4, kind: "idle" },
-      { from: 2, to: NEW_ID, kind: "violet" },
-      { from: NEW_ID, to: 3, kind: "violet" },
+      ...chain(BASE).map((a) =>
+        a.from === AFTER_ID && a.to === NEXT_ID ? { ...a, faded: true } : a,
+      ),
+      { from: AFTER_ID, to: NEW_ID, kind: "violet" },
+      { from: NEW_ID, to: NEXT_ID, kind: "violet" },
     ],
-    caption: "Now re-point 20's .next to 25 — the one existing pointer we change.",
+    caption: `Now re-point ${afterVal}'s .next to ${insertVal} — the one existing pointer we change.`,
     op: "rewire",
-    length: 4,
+    length: n,
     done: false,
   });
   // Settle: the new node drops into the row.
-  const FINAL = [1, 2, NEW_ID, 3, 4];
+  const FINAL = [
+    ...BASE.slice(0, insertAfterIdx + 1),
+    NEW_ID,
+    ...BASE.slice(insertAfterIdx + 1),
+  ];
   frames.push({
     order: FINAL,
     raisedId: null,
     raisedAfter: null,
     cursor: null,
-    states: { 5: "new" },
-    arrows: [
-      { from: 1, to: 2, kind: "idle" },
-      { from: 2, to: NEW_ID, kind: "green" },
-      { from: NEW_ID, to: 3, kind: "green" },
-      { from: 3, to: 4, kind: "idle" },
-    ],
-    caption:
-      "Done — 25 sits between 20 and 30. Inserting in the middle changed just one .next.",
+    states: { [NEW_ID]: "new" },
+    arrows: chain(FINAL).map((a) =>
+      (a.from === AFTER_ID && a.to === NEW_ID) || (a.from === NEW_ID && a.to === NEXT_ID)
+        ? { ...a, kind: "green" as ArrowKind }
+        : a,
+    ),
+    caption: `Done — ${insertVal} sits between ${afterVal} and ${nextVal}. Inserting in the middle changed just one .next.`,
     op: "insert",
-    length: 5,
+    length: n + 1,
     done: true,
   });
 
-  return frames;
+  return { frames, values };
 }
 
 /* ───────────────────────────── Geometry ────────────────────────────── */
@@ -263,11 +322,23 @@ const SPEEDS = [1100, 750, 500, 300, 160] as const;
 export function LinkedListViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — parsed for the exact node values shown. */
+  code?: string;
 }) {
-  const frames = useMemo(() => buildFrames(), []);
+  const codeConfig = useMemo(() => parseLinkedListConfig(code), [code]);
+  const hasCodeData = codeConfig !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
+
+  const built = useMemo(
+    () => buildRun(useCode && codeConfig ? codeConfig : DEFAULT_CONFIG),
+    [useCode, codeConfig],
+  );
+  const frames = built.frames;
+  const values = built.values;
   const total = frames.length;
 
   const [step, setStep] = useState(0); // frame index
@@ -326,6 +397,11 @@ export function LinkedListViz({
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const toggleSource = (next: boolean) => {
+    restart();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -494,7 +570,7 @@ export function LinkedListViz({
                   fill="var(--color-ink)"
                   style={{ fontFamily: "var(--font-mono), monospace" }}
                 >
-                  {VALUES[id]}
+                  {values[id]}
                 </text>
                 {/* the .next pointer origin, or a null slash on the tail */}
                 {hasNext(id) ? (
@@ -578,7 +654,45 @@ export function LinkedListViz({
           ⤾ Restart
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own node values vs the default list. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Default
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

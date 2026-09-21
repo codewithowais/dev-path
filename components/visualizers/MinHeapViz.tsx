@@ -51,8 +51,21 @@ function pickValues(seed: number): number[] {
   return pool.slice(0, 6);
 }
 
-function build(seed: number): Frame[] {
-  const values = pickValues(seed);
+/** Pull the exact insert sequence out of the lesson's code, e.g.
+ *  `[5, 2, 8, 1, 9, 3].forEach((v) => heap.insert(v))`. Returns null on anything
+ *  unexpected so we fall back to the seeded random behaviour. */
+function parseCode(code?: string): number[] | null {
+  if (!code) return null;
+  const m = code.match(/\[([\d\s,]+)\]\s*\.forEach/);
+  if (!m) return null;
+  const values = m[1]
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+  return values.length >= 2 ? values : null;
+}
+
+function buildFrom(values: number[]): Frame[] {
   const heap: number[] = [];
   const frames: Frame[] = [];
   let comparisons = 0;
@@ -163,6 +176,10 @@ function build(seed: number): Frame[] {
   return frames;
 }
 
+function build(seed: number): Frame[] {
+  return buildFrom(pickValues(seed));
+}
+
 const SPEEDS = [1100, 750, 480, 300, 160] as const;
 const IDLE = "color-mix(in srgb, var(--accent) 18%, white)";
 
@@ -181,12 +198,22 @@ function nodePos(i: number, maxDepth: number, vbw: number, vbh: number) {
 export function MinHeapViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — we insert the exact values from the code,
+   *  with a toggle back to a random set. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(1);
-  const frames = useMemo(() => build(seed), [seed]);
+  const frames = useMemo(
+    () => (useCode && parsed ? buildFrom(parsed) : build(seed)),
+    [useCode, parsed, seed],
+  );
   const total = frames.length;
 
   const maxLen = useMemo(() => Math.max(1, ...frames.map((f) => f.heap.length)), [frames]);
@@ -242,13 +269,22 @@ export function MinHeapViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -429,12 +465,51 @@ export function MinHeapViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own values vs a random set. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

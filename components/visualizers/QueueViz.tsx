@@ -17,13 +17,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
    a setTimeout callback.
    ──────────────────────────────────────────────────────────────────────── */
 
+type CellValue = number | string;
 type Op = {
   kind: "add" | "remove"; // enqueue | dequeue
   id: number;
-  value: number;
+  value: CellValue;
 };
 
-type Cell = { id: number; value: number };
+type Cell = { id: number; value: CellValue };
 
 const MAX_SIZE = 6;
 const NUM_OPS = 12;
@@ -83,14 +84,65 @@ function narrate(op: Op | undefined): string {
   return `dequeue: serve ${op.value} — the oldest waiting item leaves the front (FIFO).`;
 }
 
+/** Read a call argument as a number or a quoted-string literal. Returns null
+ *  for anything we can't reproduce literally (a variable, an expression). */
+function parseArg(raw: string): CellValue | null {
+  const t = raw.trim();
+  if (t === "") return null;
+  if (/^-?\d+(?:\.\d+)?$/.test(t)) return Number(t);
+  const m = /^(["'`])([\s\S]*)\1$/.exec(t);
+  if (m) return m[2];
+  return null;
+}
+
+/** Parse the lesson demo's enqueue/dequeue sequence (e.g. `q.enqueue("a");
+ *  q.dequeue()`) into a recorded op list, so the animation runs on the exact
+ *  data shown in the editor. Returns null if there's no usable demo — the
+ *  component then falls back to its random scripted sequence. */
+function parseQueueCode(code: string | undefined): Op[] | null {
+  if (!code) return null;
+  const inst = /(?:const|let|var)\s+(\w+)\s*=\s*new\s+Queue\s*\(/.exec(code);
+  if (!inst) return null;
+  const name = inst[1];
+  const callRe = new RegExp(`\\b${name}\\.(enqueue|dequeue)\\s*\\(([^)]*)\\)`, "g");
+  const ops: Op[] = [];
+  const queue: Cell[] = [];
+  let nextId = 0;
+  let peak = 0;
+  let m: RegExpExecArray | null;
+  while ((m = callRe.exec(code)) !== null) {
+    if (m[1] === "enqueue") {
+      const val = parseArg(m[2]);
+      if (val === null) return null;
+      const cell = { id: nextId++, value: val };
+      queue.push(cell);
+      peak = Math.max(peak, queue.length);
+      ops.push({ kind: "add", id: cell.id, value: cell.value });
+    } else {
+      const cell = queue.shift();
+      if (!cell) return null; // dequeue on empty → not a valid demo
+      ops.push({ kind: "remove", id: cell.id, value: cell.value });
+    }
+  }
+  if (ops.length < 2 || peak > MAX_SIZE || peak < 1 || ops.length > 24) return null;
+  if (!ops.some((o) => o.kind === "add")) return null;
+  return ops;
+}
+
 export function QueueViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   /** e.g. "enqueue: O(1) · dequeue: O(1) · front: O(1)" — shown as a chip. */
   complexity?: string;
+  /** The lesson's JavaScript source — parsed for its exact enqueue/dequeue demo. */
+  code?: string;
 }) {
+  const codeOps = useMemo(() => parseQueueCode(code), [code]);
+  const hasCodeData = codeOps !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("queue"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -99,7 +151,10 @@ export function QueueViz({
   const runStartRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ops = useMemo(() => buildScript(seed), [seed]);
+  const ops = useMemo(
+    () => (useCode && codeOps ? codeOps : buildScript(seed)),
+    [useCode, codeOps, seed],
+  );
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
@@ -167,6 +222,11 @@ export function QueueViz({
   const newSequence = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const lastOpLabel = current
@@ -296,12 +356,51 @@ export function QueueViz({
         <button
           type="button"
           onClick={newSequence}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New sequence
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own enqueue/dequeue demo vs a random sequence. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

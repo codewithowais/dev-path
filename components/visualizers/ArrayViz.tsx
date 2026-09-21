@@ -21,11 +21,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
    explicit user action.
    ──────────────────────────────────────────────────────────────────────── */
 
+/** A slot's value — numbers for the random demo, but the lesson's own code may
+ *  hold strings (e.g. ["apple", "banana", "cherry"]), so cells accept either. */
+type Cell = string | number;
+
 type Op =
   | { t: "access"; index: number }
-  | { t: "insertBegin"; index: number; value: number }
+  | { t: "insertBegin"; index: number; value: Cell }
   | { t: "shiftRight"; from: number }
-  | { t: "place"; index: number; value: number }
+  | { t: "place"; index: number; value: Cell }
   | { t: "deleteBegin"; index: number }
   | { t: "shiftLeft"; from: number }
   | { t: "truncate" };
@@ -106,6 +110,109 @@ function record(seed: number): { ops: Op[]; initial: number[] } {
   return { ops, initial };
 }
 
+/* ─────────────────────────── Bind to the lesson's code ───────────────────
+   The lesson passes its JavaScript source; we parse the exact array it builds
+   plus the index it reads and the insert/delete it performs, so the animation
+   runs on the same data the learner sees in the editor. Parsing is defensive:
+   anything unexpected returns null and the component keeps its random demo. */
+
+type ParsedArray = {
+  values: Cell[];
+  accessIndex: number;
+  insert: { value: Cell; where: "start" | "end" } | null;
+  remove: { where: "start" | "end" } | null;
+};
+
+/** Turn a single literal token ("apple", 'x', 42) into a Cell, or null. */
+function litToken(raw: string | undefined): Cell | null {
+  if (raw === undefined) return null;
+  const s = raw.trim();
+  const str = s.match(/^"([^"]*)"$/) ?? s.match(/^'([^']*)'$/);
+  if (str) return str[1];
+  if (/^-?\d+(?:\.\d+)?$/.test(s)) return Number(s);
+  return null;
+}
+
+function parseArrayCode(code?: string): ParsedArray | null {
+  if (!code) return null;
+  try {
+    // First array literal bound to a variable: `const fruits = [ ... ];`.
+    const decl = code.match(
+      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\[([^\]]*)\]/,
+    );
+    if (!decl) return null;
+    const name = decl[1];
+    const values: Cell[] = [];
+    const itemRe = /"([^"]*)"|'([^']*)'|(-?\d+(?:\.\d+)?)/g;
+    let m: RegExpExecArray | null;
+    while ((m = itemRe.exec(decl[2])) !== null) {
+      if (m[1] !== undefined) values.push(m[1]);
+      else if (m[2] !== undefined) values.push(m[2]);
+      else if (m[3] !== undefined) values.push(Number(m[3]));
+    }
+    if (values.length < 2) return null;
+
+    const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const arg = `("[^"]*"|'[^']*'|-?\\d+(?:\\.\\d+)?)`;
+
+    // Read by index: name[<int>].
+    let accessIndex = 0;
+    const acc = code.match(new RegExp(`${esc}\\[(\\d+)\\]`));
+    if (acc) accessIndex = Number(acc[1]);
+
+    // Insert: push (end) / unshift (start).
+    let insert: ParsedArray["insert"] = null;
+    const push = code.match(new RegExp(`${esc}\\.push\\(\\s*${arg}`));
+    const unshift = code.match(new RegExp(`${esc}\\.unshift\\(\\s*${arg}`));
+    if (push && litToken(push[1]) !== null) {
+      insert = { value: litToken(push[1]) as Cell, where: "end" };
+    } else if (unshift && litToken(unshift[1]) !== null) {
+      insert = { value: litToken(unshift[1]) as Cell, where: "start" };
+    }
+
+    // Delete: pop (end) / shift (start).
+    let remove: ParsedArray["remove"] = null;
+    if (new RegExp(`${esc}\\.pop\\(`).test(code)) remove = { where: "end" };
+    else if (new RegExp(`${esc}\\.shift\\(`).test(code)) remove = { where: "start" };
+
+    return { values, accessIndex, insert, remove };
+  } catch {
+    return null;
+  }
+}
+
+/** Same scripted shape as record(), seeded from the parsed code instead of a
+ *  seeded random arrangement: access → (insert) → access → (delete). */
+function recordFromCode(p: ParsedArray): { ops: Op[]; initial: Cell[] } {
+  const initial: Cell[] = [...p.values];
+  const ops: Op[] = [];
+  let len = initial.length;
+  const clampAcc = (l: number) => Math.max(0, Math.min(p.accessIndex, l - 1));
+
+  ops.push({ t: "access", index: clampAcc(len) });
+
+  if (p.insert) {
+    const ip = p.insert.where === "start" ? 0 : len; // "end" appends
+    const iv = p.insert.value;
+    ops.push({ t: "insertBegin", index: ip, value: iv });
+    for (let j = len - 1; j >= ip; j--) ops.push({ t: "shiftRight", from: j });
+    ops.push({ t: "place", index: ip, value: iv });
+    len += 1;
+  }
+
+  ops.push({ t: "access", index: clampAcc(len) });
+
+  if (p.remove) {
+    const dp = p.remove.where === "start" ? 0 : len - 1;
+    ops.push({ t: "deleteBegin", index: dp });
+    for (let j = dp + 1; j < len; j++) ops.push({ t: "shiftLeft", from: j });
+    ops.push({ t: "truncate" });
+    len -= 1;
+  }
+
+  return { ops, initial };
+}
+
 function narrate(op: Op | undefined): string {
   if (!op)
     return "Ready. Press play — read by index is instant, but inserting or deleting shifts the rest.";
@@ -130,10 +237,17 @@ function narrate(op: Op | undefined): string {
 export function ArrayViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — bind the animation to its exact array. */
+  code?: string;
 }) {
+  // Parse the lesson's code once; when it succeeds, default to running on it.
+  const parsed = useMemo(() => parseArrayCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(() => makeSeed("array"));
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [step, setStep] = useState(0);
@@ -141,7 +255,10 @@ export function ArrayViz({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { ops, initial } = useMemo(() => record(seed), [seed]);
+  const { ops, initial } = useMemo(
+    () => (useCode && parsed ? recordFromCode(parsed) : record(seed)),
+    [useCode, parsed, seed],
+  );
   const total = ops.length;
   const done = step >= total;
   const running = playing && !done;
@@ -149,7 +266,7 @@ export function ArrayViz({
   // Derive the whole picture at `step` by replaying ops 0..step. Pure + cheap.
   // Cells can be `null` while a slot is momentarily a hole mid-shift.
   const frame = useMemo(() => {
-    const cells: (number | null)[] = [...initial];
+    const cells: (Cell | null)[] = [...initial];
     let reads = 0;
     let shifts = 0;
     let hi: { index: number; role: Role } | null = null;
@@ -231,6 +348,11 @@ export function ArrayViz({
     setSeed((s) => s + 1);
   };
 
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
   const cellColor = (idx: number): string => {
     if (hi && hi.index === idx) {
       if (hi.role === "shift") return "var(--color-here)";
@@ -276,7 +398,7 @@ export function ArrayViz({
           {cells.map((v, idx) => (
             <div key={idx} className="flex flex-col items-center gap-1">
               <div
-                className="flex h-12 w-10 items-center justify-center rounded-lg font-mono text-sm font-bold transition-colors sm:h-14 sm:w-12"
+                className="flex h-12 w-auto min-w-[2.5rem] items-center justify-center whitespace-nowrap rounded-lg px-1.5 font-mono text-sm font-bold transition-colors sm:h-14 sm:min-w-[3rem]"
                 style={{
                   background: v === null ? "transparent" : cellColor(idx),
                   border:
@@ -335,12 +457,51 @@ export function ArrayViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own array vs a random one. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

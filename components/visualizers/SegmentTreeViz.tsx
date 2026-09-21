@@ -54,7 +54,40 @@ function makeRng(seed: number): () => number {
 
 const N = 8; // power of two → a clean, full binary tree
 
-function build(seed: number): {
+/** Pull the base array and a range query out of the lesson's code, e.g.
+ *  `const values = [1, 3, 5, 7, 9, 11]` and `seg.query(1, 4)`. Prefers a proper
+ *  sub-range query (not the whole array) so the descent is worth watching.
+ *  Returns null on anything unexpected so we keep the seeded random behaviour. */
+function parseCode(code?: string): { values: number[]; l: number; r: number } | null {
+  if (!code) return null;
+  const vm = code.match(/values\s*=\s*\[([\d\s,]+)\]/);
+  if (!vm) return null;
+  const values = vm[1]
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+  const n = values.length;
+  if (n < 2) return null;
+
+  const queries: Array<[number, number]> = [];
+  const re = /\.query\(\s*(\d+)\s*,\s*(\d+)\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a >= 0 && b <= n && a < b) queries.push([a, b]);
+  }
+  if (queries.length === 0) return null;
+  // Prefer a partial range (skips subtrees); otherwise take the first valid one.
+  const [l, r] = queries.find(([a, b]) => b - a < n) ?? queries[0];
+  return { values, l, r };
+}
+
+function buildFrom(
+  values: number[],
+  l: number,
+  r: number,
+): {
   frames: Frame[];
   nodes: SNode[];
   vbw: number;
@@ -63,9 +96,7 @@ function build(seed: number): {
   l: number;
   r: number;
 } {
-  const rng = makeRng(seed);
-  const values = Array.from({ length: N }, () => 1 + Math.floor(rng() * 9));
-
+  const n = values.length;
   const nodes: SNode[] = [];
   let idc = 0;
   const make = (lo: number, hi: number, depth: number): number => {
@@ -83,13 +114,15 @@ function build(seed: number): {
     }
     return id;
   };
-  const root = make(0, N, 0);
+  const root = make(0, n, 0);
 
-  const maxDepth = Math.log2(N);
-  const vbw = N * 48;
+  // Derive depth from the tree itself so arbitrary array lengths (not just
+  // powers of two) still lay out cleanly; for n = 8 this equals log2(n).
+  const maxDepth = nodes.reduce((mx, nd) => Math.max(mx, nd.depth), 0);
+  const vbw = n * 48;
   const vbh = (maxDepth + 1) * 74;
   nodes.forEach((nd) => {
-    nd.x = (((nd.lo + nd.hi) / 2) / N) * vbw;
+    nd.x = (((nd.lo + nd.hi) / 2) / n) * vbw;
     nd.y = ((nd.depth + 0.5) / (maxDepth + 1)) * vbh;
   });
 
@@ -138,10 +171,7 @@ function build(seed: number): {
   rec(root);
   frames.push(snap({ caption: `Built. The root holds the grand total ${nodes[root].sum}.` }));
 
-  // Query phase — pick an interior range and descend.
-  const l = 1 + Math.floor(rng() * 3); // 1..3
-  const len = 2 + Math.floor(rng() * 3); // 2..4
-  const r = Math.min(N, l + len); // exclusive
+  // Query phase — descend over the range [l, r).
   frames.push(
     snap({ caption: `Query sum of [${l},${r}). Take only the segments that cover it.` }),
   );
@@ -181,18 +211,37 @@ function build(seed: number): {
   return { frames, nodes, vbw, vbh, values, l, r };
 }
 
+function build(seed: number): ReturnType<typeof buildFrom> {
+  const rng = makeRng(seed);
+  const values = Array.from({ length: N }, () => 1 + Math.floor(rng() * 9));
+  const l = 1 + Math.floor(rng() * 3); // 1..3
+  const len = 2 + Math.floor(rng() * 3); // 2..4
+  const r = Math.min(N, l + len); // exclusive
+  return buildFrom(values, l, r);
+}
+
 const SPEEDS = [1100, 750, 480, 300, 160] as const;
 const IDLE = "color-mix(in srgb, var(--accent) 18%, white)";
 
 export function SegmentTreeViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — we build over the exact array in the code
+   *  and run the code's own range query, with a toggle back to a random set. */
+  code?: string;
 }) {
+  const parsed = useMemo(() => parseCode(code), [code]);
+  const hasCodeData = parsed !== null;
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [seed, setSeed] = useState<number>(1);
-  const { frames, nodes, vbw, vbh, values, l, r } = useMemo(() => build(seed), [seed]);
+  const { frames, nodes, vbw, vbh, values, l, r } = useMemo(
+    () => (useCode && parsed ? buildFrom(parsed.values, parsed.l, parsed.r) : build(seed)),
+    [useCode, parsed, seed],
+  );
   const total = frames.length;
 
   const [step, setStep] = useState(0);
@@ -243,13 +292,22 @@ export function SegmentTreeViz({
     setStep((s) => Math.min(s + 1, total - 1));
   };
 
-  const newInput = () => {
+  const resetRun = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
     setStep(0);
     setElapsed(0);
     runStartRef.current = null;
+  };
+
+  const newInput = () => {
+    resetRun();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    resetRun();
+    setUseCode(next);
   };
 
   const f = frames[Math.min(step, total - 1)];
@@ -455,12 +513,51 @@ export function SegmentTreeViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own array + query vs a random set. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"

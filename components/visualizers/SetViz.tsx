@@ -24,7 +24,7 @@ type Op =
   | { t: "query-check"; value: string; present: boolean }
   | { t: "query-result"; value: string; present: boolean };
 
-type Recording = { ops: Op[]; stream: string[]; missValue: string };
+type Recording = { ops: Op[]; stream: string[] };
 
 const NAME_POOL = ["amy", "bo", "cy", "di", "ed", "fi", "gus", "hal"];
 
@@ -48,6 +48,29 @@ function stableSeed(s: string): number {
   return (h >>> 0) % 100000;
 }
 
+/** Record the run: process every name in `stream` (add-if-new / reject-if-seen),
+ *  then run each membership test in `queries`, computing its hit/miss from the
+ *  set actually built. Shared by both random and "from code" modes. */
+function buildOps(stream: string[], queries: string[]): Recording {
+  const ops: Op[] = [];
+  const setOrder = new Map<string, number>();
+  stream.forEach((value, src) => {
+    ops.push({ t: "consider", src });
+    if (setOrder.has(value)) {
+      ops.push({ t: "reject", src, matchOrder: setOrder.get(value)! });
+    } else {
+      setOrder.set(value, setOrder.size);
+      ops.push({ t: "add", src });
+    }
+  });
+  for (const value of queries) {
+    const present = setOrder.has(value);
+    ops.push({ t: "query-check", value, present });
+    ops.push({ t: "query-result", value, present });
+  }
+  return { ops, stream };
+}
+
 /** Build a stream of ~7 names, deliberately seeded to contain duplicates so
  *  the dedup behaviour is visible, plus a name that is NOT in the set (miss). */
 function buildRun(seed: number): Recording {
@@ -65,26 +88,27 @@ function buildRun(seed: number): Recording {
   const pattern = [0, 1, 0, 2, 1, 0, 2];
   for (const p of pattern) stream.push(uniques[p]);
 
-  const ops: Op[] = [];
-  const setOrder = new Map<string, number>();
-  stream.forEach((value, src) => {
-    ops.push({ t: "consider", src });
-    if (setOrder.has(value)) {
-      ops.push({ t: "reject", src, matchOrder: setOrder.get(value)! });
-    } else {
-      setOrder.set(value, setOrder.size);
-      ops.push({ t: "add", src });
-    }
-  });
-
   // Two membership tests: a hit (first unique) then a miss.
-  const hitValue = uniques[0];
-  ops.push({ t: "query-check", value: hitValue, present: true });
-  ops.push({ t: "query-result", value: hitValue, present: true });
-  ops.push({ t: "query-check", value: missValue, present: false });
-  ops.push({ t: "query-result", value: missValue, present: false });
+  return buildOps(stream, [uniques[0], missValue]);
+}
 
-  return { ops, stream, missValue };
+/** Parse the exact list of elements the lesson adds — the string-array literal
+ *  it iterates (duplicates kept, so the dedup is visible). Null if not found. */
+function parseCodeStream(code?: string): string[] | null {
+  if (!code) return null;
+  const arr = code.match(/\[\s*(?:"[^"]*"|'[^']*')(?:\s*,\s*(?:"[^"]*"|'[^']*'))*\s*\]/);
+  if (!arr) return null;
+  const quoted = arr[0].match(/"([^"]*)"|'([^']*)'/g);
+  if (!quoted) return null;
+  const values = quoted.map((s) => s.slice(1, -1)).filter((s) => s.length > 0);
+  return values.length >= 2 ? values : null;
+}
+
+/** Parse the membership-test value the lesson checks, e.g. seen.has("bo"). */
+function parseCodeHas(code?: string): string | null {
+  const m = code?.match(/\.has\(\s*"([^"]*)"|\.has\(\s*'([^']*)'/);
+  if (!m) return null;
+  return m[1] ?? m[2] ?? null;
 }
 
 const SPEEDS = [780, 520, 320, 180, 90] as const;
@@ -92,14 +116,27 @@ const SPEEDS = [780, 520, 320, 180, 90] as const;
 export function SetViz({
   accent,
   complexity,
+  code,
 }: {
   accent: string;
   complexity?: string;
+  /** The lesson's JavaScript source — its added elements and has() value drive
+   *  the "from code" mode so the animation matches the sample on the page. */
+  code?: string;
 }) {
+  const codeStream = useMemo(() => parseCodeStream(code), [code]);
+  const codeHas = useMemo(() => parseCodeHas(code), [code]);
+  const hasCodeData = codeStream != null && codeHas != null;
+  // Default to the lesson's own data when we can parse both parts.
+  const [useCode, setUseCode] = useState<boolean>(hasCodeData);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   const [seed, setSeed] = useState<number>(() => stableSeed("set"));
 
-  const recording = useMemo(() => buildRun(seed), [seed]);
+  const recording = useMemo(
+    () =>
+      useCode && codeStream && codeHas ? buildOps(codeStream, [codeHas]) : buildRun(seed),
+    [useCode, codeStream, codeHas, seed],
+  );
   const { ops, stream } = recording;
 
   const [step, setStep] = useState(0);
@@ -201,6 +238,11 @@ export function SetViz({
   const newInput = () => {
     reset();
     setSeed((s) => s + 1);
+  };
+
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
   };
 
   const { members, status, matchValue, queryValue, queryPresent, queryPhase } = frame;
@@ -375,12 +417,51 @@ export function SetViz({
         <button
           type="button"
           onClick={newInput}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New input
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own names vs a random stream. */}
+        {hasCodeData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasCodeData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"
