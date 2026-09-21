@@ -7,6 +7,21 @@ import { MarkDoneButton } from "@/components/LessonProgress";
 import { lessonVisualizers } from "@/components/lessonVisualizers";
 import { accentText } from "@/lib/accent";
 
+/** Pull the first integer-array literal out of a code sample, e.g.
+ *  `const data = [5, 2, 9, 1, 5, 6];` → [5, 2, 9, 1, 5, 6]. Lets a visualizer
+ *  run on the exact numbers the learner sees in the editor. */
+function firstNumberArray(code?: string): number[] | undefined {
+  if (!code) return undefined;
+  const m = code.match(/\[\s*-?\d+(?:\s*,\s*-?\d+)+\s*\]/);
+  if (!m) return undefined;
+  const nums = m[0]
+    .slice(1, -1)
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+  return nums.length >= 2 ? nums : undefined;
+}
+
 /** Full lesson page: short explanation on the left, live editor + output on the
  *  right (stacked on mobile). Designed so you can see it all without hunting. */
 export function LessonView({ lesson }: { lesson: Lesson }) {
@@ -148,7 +163,11 @@ export function LessonView({ lesson }: { lesson: Lesson }) {
                 />
                 See it in motion
               </h2>
-              <Viz accent={color} complexity={lesson.big} />
+              <Viz
+                accent={color}
+                complexity={lesson.big}
+                lessonData={firstNumberArray(lesson.code?.JavaScript)}
+              />
             </section>
           );
         })()}

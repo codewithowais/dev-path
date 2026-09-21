@@ -69,8 +69,15 @@ import { LruCacheViz } from "./visualizers/LruCacheViz";
 import { TupleViz } from "./visualizers/TupleViz";
 
 /** Every lesson visualizer takes exactly these props. The pillar accent colour
- *  and the lesson's Big-O string come from LessonView. */
-export type VizProps = { accent: string; complexity?: string };
+ *  and the lesson's Big-O string come from LessonView. `lessonData` is the exact
+ *  number array from the lesson's code sample, when one exists — visualizers
+ *  that chart a list of numbers (sort/search) offer a "from code" toggle for it;
+ *  the rest ignore it. */
+export type VizProps = {
+  accent: string;
+  complexity?: string;
+  lessonData?: number[];
+};
 
 /** Registry: lesson id → its "see it in motion" component. Adding a visualizer
  *  means dropping a self-contained component in components/visualizers/ and

@@ -281,12 +281,20 @@ export function SortVisualizer({
   algo,
   accent,
   complexity,
+  lessonData,
 }: {
   algo: SortAlgo;
   accent: string;
   /** e.g. "O(n²) time · O(1) space" — shown as a chip. */
   complexity?: string;
+  /** The exact numbers from the lesson's code sample, if any — lets the learner
+   *  watch the sort run on the same data they see in the editor. */
+  lessonData?: number[];
 }) {
+  const hasLessonData = Array.isArray(lessonData) && lessonData.length >= 2;
+  // Default to the lesson's own numbers when we have them, so the animation
+  // matches the code on the page; the learner can switch to random for variety.
+  const [useCode, setUseCode] = useState<boolean>(hasLessonData);
   const [size, setSize] = useState<number>(24);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   // A stable per-algorithm starting seed so the server and client render the
@@ -294,8 +302,12 @@ export function SortVisualizer({
   // arrangement. "Shuffle" bumps this for a fresh, deterministic reshuffle.
   const [seed, setSeed] = useState<number>(() => algoSeed(algo));
 
-  // The starting numbers. Regenerated on size change or shuffle.
-  const initial = useMemo(() => randomArray(size, seed), [size, seed]);
+  // The starting numbers: the lesson's exact array in "from code" mode,
+  // otherwise a seeded random arrangement (regenerated on size/shuffle).
+  const initial = useMemo(
+    () => (useCode && hasLessonData ? [...(lessonData as number[])] : randomArray(size, seed)),
+    [useCode, hasLessonData, lessonData, size, seed],
+  );
 
   // Record the whole run up front so playback is smooth and scrubbable.
   const recording = useMemo(() => record(algo, initial), [algo, initial]);
@@ -428,9 +440,16 @@ export function SortVisualizer({
     setSize(n);
   };
 
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
   const shown = { c: frame.comparisons, w: frame.writes };
 
-  const maxVal = 100;
+  // Scale bar heights to the data's own max, so the lesson's small numbers
+  // (e.g. [5,2,9,1,5,6]) fill the chart just as the random 8..100 set does.
+  const maxVal = Math.max(...initial, 1);
   const currentOp = step > 0 ? recording.ops[step - 1] : undefined;
   const caption = narrate(currentOp, view);
 
@@ -538,12 +557,51 @@ export function SortVisualizer({
         <button
           type="button"
           onClick={shuffle}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ Shuffle
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own numbers vs a random set. */}
+        {hasLessonData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={
+                !useCode
+                  ? { background: "var(--accent)", color: "#fff" }
+                  : { color: "var(--color-muted)" }
+              }
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasLessonData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"
@@ -561,7 +619,8 @@ export function SortVisualizer({
           <select
             value={size}
             onChange={(e) => changeSize(Number(e.target.value))}
-            className="rounded-lg border border-line bg-card px-2 py-1 text-ink"
+            disabled={useCode}
+            className="rounded-lg border border-line bg-card px-2 py-1 text-ink disabled:opacity-40"
             aria-label="Number of bars"
           >
             {SIZES.map((s) => (

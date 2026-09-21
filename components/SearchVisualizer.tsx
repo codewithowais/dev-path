@@ -190,19 +190,33 @@ export function SearchVisualizer({
   algo,
   accent,
   complexity,
+  lessonData,
 }: {
   algo: SearchAlgo;
   accent: string;
   /** e.g. "O(log n) time · O(1) space" — shown as a chip. */
   complexity?: string;
+  /** The exact numbers from the lesson's code sample, if any — lets the learner
+   *  watch the search run on the same data they see in the editor. */
+  lessonData?: number[];
 }) {
+  const hasLessonData = Array.isArray(lessonData) && lessonData.length >= 2;
+  const [useCode, setUseCode] = useState<boolean>(hasLessonData);
   const [size, setSize] = useState<number>(24);
   const [speedIdx, setSpeedIdx] = useState<number>(2);
   // Stable per-algorithm seed: identical bars on server + client (no hydration
   // mismatch); "Shuffle" bumps it for a fresh, deterministic layout + target.
   const [seed, setSeed] = useState<number>(() => algoSeed(algo));
 
-  const data = useMemo(() => buildData(algo, size, seed), [algo, size, seed]);
+  const data = useMemo(() => {
+    if (useCode && hasLessonData) {
+      const arr = [...(lessonData as number[])];
+      // Binary/jump require sorted input, just like the random path.
+      if (NEEDS_SORTED[algo]) arr.sort((x, y) => x - y);
+      return arr;
+    }
+    return buildData(algo, size, seed);
+  }, [useCode, hasLessonData, lessonData, algo, size, seed]);
 
   // Pick a target that actually exists, so the search resolves in a satisfying
   // hit. A separate seed stream keeps it independent of the shuffle.
@@ -317,7 +331,14 @@ export function SearchVisualizer({
     setSize(n);
   };
 
-  const maxVal = 100;
+  const toggleSource = (next: boolean) => {
+    reset();
+    setUseCode(next);
+  };
+
+  // Scale to the data's own max so the lesson's numbers (e.g. [4,8,15,16,23,42])
+  // and the target line fill the chart like the random 8..100 set does.
+  const maxVal = Math.max(...data, 1);
   const currentOp = step > 0 ? recording.ops[step - 1] : undefined;
   const caption = narrate(currentOp, data, target, algo);
   const { lo, hi, current, found, missed, visited } = frame;
@@ -458,12 +479,43 @@ export function SearchVisualizer({
         <button
           type="button"
           onClick={shuffle}
-          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)]"
+          disabled={useCode}
+          className="rounded-pill border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-[color:var(--accent)] disabled:opacity-40"
         >
           ⤨ New target
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted">
+        {/* Data source: the lesson's own numbers vs a random set. */}
+        {hasLessonData && (
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-pill border border-line text-xs font-semibold"
+            role="group"
+            aria-label="Data source"
+          >
+            <button
+              type="button"
+              onClick={() => toggleSource(true)}
+              aria-pressed={useCode}
+              className="px-3 py-2 transition-colors"
+              style={useCode ? { background: "var(--accent)", color: "#fff" } : { color: "var(--color-muted)" }}
+            >
+              From code
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSource(false)}
+              aria-pressed={!useCode}
+              className="px-3 py-2 transition-colors"
+              style={!useCode ? { background: "var(--accent)", color: "#fff" } : { color: "var(--color-muted)" }}
+            >
+              Random
+            </button>
+          </div>
+        )}
+
+        <label
+          className={`flex items-center gap-2 text-xs font-semibold text-muted ${hasLessonData ? "" : "ml-auto"}`}
+        >
           Speed
           <input
             type="range"
@@ -481,7 +533,8 @@ export function SearchVisualizer({
           <select
             value={size}
             onChange={(e) => changeSize(Number(e.target.value))}
-            className="rounded-lg border border-line bg-card px-2 py-1 text-ink"
+            disabled={useCode}
+            className="rounded-lg border border-line bg-card px-2 py-1 text-ink disabled:opacity-40"
             aria-label="Number of items"
           >
             {SIZES.map((s) => (
